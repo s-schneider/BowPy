@@ -10,15 +10,37 @@ damit erstmal testen
 import obspy
 from obspy import read
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import Muenster_Array_Seismology as MAS
 from Muenster_Array_Seismology import get_coords
-from obspy.core.util.geodetics import gps2DistAzumiuth
+from obspy.core.util.geodetics import gps2DistAzimuth
 
-def create_signal(no_of_traces=10, len_of_traces=30000):
-  trace = np.array([np.zeros(len_of_traces)])
+
+def create_signal(no_of_traces=10, len_of_traces=30000,
+                  multiple=False, multipdist=2):
+  """
+  function that creates a 
+  """
+  dist=multipdist
+  if multiple:
+      data = np.array([np.zeros(len_of_traces)])
+      data[0][0] = 1
+      data[0][dist] = 1
+  else:
+      data = np.array([np.zeros(len_of_traces)])
+      data[0][0] = 1
   
-  return(Data)
+  for i in range(no_of_traces)[1:]:
+      new_trace = np.array([np.zeros(len_of_traces)])
+      if multiple and i < len_of_traces-dist:
+          new_trace[0][i] = 1
+          new_trace[0][i+dist] = 1
+      else:
+          new_trace[0][i] = 1
+      data = np.append(data, new_trace, axis=0)
+  data = np.flipud(data)
+  return(data)
+  
 def fk_filter(stream, inventory, catalog, phase):
 	"""
 	Import stream, inventory, catalog and phase you want to investigate.
@@ -50,11 +72,8 @@ def fk_filter(stream, inventory, catalog, phase):
 	
 	for i in range(len(st))[1:]:
 	  next_st = np.array([st[i].data])
-	  ArrayData = np.append(ArrayData, next_st , axis=0)
+	  ArrayData = np.append(ArrayData, next_st, axis=0)
 	
-	
-
-
 	"""
 	Binning of the data ############################################################
 	"""
@@ -138,5 +157,5 @@ inventory="2011-03-11T05:46:23.MSEED_inv.xml"
 catalog="2011-03-11T05:46:23.MSEED_cat.xml"
 phase="PP"
 
-fk_filter(stream, inventory, catalog, phase)
-
+#fk_filter(stream, inventory, catalog, phase)
+data=create_signal(len_of_traces=12,multiple=True)
