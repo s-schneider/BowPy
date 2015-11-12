@@ -15,7 +15,10 @@ import Muenster_Array_Seismology as MAS
 from Muenster_Array_Seismology import get_coords
 from obspy.core.util.geodetics import gps2DistAzumiuth
 
-
+def create_signal(no_of_traces=10, len_of_traces=30000):
+  trace = np.array([np.zeros(len_of_traces)])
+  
+  return(Data)
 def fk_filter(stream, inventory, catalog, phase):
 	"""
 	Import stream, inventory, catalog and phase you want to investigate.
