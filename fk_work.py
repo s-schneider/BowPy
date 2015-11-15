@@ -16,7 +16,23 @@ from Muenster_Array_Seismology import get_coords
 from obspy.core.util.geodetics import gps2DistAzimuth
 
 
-def create_signal(no_of_traces=10, len_of_traces=30000,
+
+def create_sine( no_of_traces=10, len_of_traces=30000, no_of_periods=1 ):
+    
+    deltax = 2*np.pi/len_of_traces
+    signal_len = len_of_traces * no_of_periods
+    data = np.array([np.zeros(signal_len)])
+    
+    for i in range(signal_len):
+        data[0][i] = np.sin(i*deltax)
+#    for i in range(no_of_traces)[1:]:
+#        new_trace = np.array([np.zeros(len_of_traces)])
+#        new_trace[0][i] = 
+    return(data)
+
+
+
+def create_deltasignal(no_of_traces=10, len_of_traces=30000,
                   multiple=False, multipdist=2):
   """
   function that creates a 
@@ -40,6 +56,8 @@ def create_signal(no_of_traces=10, len_of_traces=30000,
       data = np.append(data, new_trace, axis=0)
   data = np.flipud(data)
   return(data)
+  
+  
   
 def fk_filter(stream, inventory, catalog, phase):
 	"""
@@ -113,7 +131,7 @@ def fk_filter(stream, inventory, catalog, phase):
 	"""
 	#apply 2D FFT
 
-	#np.fft.fft2(a, s=None, axes=(-2, -1))
+	fft_data = np.fft.fft2(a, s=None, axes=(-2, -1))
 	"""
 	Parameters
 	----------
@@ -140,6 +158,10 @@ def fk_filter(stream, inventory, catalog, phase):
 	indicated by `axes`, or the last two axes if `axes` is not given.
 	"""
 
+	#Amplitudespectra: |F(x,y)| = ( Re(x,y)^2 + Im(x,y)^2 )^1/2
+      # write loop through all elements
+      #Amp =  np.sqrt(fft_data[i][j].real**2 + fft_data[i][j].imag**2)
+
 	#mute area around |f| > eps, choose eps dependent on your phase/data/i dont know yet
 
 	#apply 2D iFFT
@@ -158,4 +180,5 @@ catalog="2011-03-11T05:46:23.MSEED_cat.xml"
 phase="PP"
 
 #fk_filter(stream, inventory, catalog, phase)
-data=create_signal(len_of_traces=12,multiple=True)
+#data=create_signal(no_of_traces=1,len_of_traces=12,multiple=False)
+#data=create_sine(no_of_traces=1, no_of_periods=2)
