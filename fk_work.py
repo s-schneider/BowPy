@@ -17,18 +17,22 @@ from obspy.core.util.geodetics import gps2DistAzimuth
 
 
 
-def create_sine( no_of_traces=10, len_of_traces=30000, no_of_periods=1 ):
+def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
+                 no_of_periods=1 ):
     
     deltax = 2*np.pi/len_of_traces
     signal_len = len_of_traces * no_of_periods
+    period_time = 1 / samplingrate
     data = np.array([np.zeros(signal_len)])
+    t = []
     
     for i in range(signal_len):
         data[0][i] = np.sin(i*deltax)
+        t.append((float(i) + float(i)/signal_len)/signal_len)
 #    for i in range(no_of_traces)[1:]:
 #        new_trace = np.array([np.zeros(len_of_traces)])
 #        new_trace[0][i] = 
-    return(data)
+    return(data, t)
 
 
 
@@ -56,6 +60,12 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
       data = np.append(data, new_trace, axis=0)
   data = np.flipud(data)
   return(data)
+  
+def fft(data,t):
+    
+    fftdata = np.fft.fft(data[0])
+    Amp = np.sqrt(fftdata.real**2 + fftdata.imag**2 )
+#    f = 
   
   
   
