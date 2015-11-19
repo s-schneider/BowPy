@@ -44,37 +44,48 @@ def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
 
 
 def create_deltasignal(no_of_traces=10, len_of_traces=30000,
-                  multiple=False, multipdist=2):
+                  multiple=False, multipdist=2, no_of_multip=1):
   """
   function that creates a 
   """
   dist=multipdist
+  data = np.array([np.zeros(len_of_traces)])
   if multiple:
-      data = np.array([np.zeros(len_of_traces)])
       data[0][0] = 1
-      data[0][dist] = 1
+      for i in range(no_of_multip):
+	data[0][dist+i*dist] = 1
   else:
-      data = np.array([np.zeros(len_of_traces)])
       data[0][0] = 1
   
+  data_temp = data
   for i in range(no_of_traces)[1:]:
-      new_trace = np.array([np.zeros(len_of_traces)])
-      if multiple and i < len_of_traces-dist:
-          new_trace[0][i] = 1
-          new_trace[0][i+dist] = 1
-      else:
-          new_trace[0][i] = 1
-      data = np.append(data, new_trace, axis=0)
-  data = np.flipud(data)
+    new_trace = np.roll(data_temp,i)
+    if new_trace[0][0] != 0: new_trace[0][0]=0
+    data = np.append(data, new_trace, axis=0)
   return(data)
   
-def fft(data,t):
+def plot_fk(x, logscale=False, fftshift=False):
+  fftx = np.fft.fftn(x)
+  if fftshift:
+    plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None)
+    if logscale:
+      plt.imshow(np.log(np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None)
+    else:
+      plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None)
+  else:
+    if logscale:
+      plt.imshow(np.log(np.abs(fftx)), origin='lower',cmap=None)
+    else:
+      plt.imshow((np.abs(fftx)), origin='lower',cmap=None)
+
+      
     
-    fftdata = np.fft.fft(data[0])
-    Amp = np.sqrt(fftdata.real**2 + fftdata.imag**2 )
-#    f = 
-  
-  
+  plt.colorbar()
+  plt.show()
+
+def plot_data(x, color='Greys'):
+  plt.imshow(x, origin='lower', cmap=color, interpolation='nearest')
+  plt.show()
   
 def fk_filter(stream, inventory, catalog, phase):
 	"""
