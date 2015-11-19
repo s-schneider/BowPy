@@ -81,7 +81,6 @@ def plot_fk(x, logscale=False, fftshift=False):
   plt.colorbar()
   plt.show()
 
-quit
 def plot_data(x, color='Greys'):
   plt.imshow(x, origin='lower', cmap=color, interpolation='nearest')
   plt.show()
