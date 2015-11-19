@@ -23,15 +23,22 @@ def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
     deltax = 2*np.pi/len_of_traces
     signal_len = len_of_traces * no_of_periods
     period_time = 1 / samplingrate
-    data = np.array([np.zeros(signal_len)])
+    data_temp = np.array([np.zeros(signal_len)])
     t = []
     
+    # first trace
     for i in range(signal_len):
-        data[0][i] = np.sin(i*deltax)
-        t.append((float(i) + float(i)/signal_len)/signal_len)
-#    for i in range(no_of_traces)[1:]:
-#        new_trace = np.array([np.zeros(len_of_traces)])
-#        new_trace[0][i] = 
+        data_temp[0][i] = np.sin(i*deltax)
+        t.append((float(i) + float(i)/signal_len)*2*np.pi/signal_len)
+	data = data_temp
+	
+    # other traces
+    for i in range(no_of_traces)[1:]:
+       #np.array([np.zeros(len_of_traces)])
+       #new_trace[0] = data[0]
+       data =np.append(data, data_temp, axis=0)
+       
+       
     return(data, t)
 
 
