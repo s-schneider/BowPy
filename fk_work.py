@@ -18,7 +18,7 @@ from obspy.core.util.geodetics import gps2DistAzimuth
 
 
 def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
-                 no_of_periods=1 ):
+                 no_of_periods=1):
     
     deltax = 2*np.pi/len_of_traces
     signal_len = len_of_traces * no_of_periods
@@ -44,25 +44,36 @@ def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
 
 
 def create_deltasignal(no_of_traces=10, len_of_traces=30000,
-                  multiple=False, multipdist=2, no_of_multip=1):
-  """
-  function that creates a 
-  """
-  dist=multipdist
-  data = np.array([np.zeros(len_of_traces)])
-  if multiple:
-      data[0][0] = 1
-      for i in range(no_of_multip):
-	data[0][dist+i*dist] = 1
-  else:
-      data[0][0] = 1
+                       multiple=False, multipdist=2, no_of_multip=1,
+                       zero_traces=False, no_of_zeros=0):
+	"""
+	function that creates a 
+	"""
+	dist = multipdist
+	data = np.array([np.zeros(len_of_traces)])
+	if multiple:
+		data[0][0] = 1
+		for i in range(no_of_multip):
+			data[0][dist+i*dist] = 1
+	else:
+		data[0][0] = 1
   
-  data_temp = data
-  for i in range(no_of_traces)[1:]:
-    new_trace = np.roll(data_temp,i)
-    if new_trace[0][0] != 0: new_trace[0][0]=0
-    data = np.append(data, new_trace, axis=0)
-  return(data)
+	data_temp = data
+	for i in range(no_of_traces)[1:]:
+		new_trace = np.roll(data_temp,i)
+    # if new_trace[0][0] != 0: 
+    # 	#new_trace[0][0]=0
+    # 	data_temp[0][len_of_traces-(i+1)]=0
+    #     new_trace = np.roll(data_temp,i)
+		data = np.append(data, new_trace, axis=0)
+
+	if zero_traces:
+		first_zero=len(data)/no_of_zeros
+		while first_zero <= len(data):
+			data[first_zero-1] = 0
+			first_zero = first_zero+len(data)/no_of_zeros
+
+	return(data)
   
 def plot_fk(x, logscale=False, fftshift=False):
   fftx = np.fft.fftn(x)
@@ -81,7 +92,6 @@ def plot_fk(x, logscale=False, fftshift=False):
   plt.colorbar()
   plt.show()
 
-quit
 def plot_data(x, color='Greys'):
   plt.imshow(x, origin='lower', cmap=color, interpolation='nearest')
   plt.show()
