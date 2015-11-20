@@ -8,7 +8,9 @@ damit erstmal testen
 
 
 import obspy
-from obspy import read
+# from obspy import read
+# from obspy import readEvents
+# from obspy import read_inventory
 import numpy as np
 import matplotlib.pyplot as plt
 import Muenster_Array_Seismology as MAS
@@ -75,28 +77,28 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 
 	return(data)
   
-def plot_fk(x, logscale=False, fftshift=False):
+def plot_fk(x, logscale=False, fftshift=False, scaling=1):
   fftx = np.fft.fftn(x)
   if fftshift:
-    plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None)
+    plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
     if logscale:
-      plt.imshow(np.log(np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None)
+      plt.imshow(np.log(np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
     else:
-      plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None)
+      plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
   else:
     if logscale:
-      plt.imshow(np.log(np.abs(fftx)), origin='lower',cmap=None)
+      plt.imshow(np.log(np.abs(fftx)), origin='lower',cmap=None, aspect=scaling)
     else:
-      plt.imshow((np.abs(fftx)), origin='lower',cmap=None)
+      plt.imshow((np.abs(fftx)), origin='lower',cmap=None, aspect=scaling)
 
   plt.colorbar()
   plt.show()
 
-def plot_data(x, color='Greys'):
-  plt.imshow(x, origin='lower', cmap=color, interpolation='nearest')
-  plt.show()
+def plot_data(x, color='Greys', scaling=30):
+	plt.imshow(x, origin='lower', cmap=color, interpolation='nearest', aspect=scaling)
+	plt.show()
   
-def fk_filter(stream, inventory, catalog, phase):
+def fk_filter(stream, inventory, catalog, phase, normalize=True):
 	"""
 	Import stream, inventory, catalog and phase you want to investigate.
 	The function bins the data, applies an 2D FFT, removes a certain window around the
@@ -118,34 +120,43 @@ def fk_filter(stream, inventory, catalog, phase):
 	"""
 	Read data ######################################################################
 	"""
-	st = obspy.read(stream)
-	inv = obspy.read_inventory(inventory)
-	cat = obspy.readEvents(catalog)
+	st, inv, cat = read_file(stream, inventory, catalog)
 
 	#pushing the trace data in an array
-	ArrayData = np.array([st[0].data])
+	if normalize:
+		ArrayData = np.array([st[0].data])/float(max(np.array([st[0].data])[0]))
+	else:
+		ArrayData = np.array([st[0].data])
 	
 	for i in range(len(st))[1:]:
-	  next_st = np.array([st[i].data])
-	  ArrayData = np.append(ArrayData, next_st, axis=0)
+		if normalize:
+			next_st = np.array([st[i].data]) / float(max(np.array([st[i].data])[0]))
+		else:
+			next_st = np.array([st[i].data])
+
+		ArrayData = np.append(ArrayData, next_st, axis=0)
 	
 	"""
 	Binning of the data ############################################################
 	"""
 	
 	#calc min and max epidist between source and receivers
-	Array_Coords = get_coords(inv)
+
+
+	# Array_Coords = get_coords(inv)
 	
-	stat1 = st[i].meta.station
-	stat2 = st[i+1].meta.station
-	lat1 = Array_Coords[""][""]
-	lon1 = Array_Coords[""][""]
+	# stat1 = st[i].meta.station
+	# stat2 = st[i+1].meta.station
+	# lat1 = Array_Coords[""][""]
+	# lon1 = Array_Coords[""][""]
 	
-	lat2 = Array_Coords[""][""]
-	lon2 = Array_Coords[""][""]
+	# lat2 = Array_Coords[""][""]
+	# lon2 = Array_Coords[""][""]
 	
-	epi_dist = gps2DistAzumiuth( lat1, lon1, lat2, lon2 )
+	# epi_dist = gps2DistAzumiuth( lat1, lon1, lat2, lon2 )
 	
+
+
 	#create equidistant (delta x) x-mesh with ->  N artificial receiver / ghost receiver
 
 	#assign stations to ghost receiver
@@ -155,7 +166,7 @@ def fk_filter(stream, inventory, catalog, phase):
 	#beamform them
 
 	#return N binned traces with equidistant delta x 
-
+	return(ArrayData)
 
 	"""
 	Correction of global(array) slowness of phase ##################################
@@ -210,6 +221,14 @@ def fk_filter(stream, inventory, catalog, phase):
 	"""
 	return stream with filtered and binned data ####################################
 	"""
+
+def read_file(str, inv, cat):
+	# check format of stream, inventory and catalog!
+	stream=obspy.read(str)
+	inventory=obspy.read_inventory(inv)
+	catalog=obspy.readEvents(cat)
+
+	return(stream, inventory, catalog)
 
 stream="2011-03-11T05:46:23.MSEED"
 inventory="2011-03-11T05:46:23.MSEED_inv.xml"
