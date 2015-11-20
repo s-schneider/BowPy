@@ -3,8 +3,6 @@ perform 2d fft
 ordne k richtig zu, Formel finden!
 Synthetics mit sinus wavelet und multiplen dessen
 damit erstmal testen
-
-für die FFT Koeffizienten: np.fft.fftfreq
 """
 
 
