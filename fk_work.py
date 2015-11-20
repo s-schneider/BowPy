@@ -94,8 +94,23 @@ def plot_fk(x, logscale=False, fftshift=False, scaling=1):
   plt.colorbar()
   plt.show()
 
-def plot_data(x, color='Greys', scaling=30):
+def plot_data_im(x, color='Greys', scaling=30):
 	plt.imshow(x, origin='lower', cmap=color, interpolation='nearest', aspect=scaling)
+	plt.show()
+
+def plot_data(x, zoom=1, ds=1):
+	"""
+	param x: 	array of data
+	type x:		np.array
+
+	param zoom: zoom factor of the traces
+	type zoom:	float
+
+	param ds:	separating distance between traces
+	type ds:	int 
+	"""
+	for i in range(len(x)):
+		plt.plot(zoom*x[i]+ ds*i)
 	plt.show()
   
 def fk_filter(stream, inventory, catalog, phase, normalize=True):
@@ -224,11 +239,27 @@ def fk_filter(stream, inventory, catalog, phase, normalize=True):
 
 def read_file(str, inv, cat):
 	# check format of stream, inventory and catalog!
+	# if type(str)==str and type(inv)==str and type(cat)==str:
 	stream=obspy.read(str)
 	inventory=obspy.read_inventory(inv)
 	catalog=obspy.readEvents(cat)
-
 	return(stream, inventory, catalog)
+	# else:
+	# 	print("Wrong format of input")
+
+def kill(data, stat):
+	"""
+	Deletes the trace of a selected station from the array
+
+	param data:	array data
+	type data:	np.array
+
+	param stat:	station/trace to be killed
+	type stat: int
+	"""
+	data = np.del(data, stat, 0)
+	return(data)
+	
 
 stream="2011-03-11T05:46:23.MSEED"
 inventory="2011-03-11T05:46:23.MSEED_inv.xml"
