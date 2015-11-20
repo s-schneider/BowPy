@@ -78,21 +78,36 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 	return(data)
   
 def plot_fk(x, logscale=False, fftshift=False, scaling=1):
-  fftx = np.fft.fftn(x)
-  if fftshift:
-    plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
-    if logscale:
-      plt.imshow(np.log(np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
-    else:
-      plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
-  else:
-    if logscale:
-      plt.imshow(np.log(np.abs(fftx)), origin='lower',cmap=None, aspect=scaling)
-    else:
-      plt.imshow((np.abs(fftx)), origin='lower',cmap=None, aspect=scaling)
+	"""
+	Doing an fk-trafo and plotting it.
 
-  plt.colorbar()
-  plt.show()
+	param x:	Data of the array
+	type x:		np.array
+
+	param logscale:	Sets scaling of the plot to logarithmic
+	type logscale:	boolean
+
+	param fftshift: Ir True shifts zero values of f and k into the center of the plot
+	type fftshift:	boolean
+
+	param scaling:	Sets the scaling of the plot in terms of aspectratio y/x
+	type scaling:	int
+	"""
+
+	fftx = np.fft.fftn(x)
+  	if fftshift:
+    	plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
+    	if logscale:
+      		plt.imshow(np.log(np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
+    	else:
+			plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
+  	else:
+    	if logscale:
+			plt.imshow(np.log(np.abs(fftx)), origin='lower',cmap=None, aspect=scaling)
+    	else:
+      		plt.imshow((np.abs(fftx)), origin='lower',cmap=None, aspect=scaling)
+	plt.colorbar()
+	plt.show()
 
 def plot_data_im(x, color='Greys', scaling=30):
 	plt.imshow(x, origin='lower', cmap=color, interpolation='nearest', aspect=scaling)
