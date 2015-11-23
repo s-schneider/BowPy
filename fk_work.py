@@ -43,7 +43,7 @@ def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
 
 
 def create_deltasignal(no_of_traces=10, len_of_traces=30000,
-                       multiple=False, multipdist=2, no_of_multip=1,
+                       multiple=False, multipdist=2, no_of_multip=1, slowness=None,
                        zero_traces=False, no_of_zeros=0):
 	"""
 	function that creates a delta peak signal
@@ -59,7 +59,10 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
   
 	data_temp = data
 	for i in range(no_of_traces)[1:]:
-		new_trace = np.roll(data_temp,i)
+		if slowness:
+			new_trace = np.roll(data_temp, slowness*i)
+		else:
+			new_trace = np.roll(data_temp,i)
 		data = np.append(data, new_trace, axis=0)
 
 	if zero_traces:
@@ -69,6 +72,20 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 			first_zero = first_zero+len(data)/no_of_zeros
 
 	return(data)
+      
+def shift_array(array, shift_value=0):
+	shifted = []
+	for i in range(len(array)):
+		shifted.append(np.roll(array[i],-shift_value*i))
+	return(shifted)
+
+def maxrow(array):
+	rowsum=0
+	for i in range(len(array)):
+		if array[i].sum() > rowsum:
+			rowsum = array[i].sum()
+			max_row_index = i
+	return(rowsum, max_row_index)
   
 def plot_fk(x, logscale=False, fftshift=False, scaling=1):
 	"""
@@ -90,9 +107,9 @@ def plot_fk(x, logscale=False, fftshift=False, scaling=1):
 	fftx = np.fft.fftn(x)
 	if fftshift:
 		plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
-    	if logscale:
-      		plt.imshow(np.log(np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
-      	else:
+		if logscale:
+			plt.imshow(np.log(np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
+		else:
 			plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
 	if not fftshift:
 		if logscale:
@@ -308,7 +325,21 @@ def kill(data, stat):
 
 	data = np.delete(data, stat, 0)
 	return(data)
+
+def set_zero(array, stat):
+	x = len(array[0])
+	y = len(array)
 	
+	new_array = np.array([ np.array(np.zeros(x)) ])
+	new_line = new_array
+	for i in range(y)[1:]:
+		new_array = np.append(new_array, new_line, axis=0)
+	
+	new_array[stat-1] = array[stat-1]
+	new_array[stat] = array[stat]
+	new_array[stat+1] = array[stat+1]
+	
+	return(new_array)
 
 stream="2011-03-11T05:46:23.MSEED"
 inventory="2011-03-11T05:46:23.MSEED_inv.xml"
@@ -318,3 +349,18 @@ phase="PP"
 #fk_filter(stream, inventory, catalog, phase)
 #data=create_signal(no_of_traces=1,len_of_traces=12,multiple=False)
 #data=create_sine(no_of_traces=1, no_of_periods=2)
+
+"""
+In [2]: y = fk.create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=1, slowness=0)
+
+In [3]: x = fk.create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=5, slowness=2)
+
+In [4]: a = x + y
+
+In [5]: work = fk.shift_array(a, 1)
+
+In [6]: work_fft = np.fft.fftn(work)
+
+In [8]: new = fk.set_zero(work_fft, stat=around 0)
+
+"""
