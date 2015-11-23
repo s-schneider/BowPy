@@ -8,9 +8,6 @@ damit erstmal testen
 
 
 import obspy
-# from obspy import read
-# from obspy import readEvents
-# from obspy import read_inventory
 import numpy as np
 import matplotlib.pyplot as plt
 import Muenster_Array_Seismology as MAS
@@ -49,7 +46,7 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
                        multiple=False, multipdist=2, no_of_multip=1,
                        zero_traces=False, no_of_zeros=0):
 	"""
-	function that creates a 
+	function that creates a delta peak signal
 	"""
 	dist = multipdist
 	data = np.array([np.zeros(len_of_traces)])
@@ -63,10 +60,6 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 	data_temp = data
 	for i in range(no_of_traces)[1:]:
 		new_trace = np.roll(data_temp,i)
-    # if new_trace[0][0] != 0: 
-    # 	#new_trace[0][0]=0
-    # 	data_temp[0][len_of_traces-(i+1)]=0
-    #     new_trace = np.roll(data_temp,i)
 		data = np.append(data, new_trace, axis=0)
 
 	if zero_traces:
@@ -95,17 +88,18 @@ def plot_fk(x, logscale=False, fftshift=False, scaling=1):
 	"""
 
 	fftx = np.fft.fftn(x)
-  	if fftshift:
-    	plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
+	if fftshift:
+		plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
     	if logscale:
       		plt.imshow(np.log(np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
-    	else:
+      	else:
 			plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
-  	else:
-    	if logscale:
+	if not fftshift:
+		if logscale:
 			plt.imshow(np.log(np.abs(fftx)), origin='lower',cmap=None, aspect=scaling)
-    	else:
-      		plt.imshow((np.abs(fftx)), origin='lower',cmap=None, aspect=scaling)
+		else:
+			plt.imshow((np.abs(fftx)), origin='lower',cmap=None, aspect=scaling)
+
 	plt.colorbar()
 	plt.show()
 
@@ -113,7 +107,7 @@ def plot_data_im(x, color='Greys', scaling=30):
 	plt.imshow(x, origin='lower', cmap=color, interpolation='nearest', aspect=scaling)
 	plt.show()
 
-def plot_data(x, zoom=1, ds=1):
+def plot_data(x, zoom=1, y_dist=1, epidist=None):
 	"""
 	param x: 	array of data
 	type x:		np.array
@@ -121,70 +115,44 @@ def plot_data(x, zoom=1, ds=1):
 	param zoom: zoom factor of the traces
 	type zoom:	float
 
-	param ds:	separating distance between traces
-	type ds:	int 
+	param y_dist:	separating distance between traces, for example equidistant with "1" 
+					or import epidist-list via epidist
+	type y_dist:	int or list
 	"""
 	for i in range(len(x)):
-		plt.plot(zoom*x[i]+ ds*i)
+		if type(y_dist) == int:
+			plt.plot(zoom*x[i]+ y_dist*i)
+		if type(y_dist) == list:
+			plt.plot(zoom*x[i]+ y_dist[i])
 	plt.show()
-  
-def fk_filter(stream, inventory, catalog, phase, normalize=True):
+
+def fk_filter(st, inv, cat, phase, normalize=True):
 	"""
 	Import stream, inventory, catalog and phase you want to investigate.
-	The function bins the data, applies an 2D FFT, removes a certain window around the
+	The function bins the data or interpolates them or adds zero-signal-stations for equidistant spacing, applies an 2D FFT, removes a certain window around the
 	desired phase to surpress mutliples and applies an 2d iFFT
+	Alternative is an nonequidistant 2D FFT.
 
-	param stream: with ending like MSEED
-	type stream: string
+	param st: Stream
+	type st: obspy.core.stream.Stream
 
-	param inventory: with ending xml
-	type inventory: string
+	param inv: inventory
+	type inv: obspy.station.inventory.Inventory
 
-	param catalog: with ending xml
-	type catalog: string
+	param cat: catalog
+	type cat: obspy.core.event.Catalog
 
 	param phase: name of the phase to be investigated
 	type phase: string
 	"""
-
-	"""
-	Read data ######################################################################
-	"""
-	st, inv, cat = read_file(stream, inventory, catalog)
-
-	#pushing the trace data in an array
-	if normalize:
-		ArrayData = np.array([st[0].data])/float(max(np.array([st[0].data])[0]))
-	else:
-		ArrayData = np.array([st[0].data])
-	
-	for i in range(len(st))[1:]:
-		if normalize:
-			next_st = np.array([st[i].data]) / float(max(np.array([st[i].data])[0]))
-		else:
-			next_st = np.array([st[i].data])
-
-		ArrayData = np.append(ArrayData, next_st, axis=0)
 	
 	"""
-	Binning of the data ############################################################
+	Sorting of the data ############################################################
 	"""
-	
-	#calc min and max epidist between source and receivers
+	ArrayData = stream2array(st)
+	epidist, Array_Coords = epidist(inv, cat)
 
-
-	# Array_Coords = get_coords(inv)
-	
-	# stat1 = st[i].meta.station
-	# stat2 = st[i+1].meta.station
-	# lat1 = Array_Coords[""][""]
-	# lon1 = Array_Coords[""][""]
-	
-	# lat2 = Array_Coords[""][""]
-	# lon2 = Array_Coords[""][""]
-	
-	# epi_dist = gps2DistAzumiuth( lat1, lon1, lat2, lon2 )
-	
+	st_aligned = MAS.align_phases()
 
 
 	#create equidistant (delta x) x-mesh with ->  N artificial receiver / ghost receiver
@@ -196,7 +164,6 @@ def fk_filter(stream, inventory, catalog, phase, normalize=True):
 	#beamform them
 
 	#return N binned traces with equidistant delta x 
-	return(ArrayData)
 
 	"""
 	Correction of global(array) slowness of phase ##################################
@@ -252,15 +219,81 @@ def fk_filter(stream, inventory, catalog, phase, normalize=True):
 	return stream with filtered and binned data ####################################
 	"""
 
-def read_file(str, inv, cat):
-	# check format of stream, inventory and catalog!
-	# if type(str)==str and type(inv)==str and type(cat)==str:
-	stream=obspy.read(str)
-	inventory=obspy.read_inventory(inv)
-	catalog=obspy.readEvents(cat)
-	return(stream, inventory, catalog)
-	# else:
-	# 	print("Wrong format of input")
+def stream2array(stream, normalize=True):
+
+	st = stream
+
+	if normalize:
+		ArrayData = np.array([st[0].data])/float(max(np.array([st[0].data])[0]))
+	else:
+		ArrayData = np.array([st[0].data])
+	
+	for i in range(len(st))[1:]:
+		if normalize:
+			next_st = np.array([st[i].data]) / float(max(np.array([st[i].data])[0]))
+		else:
+			next_st = np.array([st[i].data])
+
+		ArrayData = np.append(ArrayData, next_st, axis=0)
+	return(ArrayData)
+
+
+def read_file(stream, inventory, catalog, array=False):
+	"""
+	function to read data files, such as MSEED, station-xml and quakeml, in a way of obspy.read
+	if need, pushes stream in an array for further processing
+	"""
+	st=obspy.read(stream)
+	inv=obspy.read_inventory(inventory)
+	cat=obspy.readEvents(catalog)
+
+	#pushing the trace data in an array
+	if array:
+		ArrayData=stream2array(st)
+		return(st, inv, cat, ArrayData)
+	else:
+		return(st, inv, cat)
+
+  
+def epidist(inventory, catalog):
+	"""
+	Calculates the Epicentral distance between event and stations
+
+	param inventory: 
+	type inventory:
+
+	param catalog:
+	type catalog:
+
+	Returns
+	param epidist:
+	type epidist: list
+
+	param Array_Coords:
+	type Array_Coords: dict
+	"""
+	#calc min and max epidist between source and receivers
+	inv = inventory
+	cat = catalog
+	event=cat[0]
+	Array_Coords = get_coords(inv)
+	eventlat = event.origins[0].latitude
+	eventlon = event.origins[0].longitude
+
+	epidist=[]
+	for network in inv:
+		for station in network:
+			scode = network.code + "." + station.code
+			lat1 = Array_Coords[scode]["latitude"]
+			lat2 = Array_Coords[scode]["longitude"]
+			# calculate epidist in km
+			# epidist[i] corresponds to ArrayData[i][:]
+			# Lets see if it is useful, for later use Array_Coords is better for sure
+			epidist.append(gps2DistAzimuth( lat1, lat2, eventlat, eventlon )[0]/1000)
+			# adds an epidist entry to the Array_coords dictionary 
+			Array_Coords[scode]["Epidist"] = gps2DistAzimuth( lat1, lat2, eventlat, eventlon )[0]/1000
+
+	return(epidist, Array_Coords)
 
 def kill(data, stat):
 	"""
@@ -269,10 +302,11 @@ def kill(data, stat):
 	param data:	array data
 	type data:	np.array
 
-	param stat:	station/trace to be killed
-	type stat: int
+	param stat:	station(s)/trace(s) to be killed
+	type stat: int or list
 	"""
-	data = np.del(data, stat, 0)
+
+	data = np.delete(data, stat, 0)
 	return(data)
 	
 
