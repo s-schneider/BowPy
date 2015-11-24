@@ -335,9 +335,9 @@ def set_zero(array, stat):
 	for i in range(y)[1:]:
 		new_array = np.append(new_array, new_line, axis=0)
 	
-	new_array[stat-1] = array[stat-1]
+	#new_array[stat-1] = array[stat-1]
 	new_array[stat] = array[stat]
-	new_array[stat+1] = array[stat+1]
+	#new_array[stat+1] = array[stat+1]
 	
 	return(new_array)
 
