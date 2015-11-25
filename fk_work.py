@@ -48,6 +48,7 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 	"""
 	function that creates a delta peak signal
 	"""
+	slowness = slowness -1
 	dist = multipdist
 	data = np.array([np.zeros(len_of_traces)])
 	if multiple:
@@ -163,6 +164,37 @@ def fk_filter(st, inv, cat, phase, normalize=True):
 	type phase: string
 	"""
 	
+	"""
+	Example workflow:
+	example work flow for filtering
+
+	import fk_work as fk
+	import matplotlib.pyplot as plt
+	import numpy as np
+
+	#snes muss noch korrekt umgerechnet werden
+
+	snes = 1
+	snes2 = 3
+	y = fk.create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=1, slowness=snes)
+
+	x = fk.create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=5, slowness=snes2)
+
+	a = x + y
+
+	work = fk.shift_array(a, snes)
+
+	work_fft = np.fft.fftn(work)
+
+	max_k=fk.maxrow(work_fft)
+
+	newfft = fk.set_zero(work_fft, stat=max_k)
+
+	new = np.fft.ifftn(newfft)
+
+	data = fk.shift_array(new, -snes)
+	
+	"""
 	"""
 	Sorting of the data ############################################################
 	"""
@@ -350,34 +382,3 @@ phase="PP"
 #data=create_signal(no_of_traces=1,len_of_traces=12,multiple=False)
 #data=create_sine(no_of_traces=1, no_of_periods=2)
 
-"""
-example work flow for filtering
-
-import fk_work as fk
-import matplotlib.pyplot as plt
-import numpy as np
-
-#snes muss noch korrekt umgerechnet werden
-
-snes = 1
-y = fk.create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=1, slowness=snes-1)
-
-x = fk.create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=5, slowness=snes+1)
-
-a = x + y
-
-work = fk.shift_array(a, snes)
-
-work_fft = np.fft.fftn(work)
-
-max_k=fk.maxrow(work_fft)
-
-newfft = fk.set_zero(work_fft, stat=max_k)
-
-new = np.fft.ifftn(newfft)
-
-data = fk.shift_array(new, -snes)
-
-
-
-"""
