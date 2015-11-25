@@ -47,8 +47,10 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
                        zero_traces=False, no_of_zeros=0):
 	"""
 	function that creates a delta peak signal
+	slowness = 0 corresponds to shift of 1 to each trace
 	"""
-	slowness = slowness -1
+	
+	slowness = slowness-1
 	dist = multipdist
 	data = np.array([np.zeros(len_of_traces)])
 	if multiple:
