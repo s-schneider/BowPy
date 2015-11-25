@@ -74,9 +74,9 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 	return(data)
       
 def shift_array(array, shift_value=0):
-	shifted = []
+	shifted = np.array([])
 	for i in range(len(array)):
-		shifted.append(np.roll(array[i],-shift_value*i))
+		shifted = np.append(shifted, np.roll(array[i],-shift_value*i), axis=0)
 	return(shifted)
 
 def maxrow(array):
@@ -85,7 +85,7 @@ def maxrow(array):
 		if array[i].sum() > rowsum:
 			rowsum = array[i].sum()
 			max_row_index = i
-	return(rowsum, max_row_index)
+	return(max_row_index)
   
 def plot_fk(x, logscale=False, fftshift=False, scaling=1):
 	"""
@@ -351,16 +351,33 @@ phase="PP"
 #data=create_sine(no_of_traces=1, no_of_periods=2)
 
 """
-In [2]: y = fk.create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=1, slowness=0)
+example work flow for filtering
 
-In [3]: x = fk.create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=5, slowness=2)
+import fk_work as fk
+import matplotlib.pyplot as plt
+import numpy as np
 
-In [4]: a = x + y
+#snes muss noch korrekt umgerechnet werden
 
-In [5]: work = fk.shift_array(a, 1)
+snes = 1
+y = fk.create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=1, slowness=snes-1)
 
-In [6]: work_fft = np.fft.fftn(work)
+x = fk.create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=5, slowness=snes+1)
 
-In [8]: new = fk.set_zero(work_fft, stat=around 0)
+a = x + y
+
+work = fk.shift_array(a, snes)
+
+work_fft = np.fft.fftn(work)
+
+max_k=fk.maxrow(work_fft)
+
+newfft = fk.set_zero(work_fft, stat=max_k)
+
+new = np.fft.ifftn(newfft)
+
+data = fk.shift_array(new, -snes)
+
+
 
 """
