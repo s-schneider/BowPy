@@ -135,7 +135,7 @@ def plot_data_im(x, color='Greys', scaling=30):
 def plot_data(x, zoom=1, y_dist=1, epidist=None):
 	"""
 	param x: 	array of data
-	type x:		np.array
+	type x:		np.array or obspy.core.stream.Stream
 
 	param zoom: zoom factor of the traces
 	type zoom:	float
@@ -144,6 +144,10 @@ def plot_data(x, zoom=1, y_dist=1, epidist=None):
 					or import epidist-list via epidist
 	type y_dist:	int or list
 	"""
+
+	if type(x)==obspy.core.stream.Stream:
+		x = stream2array(x)
+
 	for i in range(len(x)):
 		if type(y_dist) == int:
 			plt.plot(zoom*x[i]+ y_dist*i)
