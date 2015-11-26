@@ -77,10 +77,9 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 	return(data)
       
 def shift_array(array, shift_value=0):
-	shifted = np.array([])
 	for i in range(len(array)):
-		shifted = np.append(shifted, np.roll(array[i],-shift_value*i), axis=0)
-	return(shifted)
+		array[i] = np.roll(array[i],-shift_value*i)
+	return(array)
 
 def maxrow(array):
 	rowsum=0
@@ -169,12 +168,12 @@ def fk_filter(st, inv, cat, phase, normalize=True):
 	"""
 	Example workflow:
 	example work flow for filtering
+	snes muss noch korrekt umgerechnet werden
 
 	import fk_work as fk
 	import matplotlib.pyplot as plt
 	import numpy as np
 
-	#snes muss noch korrekt umgerechnet werden
 
 	snes = 1
 	snes2 = 3
