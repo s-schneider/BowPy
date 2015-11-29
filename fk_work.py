@@ -75,12 +75,17 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 			first_zero = first_zero+len(data)/no_of_zeros
 
 	return(data)
-      
+
+def create_standard_test(snes1=1, snes2=3):
+        y = create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=1, slowness=snes1)
+        x = create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=5, slowness=snes2)
+        a = x + y
+	return(a)
+
 def shift_array(array, shift_value=0):
-	shifted = np.array([])
 	for i in range(len(array)):
-		shifted = np.append(shifted, np.roll(array[i],-shift_value*i), axis=0)
-	return(shifted)
+		array[i] = np.roll(array[i],-shift_value*i)
+	return(array)
 
 def maxrow(array):
 	rowsum=0
@@ -130,7 +135,7 @@ def plot_data_im(x, color='Greys', scaling=30):
 def plot_data(x, zoom=1, y_dist=1, epidist=None):
 	"""
 	param x: 	array of data
-	type x:		np.array
+	type x:		np.array or obspy.core.stream.Stream
 
 	param zoom: zoom factor of the traces
 	type zoom:	float
@@ -139,12 +144,38 @@ def plot_data(x, zoom=1, y_dist=1, epidist=None):
 					or import epidist-list via epidist
 	type y_dist:	int or list
 	"""
+
+	if type(x)==obspy.core.stream.Stream:
+		x = stream2array(x)
+
 	for i in range(len(x)):
 		if type(y_dist) == int:
 			plt.plot(zoom*x[i]+ y_dist*i)
 		if type(y_dist) == list:
 			plt.plot(zoom*x[i]+ y_dist[i])
 	plt.show()
+
+def fk_filter_synth(data, snes):
+	"""
+	Function to test the fk workflow with synthetic data
+	param data:	data of the array
+	type data:	numpy.ndarray
+
+	param snes:	slownessvalue of the desired extracted phase
+	type snes:	int
+	"""
+
+	ds = shift_array(data, snes)
+	
+	dsfft = np.fft.fftn(ds)
+	max_k = maxrow(dsfft)
+	dsfft = set_zero(dsfft, max_k)
+	ds = np.fft.ifftn(dsfft)
+	
+	data = shift_array(ds, -snes)
+	
+	return(data)
+
 
 def fk_filter(st, inv, cat, phase, normalize=True):
 	"""
@@ -169,12 +200,12 @@ def fk_filter(st, inv, cat, phase, normalize=True):
 	"""
 	Example workflow:
 	example work flow for filtering
+	snes muss noch korrekt umgerechnet werden
 
 	import fk_work as fk
 	import matplotlib.pyplot as plt
 	import numpy as np
 
-	#snes muss noch korrekt umgerechnet werden
 
 	snes = 1
 	snes2 = 3
@@ -197,10 +228,12 @@ def fk_filter(st, inv, cat, phase, normalize=True):
 	data = fk.shift_array(new, -snes)
 	
 	"""
+	
+
 	"""
 	Sorting of the data ############################################################
 	"""
-	ArrayData = stream2array(st)
+	ArrayData = stream2array(st, normalize)
 	epidist, Array_Coords = epidist(inv, cat)
 
 	st_aligned = MAS.align_phases()
