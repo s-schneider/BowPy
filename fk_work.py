@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import Muenster_Array_Seismology as MAS
 from Muenster_Array_Seismology import get_coords
-from obspy.core.util.geodetics import gps2DistAzimuth
+from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees
 
 
 
@@ -132,10 +132,13 @@ def plot_data_im(x, color='Greys', scaling=30):
 	plt.imshow(x, origin='lower', cmap=color, interpolation='nearest', aspect=scaling)
 	plt.show()
 
-def plot_data(x, zoom=1, y_dist=1, epidist=None):
+def plot_data(st, inv, cat, zoom=1, y_dist=1, yinfo=False):
 	"""
-	param x: 	array of data
-	type x:		np.array or obspy.core.stream.Stream
+	Alpha Version!
+	Time axis has no time-ticks
+
+	param st: 	array of data or stream
+	type st:	np.array obspy.core.stream.Stream
 
 	param zoom: zoom factor of the traces
 	type zoom:	float
@@ -144,15 +147,19 @@ def plot_data(x, zoom=1, y_dist=1, epidist=None):
 					or import epidist-list via epidist
 	type y_dist:	int or list
 	"""
+	if type(st) == obspy.core.stream.Stream:
+		data = stream2array(st)
 
-	if type(x)==obspy.core.stream.Stream:
-		x = stream2array(x)
+	if yinfo:
+		#Calculates y-axis info using epidistance information of the stream
+		epidist = epidist_stream(st, inv, cat) 
+		y_dist = epidist2list(epidist)
 
-	for i in range(len(x)):
+	for i in range(len(data)):
 		if type(y_dist) == int:
-			plt.plot(zoom*x[i]+ y_dist*i)
+			plt.plot(zoom*data[i]+ y_dist*i)
 		if type(y_dist) == list:
-			plt.plot(zoom*x[i]+ y_dist[i])
+			plt.plot(zoom*data[i]+ y_dist[i])
 	plt.show()
 
 def fk_filter_synth(data, snes):
@@ -339,9 +346,9 @@ def read_file(stream, inventory, catalog, array=False):
 		return(st, inv, cat)
 
   
-def epidist(inventory, catalog):
+def epidist_inv(inventory, catalog):
 	"""
-	Calculates the Epicentral distance between event and stations
+	Calculates the epicentral distance between event and stations of the inventory
 
 	param inventory: 
 	type inventory:
@@ -350,8 +357,6 @@ def epidist(inventory, catalog):
 	type catalog:
 
 	Returns
-	param epidist:
-	type epidist: list
 
 	param Array_Coords:
 	type Array_Coords: dict
@@ -364,20 +369,50 @@ def epidist(inventory, catalog):
 	eventlat = event.origins[0].latitude
 	eventlon = event.origins[0].longitude
 
-	epidist=[]
 	for network in inv:
 		for station in network:
 			scode = network.code + "." + station.code
 			lat1 = Array_Coords[scode]["latitude"]
 			lat2 = Array_Coords[scode]["longitude"]
 			# calculate epidist in km
-			# epidist[i] corresponds to ArrayData[i][:]
-			# Lets see if it is useful, for later use Array_Coords is better for sure
-			epidist.append(gps2DistAzimuth( lat1, lat2, eventlat, eventlon )[0]/1000)
 			# adds an epidist entry to the Array_coords dictionary 
-			Array_Coords[scode]["Epidist"] = gps2DistAzimuth( lat1, lat2, eventlat, eventlon )[0]/1000
+			Array_Coords[scode]["epidist"] = kilometer2degrees(gps2DistAzimuth( lat1, lat2, eventlat, eventlon )[0]/1000)
 
-	return(epidist, Array_Coords)
+	return(Array_Coords)
+
+def epidist_stream(stream, inventory, catalog):
+	"""
+	Receives the epicentral distance of the station-source couple given in the stream. It uses just the
+	coordinates of the used stations in stream.
+
+	param stream:
+	type stream:
+
+	param inventory: 
+	type inventory:
+
+	param catalog:
+	type catalog:
+
+	"""
+	Array_Coords = epidist_inv(inventory, catalog)
+
+	epidist = {}
+	for trace in stream:
+		scode = trace.meta.network + "." + trace.meta.station
+		epidist["%s" % (scode)] =  {"epidist" : Array_Coords[scode]["epidist"]}
+
+	return(epidist)
+
+def epidist2list(epidist):
+	"""
+	converts dictionary entries of epidist into a list
+	"""
+	epidist_list = []
+	for scode in epidist:
+		epidist_list.append(epidist[scode]["epidist"])
+
+	return(epidist_list)
 
 def kill(data, stat):
 	"""
