@@ -190,7 +190,7 @@ def fk_filter_synth(data, snes):
 	return(data.real)
 
 
-def fk_filter(st, inv, cat, phase, normalize=True):
+def fk_filter(st, inv=None, cat=None, phase=None, epi_dist=None, normalize=True):
 	"""
 	Import stream, inventory, catalog and phase you want to investigate.
 	The function bins the data or interpolates them or adds zero-signal-stations for equidistant spacing, applies an 2D FFT, removes a certain window around the
@@ -208,6 +208,9 @@ def fk_filter(st, inv, cat, phase, normalize=True):
 
 	param phase: name of the phase to be investigated
 	type phase: string
+	
+	param epidist: list of epidistances, corresponding to st
+	type epidist: list
 	"""
 
 	"""
@@ -220,7 +223,8 @@ def fk_filter(st, inv, cat, phase, normalize=True):
 	"""
 	Calculate epicentral distances of station-receiver couples######################
 	"""
-	epidist = epidist_stream(stream_aligned, inv, cat)
+	if not epi_dist:
+		epidist = epidist_stream(stream_aligned, inv, cat)
 	
 
 	"""
