@@ -5,9 +5,8 @@ Synthetics mit sinus wavelet und multiplen dessen
 damit erstmal testen
 """
 
-
-
 import obspy
+import numpy
 import numpy as np
 import matplotlib.pyplot as plt
 import Muenster_Array_Seismology as MAS
@@ -44,16 +43,18 @@ def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
 
 def create_deltasignal(no_of_traces=10, len_of_traces=30000,
                        multiple=False, multipdist=2, no_of_multip=1, slowness=None,
-                       zero_traces=False, no_of_zeros=0):
+                       zero_traces=False, no_of_zeros=0,
+                       noise_level=0):
 	"""
 	function that creates a delta peak signal
 	slowness = 0 corresponds to shift of 1 to each trace
 	"""
+	if slowness:
+		slowness = slowness-1
+	data = np.array([noise_level * np.random.rand(len_of_traces)])
 	
-	slowness = slowness-1
-	dist = multipdist
-	data = np.array([np.zeros(len_of_traces)])
 	if multiple:
+		dist = multipdist
 		data[0][0] = 1
 		for i in range(no_of_multip):
 			data[0][dist+i*dist] = 1
@@ -76,9 +77,9 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 
 	return(data)
 
-def create_standard_test(snes1=1, snes2=3):
-        y = create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=1, slowness=snes1)
-        x = create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=5, slowness=snes2)
+def create_standard_test(snes1=1, snes2=3, noise=0):
+        y = create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=1, slowness=snes1, noise_level=noise)
+        x = create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=5, slowness=snes2, noise_level=noise)
         a = x + y
 	return(a)
 
@@ -95,7 +96,7 @@ def maxrow(array):
 			max_row_index = i
 	return(max_row_index)
   
-def plot_fk(x, logscale=False, fftshift=False, scaling=1):
+def plot_fft(x, logscale=False, fftshift=False, scaling=1):
 	"""
 	Doing an fk-trafo and plotting it.
 
@@ -112,9 +113,9 @@ def plot_fk(x, logscale=False, fftshift=False, scaling=1):
 	type scaling:	int
 	"""
 
-	fftx = np.fft.fftn(x)
+	fftx = x
 	if fftshift:
-		plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
+		plt.imshow((np.abs(x)), origin='lower',cmap=None, aspect=scaling)
 		if logscale:
 			plt.imshow(np.log(np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
 		else:
@@ -132,10 +133,12 @@ def plot_data_im(x, color='Greys', scaling=30):
 	plt.imshow(x, origin='lower', cmap=color, interpolation='nearest', aspect=scaling)
 	plt.show()
 
-def plot_data(st, inv, cat, zoom=1, y_dist=1, yinfo=False):
+def plot_data(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
 	"""
 	Alpha Version!
 	Time axis has no time-ticks
+	
+	Needs inventory and catalog for yinfo using
 
 	param st: 	array of data or stream
 	type st:	np.array obspy.core.stream.Stream
@@ -149,6 +152,8 @@ def plot_data(st, inv, cat, zoom=1, y_dist=1, yinfo=False):
 	"""
 	if type(st) == obspy.core.stream.Stream:
 		data = stream2array(st)
+	else:
+		data = st
 
 	if yinfo:
 		#Calculates y-axis info using epidistance information of the stream
@@ -176,12 +181,13 @@ def fk_filter_synth(data, snes):
 	
 	dsfft = np.fft.fftn(ds)
 	max_k = maxrow(dsfft)
+	print("maximum wavenumber k is %f" % max_k)
 	dsfft = set_zero(dsfft, max_k)
 	ds = np.fft.ifftn(dsfft)
 	
 	data = shift_array(ds, -snes)
 	
-	return(data)
+	return(data.real)
 
 
 def fk_filter(st, inv, cat, phase, normalize=True):
@@ -203,112 +209,51 @@ def fk_filter(st, inv, cat, phase, normalize=True):
 	param phase: name of the phase to be investigated
 	type phase: string
 	"""
-	
-	"""
-	Example workflow:
-	example work flow for filtering
-	snes muss noch korrekt umgerechnet werden
-
-	import fk_work as fk
-	import matplotlib.pyplot as plt
-	import numpy as np
-
-
-	snes = 1
-	snes2 = 3
-	y = fk.create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=1, slowness=snes)
-
-	x = fk.create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=5, slowness=snes2)
-
-	a = x + y
-
-	work = fk.shift_array(a, snes)
-
-	work_fft = np.fft.fftn(work)
-
-	max_k=fk.maxrow(work_fft)
-
-	newfft = fk.set_zero(work_fft, stat=max_k)
-
-	new = np.fft.ifftn(newfft)
-
-	data = fk.shift_array(new, -snes)
-	
-	"""
-	
-
-	"""
-	Sorting of the data ############################################################
-	"""
-	ArrayData = stream2array(st, normalize)
-	epidist, Array_Coords = epidist(inv, cat)
-
-	st_aligned = MAS.align_phases()
-
-
-	#create equidistant (delta x) x-mesh with ->  N artificial receiver / ghost receiver
-
-	#assign stations to ghost receiver
-
-	#calc local slowness of the phase and align all the traces assigned to the respective ghost with that slowness
-
-	#beamform them
-
-	#return N binned traces with equidistant delta x 
 
 	"""
 	Correction of global(array) slowness of phase ##################################
 	"""
+	#stream_aligned = MAS.align_phases(st, cat[0], inv, phase)
+	stream_aligned = st
 
-	#align all binned traces with the slowness of the imported phase
+	
+	"""
+	Calculate epicentral distances of station-receiver couples######################
+	"""
+	epidist = epidist_stream(stream_aligned, inv, cat)
+	
 
 	"""
 	2D FFT #########################################################################
 	"""
-	#apply 2D FFT
-
-	fft_data = np.fft.fft2(a, s=None, axes=(-2, -1))
-	"""
-	Parameters
-	----------
-	a : array_like
-	Input array, can be complex
-	s : sequence of ints, optional
-	Shape (length of each transformed axis) of the output
-	(`s[0]` refers to axis 0, `s[1]` to axis 1, etc.).
-	This corresponds to `n` for `fft(x, n)`.
-	Along each axis, if the given shape is smaller than that of the input,
-	the input is cropped.  If it is larger, the input is padded with zeros.
-	if `s` is not given, the shape of the input along the axes specified
-	by `axes` is used.
-	axes : sequence of ints, optional
-	Axes over which to compute the FFT.  If not given, the last two
-	axes are used.  A repeated index in `axes` means the transform over
-	that axis is performed multiple times.  A one-element sequence means
-	that a one-dimensional FFT is performed.
-
-	Returns
-	-------
-	out : complex ndarray
-	The truncated or zero-padded input, transformed along the axes
-	indicated by `axes`, or the last two axes if `axes` is not given.
-	"""
-
-	#Amplitudespectra: |F(x,y)| = ( Re(x,y)^2 + Im(x,y)^2 )^1/2
-      # write loop through all elements
-      #Amp =  np.sqrt(fft_data[i][j].real**2 + fft_data[i][j].imag**2)
-
+	#Convert to numpy.ndarray, stream info still in st
+	ArrayData = stream2array(stream_aligned, normalize)
+	
+	#Apply FFT
+	fft_Data = np.fft.fftn(ArrayData)
+	
+	#Find row with maximum sum-value - corresponding to zero k phase
+	max_k=maxrow(fft_Data)
+	
 	#mute area around |f| > eps, choose eps dependent on your phase/data/i dont know yet
-
+	fft_corr= set_zero(fft_Data, max_k)
+	
 	#apply 2D iFFT
+	ArrayData_filtered = np.fft.ifftn(fft_corr)
 
+	#Create Stream object
+	stream_filtered = array2stream(ArrayData_filtered)
+	for i in range(len(stream_filtered)):
+		stream_filtered[i].meta = stream_aligned[i].meta
+	
 	"""
 	Undo global-correction of the phase ############################################
 	""" 
-
+	#stream_filtered = MAS.align_phases()
 	"""
-	return stream with filtered and binned data ####################################
+	return stream with filtered data ####################################
 	"""
+	return(stream_filtered)
 
 def stream2array(stream, normalize=True):
 
@@ -328,6 +273,16 @@ def stream2array(stream, normalize=True):
 		ArrayData = np.append(ArrayData, next_st, axis=0)
 	return(ArrayData)
 
+def array2stream(ArrayData):
+	
+	traces = []
+	
+	for i in range(len(ArrayData)):
+		newtrace = obspy.core.trace.Trace(ArrayData[i])
+		traces.append(newtrace)
+		
+	stream = obspy.core.stream.Stream(traces)
+	return(stream)
 
 def read_file(stream, inventory, catalog, array=False):
 	"""
@@ -428,7 +383,7 @@ def kill(data, stat):
 	data = np.delete(data, stat, 0)
 	return(data)
 
-def set_zero(array, stat):
+def set_zero(array, stat, radius=None):
 	x = len(array[0])
 	y = len(array)
 	
@@ -437,13 +392,18 @@ def set_zero(array, stat):
 	for i in range(y)[1:]:
 		new_array = np.append(new_array, new_line, axis=0)
 	
-	#new_array[stat-1] = array[stat-1]
-	new_array[stat] = array[stat]
-	#new_array[stat+1] = array[stat+1]
+	
+	if radius:
+		for i in range(np.arange(stat, stat + radius)):
+			new_array[i] = array[i]
+	
+	else:
+		new_array[stat] = array[stat]
+
 	
 	return(new_array)
 
-stream="2011-03-11T05:46:23.MSEED"
+stream="WORK_D.MSEED"
 inventory="2011-03-11T05:46:23.MSEED_inv.xml"
 catalog="2011-03-11T05:46:23.MSEED_cat.xml"
 phase="PP"
