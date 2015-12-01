@@ -78,8 +78,13 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 	return(data)
 
 def create_standard_test(snes1=1, snes2=3, noise=0):
-        y = create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=1, slowness=snes1, noise_level=noise)
-        x = create_deltasignal(no_of_traces=200, len_of_traces=200, multiple=True, multipdist=5, no_of_multip=5, slowness=snes2, noise_level=noise)
+        y = create_deltasignal(no_of_traces=200, len_of_traces=200, 
+        						multiple=True, multipdist=5, no_of_multip=1, 
+        						slowness=snes1, noise_level=noise)
+
+        x = create_deltasignal(no_of_traces=200, len_of_traces=200, 
+        						multiple=True, multipdist=5, no_of_multip=5, 
+        						slowness=snes2, noise_level=noise)
         a = x + y
 	return(a)
 
