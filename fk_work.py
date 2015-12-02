@@ -96,8 +96,8 @@ def standard_test_signal(snes1=1, snes2=3, noise=0, nonequi=False):
         						slowness=snes2, noise_level=noise,
         						non_equi=nonequi)
         a = x + y
-        index = np.sort(yindices + xindices)
-	return(a, index)
+        y_index = np.sort(np.unique(np.append(yindices, xindices)))
+	return(a, y_index)
 
 def shift_array(array, shift_value=0):
 	for i in range(len(array)):
