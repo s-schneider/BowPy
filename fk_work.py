@@ -44,7 +44,8 @@ def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
 def create_deltasignal(no_of_traces=10, len_of_traces=30000,
                        multiple=False, multipdist=2, no_of_multip=1, slowness=None,
                        zero_traces=False, no_of_zeros=0,
-                       noise_level=0):
+                       noise_level=0,
+                       non_equi=False):
 	"""
 	function that creates a delta peak signal
 	slowness = 0 corresponds to shift of 1 to each trace
@@ -74,19 +75,29 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 		while first_zero <= len(data):
 			data[first_zero-1] = 0
 			first_zero = first_zero+len(data)/no_of_zeros
+	
+	if non_equi:
+		for i in [5, 50, 120]:
+			data = line_set_zero(data, i, 10)
+		data, indices= extract_nonzero(data)
+	else:
+		indices = []
 
-	return(data)
+	return(data, indices)
 
-def create_standard_test(snes1=1, snes2=3, noise=0):
-        y = create_deltasignal(no_of_traces=200, len_of_traces=200, 
+def standard_test_signal(snes1=1, snes2=3, noise=0, nonequi=False):
+        y, yindices = create_deltasignal(no_of_traces=200, len_of_traces=200, 
         						multiple=True, multipdist=5, no_of_multip=1, 
-        						slowness=snes1, noise_level=noise)
+        						slowness=snes1, noise_level=noise,
+        						non_equi=nonequi)
 
-        x = create_deltasignal(no_of_traces=200, len_of_traces=200, 
+        x, xindices = create_deltasignal(no_of_traces=200, len_of_traces=200, 
         						multiple=True, multipdist=5, no_of_multip=5, 
-        						slowness=snes2, noise_level=noise)
+        						slowness=snes2, noise_level=noise,
+        						non_equi=nonequi)
         a = x + y
-	return(a)
+        index = np.sort(yindices + xindices)
+	return(a, index)
 
 def shift_array(array, shift_value=0):
 	for i in range(len(array)):
@@ -168,7 +179,7 @@ def plot_data(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
 	for i in range(len(data)):
 		if type(y_dist) == int:
 			plt.plot(zoom*data[i]+ y_dist*i)
-		if type(y_dist) == list:
+		if type(y_dist) == list or type(y_dist) == numpy.ndarray:
 			plt.plot(zoom*data[i]+ y_dist[i])
 	plt.show()
 
@@ -187,7 +198,7 @@ def fk_filter_synth(data, snes):
 	dsfft = np.fft.fftn(ds)
 	max_k = maxrow(dsfft)
 	print("maximum wavenumber k is %f" % max_k)
-	dsfft = set_zero(dsfft, max_k)
+	dsfft = line_cut(dsfft, max_k)
 	ds = np.fft.ifftn(dsfft)
 	
 	data = shift_array(ds, -snes)
@@ -229,8 +240,10 @@ def fk_filter(st, inv=None, cat=None, phase=None, epi_dist=None, normalize=True)
 	Calculate epicentral distances of station-receiver couples######################
 	"""
 	if not epi_dist:
-		epidist = epidist_stream(stream_aligned, inv, cat)
-	
+		if st and inv and cat:
+			epidist = epidist_stream(stream_aligned, inv, cat)
+	else:
+		print()
 
 	"""
 	2D FFT #########################################################################
@@ -392,7 +405,11 @@ def kill(data, stat):
 	data = np.delete(data, stat, 0)
 	return(data)
 
-def set_zero(array, stat, radius=None):
+def line_cut(array, stat, radius=None):
+	"""
+	Sets the array to zero, except for the stat line and the radius values around it.
+	"Cuts" one line out. 
+	"""
 	x = len(array[0])
 	y = len(array)
 	
@@ -403,7 +420,7 @@ def set_zero(array, stat, radius=None):
 	
 	
 	if radius:
-		for i in range(np.arange(stat, stat + radius)):
+		for i in range(stat, stat + radius):
 			new_array[i] = array[i]
 	
 	else:
@@ -411,6 +428,24 @@ def set_zero(array, stat, radius=None):
 
 	
 	return(new_array)
+
+def line_set_zero(array, stat, radius=None):
+	"""
+	Sets lines zero in array
+	"""
+	if radius:
+		for i in range(stat, stat + radius):
+			array[i] = 0
+	else:
+		array[stat] = 0
+	
+	return(array)
+
+def extract_nonzero(array):
+	newarray = array[~np.all(array == 0, axis=1)]
+	newindex = np.unique(array.nonzero()[0])
+	return(newarray, newindex)
+
 
 stream="WORK_D.MSEED"
 inventory="2011-03-11T05:46:23.MSEED_inv.xml"
