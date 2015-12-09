@@ -258,7 +258,7 @@ def fk_filter(st, inv=None, cat=None, phase=None, epi_dist=None, normalize=True)
 	max_k=maxrow(fft_Data)
 	
 	#mute area around |f| > eps, choose eps dependent on your phase/data/i dont know yet
-	fft_corr= set_zero(fft_Data, max_k)
+	fft_corr= line_cut(fft_Data, max_k)
 	
 	#apply 2D iFFT
 	ArrayData_filtered = np.fft.ifftn(fft_corr)
