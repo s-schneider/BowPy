@@ -1,0 +1,25 @@
+!Simon Schneider 30.11.2015
+!Apply a FK-Filter for a given phase!
+
+!EPI_DIST_OUT
+write FKOUT all
+
+SYSTEM
+@python /local/s_schn42/Thesis/FK-filter/do_fkextract.py
+
+SYSTEM
+@
+
+!SYSTEM
+!@rm -f epidist.txt
+
+SYSTEM
+@mv FKOUT.QHD FKIN.QHD
+
+SYSTEM
+@rm -f FKOUT.QBN
+
+hide all
+read fkin all
+
+return

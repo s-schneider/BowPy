@@ -1,0 +1,14 @@
+!file ECHO_EPI.SHC
+!Simon Schneider 30.11.2015
+
+
+default 1. distance
+default 2. name
+
+
+sdef dist !distance in degree
+
+@ECHO_CH |epidist|.txt|
+echo #2 #1
+echo_ch
+return
