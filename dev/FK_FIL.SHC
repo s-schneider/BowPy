@@ -5,7 +5,10 @@
 write FKOUT all
 
 SYSTEM
-@python /local/s_schn42/Thesis/FK-filter/do_fkfilter.py
+@export wdir=`pwd`
+
+SYSTEM
+@python /local/s_schn42/Thesis/FK-filter/dev/do_fkfilter.py
 
 !SYSTEM
 !@rm -f epidist.txt
@@ -20,4 +23,3 @@ hide all
 read fkin all
 
 return
-

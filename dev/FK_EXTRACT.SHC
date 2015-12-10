@@ -5,10 +5,13 @@
 write FKOUT all
 
 SYSTEM
-@python /local/s_schn42/Thesis/FK-filter/do_fkextract.py
+@cp /local/s_schn42/Thesis/FK-filter/dev/do_fkextract.py .
 
 SYSTEM
-@
+@python do_fkextract.py
+
+SYSTEM
+@rm -f do_fkextract.py
 
 !SYSTEM
 !@rm -f epidist.txt
