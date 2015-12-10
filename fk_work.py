@@ -99,10 +99,15 @@ def standard_test_signal(snes1=1, snes2=3, noise=0, nonequi=False):
         y_index = np.sort(np.unique(np.append(yindices, xindices)))
 	return(a, y_index)
 
-def shift_array(array, shift_value=0):
-	for i in range(len(array)):
-		array[i] = np.roll(array[i],-shift_value*i)
-	return(array)
+def shift_array(array, shift_value=0, y_dist=False):
+	array_shift = array
+	try:
+		for i in range(len(array)):
+			array_shift[i] = np.roll(array[i], -shift_value*y_dist[i])
+	except (AttributeError, TypeError):
+		for i in range(len(array)):
+			array_shift[i] = np.roll(array[i], -shift_value*i)
+	return(array_shift)
 
 def maxrow(array):
 	rowsum=0
@@ -183,7 +188,7 @@ def plot_data(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
 			plt.plot(zoom*data[i]+ y_dist[i])
 	plt.show()
 
-def fk_filter_synth(data, snes):
+def fk_filter_extract_phase(data, snes, y_dist=False):
 	"""
 	Function to test the fk workflow with synthetic data
 	param data:	data of the array
@@ -193,7 +198,7 @@ def fk_filter_synth(data, snes):
 	type snes:	int
 	"""
 
-	ds = shift_array(data, snes)
+	ds = shift_array(data, snes, y_dist)
 	
 	dsfft = np.fft.fftn(ds)
 	max_k = maxrow(dsfft)
@@ -201,9 +206,31 @@ def fk_filter_synth(data, snes):
 	dsfft = line_cut(dsfft, max_k)
 	ds = np.fft.ifftn(dsfft)
 	
-	data = shift_array(ds, -snes)
+	data_fk = shift_array(ds, -snes, y_dist)
 	
-	return(data.real)
+	return(data_fk.real)
+
+def fk_filter_eliminate_phase(data, snes, y_dist=False):
+	"""
+	Function to test the fk workflow with synthetic data
+	param data:	data of the array
+	type data:	numpy.ndarray
+
+	param snes:	slownessvalue of the desired extracted phase
+	type snes:	int
+	"""
+
+	ds = shift_array(data, snes, y_dist)
+	
+	dsfft = np.fft.fftn(ds)
+	max_k = maxrow(dsfft)
+	print("maximum wavenumber k is %f" % max_k)
+	dsfft = line_set_zero(dsfft, max_k)
+	ds = np.fft.ifftn(dsfft)
+	
+	data_fk = shift_array(ds, -snes, y_dist)
+	
+	return(data_fk.real)
 
 
 def fk_filter(st, inv=None, cat=None, phase=None, epi_dist=None, normalize=True):
@@ -418,10 +445,13 @@ def line_cut(array, stat, radius=None):
 	for i in range(y)[1:]:
 		new_array = np.append(new_array, new_line, axis=0)
 	
-	
 	if radius:
-		for i in range(stat, stat + radius):
+		for i in range(stat, stat + radius  + 1):
 			new_array[i] = array[i]
+			if i == 0:
+				new_array[y] = array[y]
+			else:
+				new_array[y-i] = array[y-i]
 	
 	else:
 		new_array[stat] = array[stat]
@@ -433,13 +463,20 @@ def line_set_zero(array, stat, radius=None):
 	"""
 	Sets lines zero in array
 	"""
+	new_array = array
+	end = len(array)-1
 	if radius:
-		for i in range(stat, stat + radius):
-			array[i] = 0
+		for i in range(stat, stat + radius + 1):
+			new_array[i] = 0
+			if i == 0:
+				new_array[end] = 0
+			else:
+				new_array[end-i] = 0
+
 	else:
-		array[stat] = 0
+		new_array[stat] = 0
 	
-	return(array)
+	return(new_array)
 
 def extract_nonzero(array):
 	newarray = array[~np.all(array == 0, axis=1)]
