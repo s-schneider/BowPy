@@ -5,7 +5,7 @@ import fk_work as fkw
 from fk_work import fk_filter_eliminate_phase
 import os
 
-wdir = os.environ.get('wdir')
+wdir = os.environ.get('x')
 
 ifile = wdir + '/' + 'FKOUT.QHD'
 ofile = wdir + '/' +  'FKIN.QHD'
