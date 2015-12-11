@@ -4,8 +4,12 @@
 !EPI_DIST_OUT
 write FKOUT all
 
+switch capcnv off
 SYSTEM
-@export wdir=`pwd`
+@wdir=`pwd`
+
+SYSTEM
+@export $wdir
 
 SYSTEM
 @python /local/s_schn42/Thesis/FK-filter/dev/do_fkfilter.py
@@ -19,6 +23,7 @@ SYSTEM
 SYSTEM
 @rm -f FKOUT.QBN
 
+SWITCH CAPCNV OFF
 hide all
 read fkin all
 
