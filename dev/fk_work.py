@@ -13,7 +13,156 @@ import Muenster_Array_Seismology as MAS
 from Muenster_Array_Seismology import get_coords
 from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees
 
+def fk_filter(ftype=None, st, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=True):
+	"""
+	At this point prework with programs like seismic handler or SAC is needed to perform correctly
 
+
+	Import stream, the function applies an 2D FFT, removes a certain window around the
+	desired phase to surpress a slownessvalue corresponding to a wavenumber and applies an 2d iFFT.
+	Alternative is an nonequidistant 2D Lombard-Scargle transformation.
+
+	param ftype: Type of filter, FFT or LS (Lombard-Scargle)
+	type ftype: string
+
+	param st: Stream
+	type st: obspy.core.stream.Stream
+
+	param inv: inventory
+	type inv: obspy.station.inventory.Inventory
+
+	param cat: catalog
+	type cat: obspy.core.event.Catalog
+
+	param phase: name of the phase to be investigated
+	type phase: string
+	
+	param epidist: list of epidistances, corresponding to st
+	type epidist: list
+
+	param fktype: type of fk-filter, extraction or elimination
+	type fktype: string
+	"""
+
+
+
+	"""
+	Lombard-Scargle Filter #########################################################
+	"""
+
+	"""
+	Calculate epicentral distances of station-receiver couples######################
+	Only needed if LS is used
+	"""
+	if ftype = "LS":
+		if st and inv and cat:
+			epidist = epidist_stream(stream_aligned, inv, cat)
+
+		if not epi_dist = None:
+			# read epi_dist here: epidist = 
+			print()
+
+		#FILTER ROUTINE HERE
+
+
+
+	"""
+	2D FFT #########################################################################
+	"""
+	elif ftype = "FFT":
+		#Convert to numpy.ndarray, stream info still in st
+		ArrayData = stream2array(stream_aligned, normalize)
+		
+		#Apply FFT
+		if fktype == "eliminate":
+			array_filtered = fk_filter_eliminate_phase(ArrayData, radius=None)
+		elif fktype == "extract":
+			array_filtered = fk_filter_extract_phase(ArrayData, radius=None)
+		else:
+			print("No type of fk-filter specified")
+			raise TypeError
+
+		#Convert to Stream object
+		stream_filtered = array2stream(ArrayData_filtered)
+
+		for i in range(len(stream_filtered)):
+			stream_filtered[i].meta = stream_aligned[i].meta
+	
+	else:
+		print("No valid input for type of filter")
+		raise TypeError
+
+	"""
+	return stream with filtered data ####################################
+	"""
+	return(stream_filtered)
+
+
+
+
+def fk_filter_extract_phase(data, snes=False, y_dist=False, radius=None, maxk=False):
+	"""
+	Function to test the fk workflow with synthetic data
+	param data:	data of the array
+	type data:	numpy.ndarray
+
+	param snes:	slownessvalue of the desired extracted phase
+	type snes:	int
+	"""
+	if snes:
+		ds = shift_array(data, snes, y_dist)
+	else:
+		ds = data
+	
+	dsfft = np.fft.fftn(ds)
+	
+	if maxk:
+		max_k = maxrow(dsfft)
+		print("maximum wavenumber k is %f" % max_k)
+		dsfft = line_cut(dsfft, max_k)
+	else:
+		dsfft = line_cut(dsfft, 0,radius)
+	
+	ds = np.fft.ifftn(dsfft)
+	if snes:
+		data_fk = shift_array(ds, -snes, y_dist)
+	else:
+		data_fk = ds
+
+	return(data_fk.real)
+
+def fk_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None, maxk=False):
+	"""
+	Function to test the fk workflow with synthetic data
+	param data:	data of the array
+	type data:	numpy.ndarray
+
+	param snes:	slownessvalue of the desired extracted phase
+	type snes:	int
+	"""
+
+	if snes:
+		ds = shift_array(data, snes, y_dist)
+	else:
+		ds = data
+		
+	dsfft = np.fft.fftn(ds)
+	
+	if maxk:
+		max_k = maxrow(dsfft)
+		print("maximum wavenumber k is %f" % max_k)
+		dsfft = line_set_zero(dsfft, max_k)
+	else:
+		dsfft = line_set_zero(dsfft, 0, radius)
+	
+	ds = np.fft.ifftn(dsfft)
+	
+	if snes:
+		data_fk = shift_array(ds, -snes, y_dist)
+	else:
+		data_fk = ds
+
+	return(data_fk.real)
 
 def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
                  no_of_periods=1):
@@ -194,137 +343,6 @@ def plot_data(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
 		if type(y_dist) == list or type(y_dist) == numpy.ndarray:
 			plt.plot(zoom*data[i]+ y_dist[i])
 	plt.show()
-
-def fk_filter_extract_phase(data, snes=False, y_dist=False, radius=None, maxk=False):
-	"""
-	Function to test the fk workflow with synthetic data
-	param data:	data of the array
-	type data:	numpy.ndarray
-
-	param snes:	slownessvalue of the desired extracted phase
-	type snes:	int
-	"""
-	if snes:
-		ds = shift_array(data, snes, y_dist)
-	else:
-		ds = data
-	
-	dsfft = np.fft.fftn(ds)
-	
-	if maxk:
-		max_k = maxrow(dsfft)
-		print("maximum wavenumber k is %f" % max_k)
-		dsfft = line_cut(dsfft, max_k)
-	else:
-		dsfft = line_cut(dsfft, 0,radius)
-	
-	ds = np.fft.ifftn(dsfft)
-	
-	data_fk = shift_array(ds, -snes, y_dist)
-	
-	return(data_fk.real)
-
-def fk_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None, maxk=False):
-	"""
-	Function to test the fk workflow with synthetic data
-	param data:	data of the array
-	type data:	numpy.ndarray
-
-	param snes:	slownessvalue of the desired extracted phase
-	type snes:	int
-	"""
-
-	if snes:
-		ds = shift_array(data, snes, y_dist)
-	else:
-		ds = data
-		
-	dsfft = np.fft.fftn(ds)
-	
-	if maxk:
-		max_k = maxrow(dsfft)
-		print("maximum wavenumber k is %f" % max_k)
-		dsfft = line_set_zero(dsfft, max_k)
-	else:
-		dsfft = line_set_zero(dsfft, 0, radius)
-	
-	ds = np.fft.ifftn(dsfft)
-	
-	data_fk = shift_array(ds, -snes, y_dist)
-	
-	return(data_fk.real)
-
-
-def fk_filter(st, inv=None, cat=None, phase=None, epi_dist=None, normalize=True):
-	"""
-	Import stream, inventory, catalog and phase you want to investigate.
-	The function bins the data or interpolates them or adds zero-signal-stations for equidistant spacing, applies an 2D FFT, removes a certain window around the
-	desired phase to surpress mutliples and applies an 2d iFFT
-	Alternative is an nonequidistant 2D FFT.
-
-	param st: Stream
-	type st: obspy.core.stream.Stream
-
-	param inv: inventory
-	type inv: obspy.station.inventory.Inventory
-
-	param cat: catalog
-	type cat: obspy.core.event.Catalog
-
-	param phase: name of the phase to be investigated
-	type phase: string
-	
-	param epidist: list of epidistances, corresponding to st
-	type epidist: list
-	"""
-
-	"""
-	Correction of global(array) slowness of phase ##################################
-	"""
-	#stream_aligned = MAS.align_phases(st, cat[0], inv, phase)
-	stream_aligned = st
-
-	
-	"""
-	Calculate epicentral distances of station-receiver couples######################
-	"""
-	if not epi_dist:
-		if st and inv and cat:
-			epidist = epidist_stream(stream_aligned, inv, cat)
-	else:
-		print()
-
-	"""
-	2D FFT #########################################################################
-	"""
-	#Convert to numpy.ndarray, stream info still in st
-	ArrayData = stream2array(stream_aligned, normalize)
-	
-	#Apply FFT
-	fft_Data = np.fft.fftn(ArrayData)
-	
-	#Find row with maximum sum-value - corresponding to zero k phase
-	max_k=maxrow(fft_Data)
-	
-	#mute area around |f| > eps, choose eps dependent on your phase/data/i dont know yet
-	fft_corr= line_cut(fft_Data, max_k)
-	
-	#apply 2D iFFT
-	ArrayData_filtered = np.fft.ifftn(fft_corr)
-
-	#Create Stream object
-	stream_filtered = array2stream(ArrayData_filtered)
-	for i in range(len(stream_filtered)):
-		stream_filtered[i].meta = stream_aligned[i].meta
-	
-	"""
-	Undo global-correction of the phase ############################################
-	""" 
-	#stream_filtered = MAS.align_phases()
-	"""
-	return stream with filtered data ####################################
-	"""
-	return(stream_filtered)
 
 def stream2array(stream, normalize=True):
 
