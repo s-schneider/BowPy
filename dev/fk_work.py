@@ -13,7 +13,10 @@ import Muenster_Array_Seismology as MAS
 from Muenster_Array_Seismology import get_coords
 from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees
 
-def fk_filter(ftype=None, st, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=True):
+#Lib for Lomb-Scargle
+from gatspy import periodic
+
+def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=True):
 	"""
 	At this point prework with programs like seismic handler or SAC is needed to perform correctly
 
@@ -22,11 +25,11 @@ def fk_filter(ftype=None, st, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	desired phase to surpress a slownessvalue corresponding to a wavenumber and applies an 2d iFFT.
 	Alternative is an nonequidistant 2D Lombard-Scargle transformation.
 
-	param ftype: Type of filter, FFT or LS (Lombard-Scargle)
-	type ftype: string
-
 	param st: Stream
 	type st: obspy.core.stream.Stream
+	
+	param ftype: Type of filter, FFT or LS (Lombard-Scargle)
+	type ftype: string
 
 	param inv: inventory
 	type inv: obspy.station.inventory.Inventory
@@ -47,31 +50,41 @@ def fk_filter(ftype=None, st, inv=None, cat=None, phase=None, epi_dist=None, fkt
 
 
 	"""
-	Lombard-Scargle Filter #########################################################
+	2D Wavenumber-Frequency Filter #########################################################
 	"""
-
-	"""
-	Calculate epicentral distances of station-receiver couples######################
-	Only needed if LS is used
-	"""
-	if ftype = "LS":
+	
+	# 2D FFT-LS #####################################################################
+	if ftype == "LS":
 		if st and inv and cat:
-			epidist = epidist_stream(stream_aligned, inv, cat)
+			epidist = epidist_stream(st, inv, cat)
 
-		if not epi_dist = None:
+		if not epi_dist == None:
 			# read epi_dist here: epidist = 
-			print()
+			print("epi_dist is about to be read here")
 
-		#FILTER ROUTINE HERE
-
-
-
-	"""
-	2D FFT #########################################################################
-	"""
-	elif ftype = "FFT":
+		
+		model = periodic.LombScargleFast(fit_period=True)
+		#model.optimizer.period_range = (min_wavelength, max_wavelength)
+		
+		ArrayData = stream2array(st,normalize)
+		
+		xstat = []
+		
+		freq = []
+		knum = []
+		for i in range(len(ArrayData)):
+			freq.append(np.fft.fftn(ArrayData[i]))
+			for j in range(len(ArrayData[i])):
+				xstat.append(ArrayData[i][j])
+			
+			knum.append(model.fit(epidist, xstat))
+			
+	
+	#2D FFT #########################################################################
+	
+	elif ftype == "FFT":
 		#Convert to numpy.ndarray, stream info still in st
-		ArrayData = stream2array(stream_aligned, normalize)
+		ArrayData = stream2array(st, normalize)
 		
 		#Apply FFT
 		if fktype == "eliminate":
@@ -86,7 +99,7 @@ def fk_filter(ftype=None, st, inv=None, cat=None, phase=None, epi_dist=None, fkt
 		stream_filtered = array2stream(ArrayData_filtered)
 
 		for i in range(len(stream_filtered)):
-			stream_filtered[i].meta = stream_aligned[i].meta
+			stream_filtered[i].meta = st[i].meta
 	
 	else:
 		print("No valid input for type of filter")
@@ -102,6 +115,7 @@ def fk_filter(ftype=None, st, inv=None, cat=None, phase=None, epi_dist=None, fkt
 
 def fk_filter_extract_phase(data, snes=False, y_dist=False, radius=None, maxk=False):
 	"""
+	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
 	param data:	data of the array
 	type data:	numpy.ndarray
@@ -133,6 +147,7 @@ def fk_filter_extract_phase(data, snes=False, y_dist=False, radius=None, maxk=Fa
 
 def fk_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None, maxk=False):
 	"""
+	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
 	param data:	data of the array
 	type data:	numpy.ndarray
