@@ -14,9 +14,16 @@ from Muenster_Array_Seismology import get_coords
 from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees
 
 #Lib for Lomb-Scargle
-from gatspy import periodic
+try:
+	from gatspy import periodic
+	gatspylib = True
+except(ImportError):
+	import scipy as sp
+	import scipy.signal as signal
+	gatspylib = False
 
-def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=True):
+def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=True,
+	      min_wavelength=1000 , max_wavelength=1000000, knout=10000):
 	"""
 	At this point prework with programs like seismic handler or SAC is needed to perform correctly
 
@@ -45,6 +52,15 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 
 	param fktype: type of fk-filter, extraction or elimination
 	type fktype: string
+	
+	param min_wavelength: minimum wavelength for wavenumber in m
+	type min_wavelength: int
+	
+	param max_wavelength: maximum wavelength for wavenumber in m
+	type max_wavelength: int
+	
+	param knout: number of k-values to be checked
+	type knout: int
 	"""
 
 
@@ -56,28 +72,39 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	# 2D FFT-LS #####################################################################
 	if ftype == "LS":
 		if st and inv and cat:
-			epidist = epidist_stream(st, inv, cat)
+			epidist = epidist2list(epidist_stream(st, inv, cat))
 
 		if not epi_dist == None:
 			# read epi_dist here: epidist = 
 			print("epi_dist is about to be read here")
 
-		
-		model = periodic.LombScargleFast(fit_period=True)
-		#model.optimizer.period_range = (min_wavelength, max_wavelength)
+
+		xstat = []
+		freq = []
+		knum = []
+		if gatspylib:
+			model = periodic.LombScargleFast(fit_period=True)
+			#model.optimizer.period_range = (min_wavelength, max_wavelength)
+
+			for i in range(len(ArrayData)):
+				freq.append(np.fft.fftn(ArrayData[i]))
+				for j in range(len(ArrayData[i])):
+					xstat.append(ArrayData[j][i])
+				
+				knum.append(model.fit(epidist, xstat))
+				
+		if not gatspylib:
+			period_range = np.linspace(min_wavelength, max_wavelength, knout)
+
+			for i in range(len(ArrayData)):
+				freq.append(np.fft.fftn(ArrayData[i]))
+				for j in range(len(ArrayData[i])):
+					xstat.append(ArrayData[j][i])
+				knum.append(signal.lombscargle(epidist, xstat, period_range))
 		
 		ArrayData = stream2array(st,normalize)
 		
-		xstat = []
-		
-		freq = []
-		knum = []
-		for i in range(len(ArrayData)):
-			freq.append(np.fft.fftn(ArrayData[i]))
-			for j in range(len(ArrayData[i])):
-				xstat.append(ArrayData[i][j])
-			
-			knum.append(model.fit(epidist, xstat))
+
 			
 	
 	#2D FFT #########################################################################
@@ -543,6 +570,20 @@ stream="WORK_D.MSEED"
 inventory="2011-03-11T05:46:23.MSEED_inv.xml"
 catalog="2011-03-11T05:46:23.MSEED_cat.xml"
 phase="PP"
+
+"""
+import fk_work as fkw
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import numpy as np
+import scipy as sp
+import scipy.signal as signal
+
+stream="../data/WORK_D.MSEED"
+inventory="../data/2011-03-11T05:46:23.MSEED_inv.xml"
+catalog="../data/2011-03-11T05:46:23.MSEED_cat.xml"
+st, inv, cat = fkw.read_file(stream, inventory, catalog)
+"""
 
 #fk_filter(stream, inventory, catalog, phase)
 #data=create_signal(no_of_traces=1,len_of_traces=12,multiple=False)
