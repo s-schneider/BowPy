@@ -17,7 +17,7 @@ except(ImportError):
 	scipylib = True
 
 def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=True,
-	      min_wavelength=10 , max_wavelength=2500, knout=10000):
+	      min_wavelength=10 , max_wavelength=2500):
 	"""
 	At this point prework with programs like seismic handler or SAC is needed to perform correctly
 
@@ -76,54 +76,36 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 			print("epi_dist is about to be read here")
 
 
-		freq = []
-		knum = []
 		# Using gatspy library ##################################################
 		if gatspylib:
-			model = periodic.LombScargleFast(fit_period=True)
-			model.optimizer.period_range = (min_wavelength, max_wavelength)
-
-			for i in range(len(ArrayData)):
-				freq_new = np.fft.fftn(ArrayData[i])
-				if i == 0:
-					freq = np.append( [ freq ], [ freq_new ] )
-				elif i == 1:
-					freq = np.append( [ freq ], [ freq_new ], axis=0 )
-				else:
-					freq = np.append( freq , [ freq_new ], axis=0 )
-
-			freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
-			for j in range(len(ArrayDataT)):			
-				k_new = model.fit(epidist, freqT[j])
-				if j == 0:
-					knum = np.append( [ knum ], [k_new] )
-				elif j == 1:
-					knum = np.append( [ knum ], [k_new], axis=0 )
-				else:
-					knum = np.append( knum , [k_new], axis=0 )
+			if fktype == "eliminate":
+				array_filtered = _fk_ls_filter_eliminate_phase_gp(ArrayData, y_dist=epidist, 
+									min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+			elif fktype == "extract":
+				array_filtered = _fk_ls_filter_extract_phase_gp(ArrayData, y_dist=epidist, 
+									min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+			else:
+				print("No type of fk-filter specified")
+				raise TypeError
+			
 		# Using scipy library ##################################################	
 		if scipylib:
-			period_range = np.linspace(min_wavelength, max_wavelength, knout)
-			freq = np.zeros((len(ArrayData), len(ArrayData[0]))) + 1j
-
-			for i in range(len(ArrayData)):
-				freq_new = np.fft.fftn(ArrayData[i])
-				freq[i] = freq_new
-
-			freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
-			knum = np.zeros((len(ArrayData), len(ArrayData[0])))
-			for j in range(len(freqT)):
-				print("Doing %i of %i" % (j, len(freqT)))
-				k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
-				knum[j] = k_new
-					
-		fkspectra = knum
+			if fktype == "eliminate":
+				array_filtered = _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=epidist, 
+									min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+			elif fktype == "extract":
+				array_filtered = _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=epidist, 
+									min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+			else:
+				print("No type of fk-filter specified")
+				raise TypeError		
+			
+		fkspectra=array_filtered
 		tend=datetime.datetime.now()
-		print(tend-tstart)
-		return(fkspectra, period_range, freq)
+		print( tend-tstart )
+		return(fkspectra)
 				
 		
-		#stream_filtered = 
 		
 
 			
@@ -137,9 +119,9 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 		
 		#Apply FFT
 		if fktype == "eliminate":
-			array_filtered = fk_filter_eliminate_phase(ArrayData, radius=None)
+			array_filtered = _fk_fft_filter_eliminate_phase(ArrayData, radius=None)
 		elif fktype == "extract":
-			array_filtered = fk_filter_extract_phase(ArrayData, radius=None)
+			array_filtered = _fk_fft_filter_extract_phase(ArrayData, radius=None)
 		else:
 			print("No type of fk-filter specified")
 			raise TypeError
@@ -161,11 +143,163 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	"""
 	return stream with filtered data ####################################
 	"""
+	
+# LS FUNCTIONS ############################################################################
+def _fk_ls_filter_extract_phase_gp(ArrayData, min_wavelength, max_wavelength,  
+				   y_dist=False, radius=None, maxk=False):
+	"""
+	Only use with the function fk_filter!
+	FK-filter using the Lomb-Scargle Periodogram with the gatspy library
+	param data:	data of the array
+	type data:	numpy.ndarray
+
+	param snes:	slownessvalue of the desired extracted phase
+	type snes:	int
+	"""
+	epidist=y_dist
+	model = periodic.LombScargleFast(fit_period=True)
+	model.optimizer.period_range = (min_wavelength, max_wavelength)
+
+	for i in range(len(ArrayData)):
+		freq_new = np.fft.fftn(ArrayData[i])
+		freq[i] = freq_new
+
+	freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
+	knum = np.zeros( ( len(freqT), len(freqT[0]) ) )
+	
+	for j in range(len(ArrayDataT)):
+		k_new = model.fit(epidist, freqT[j])
+		knum[i] = k_new
+	
+	fkspectra = transpose(knum)
+
+	if maxk:
+		max_k = maxrow(fkspectra)
+		print("maximum wavenumber k is %f" % max_k)
+		dsfft = line_cut(fkspectra, max_k)
+	else:
+		dsfft = line_cut(fkspectra, 0, radius)
+	
+	return(fkspectra)
+
+def _fk_ls_filter_eliminate_phase_gp(ArrayData, min_wavelength, max_wavelength,  
+				   y_dist=False, radius=None, maxk=False):
+	"""
+	Only use with the function fk_filter!
+	Function to test the fk workflow with synthetic data
+	param data:	data of the array
+	type data:	numpy.ndarray
+
+	param snes:	slownessvalue of the desired extracted phase
+	type snes:	int
+	"""
+	epidist=y_dist
+	model = periodic.LombScargleFast(fit_period=True)
+	model.optimizer.period_range = (min_wavelength, max_wavelength)
+
+	for i in range(len(ArrayData)):
+		freq_new = np.fft.fftn(ArrayData[i])
+		freq[i] = freq_new
+
+	freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
+	knum = np.zeros( ( len(freqT), len(freqT[0]) ) )
+	
+	for j in range(len(ArrayDataT)):
+		k_new = model.fit(epidist, freqT[j])
+		knum[i] = k_new
+	
+	fkspectra = transpose(knum)
+
+	if maxk:
+		max_k = maxrow(fkspectra)
+		print("maximum wavenumber k is %f" % max_k)
+		dsfft = line_cut(fkspectra, max_k)
+	else:
+		dsfft = line_cut(fkspectra, 0, radius)
+	
+	return(fkspectra)
+
+
+def _fk_ls_filter_extract_phase_sp(ArrayData, min_wavelength, max_wavelength,  
+				   y_dist=False, radius=None, maxk=False):
+	"""
+	Only use with the function fk_filter!
+	FK-filter using the Lomb-Scargle Periodogram with the scipy library
+	param data:	data of the array
+	type data:	numpy.ndarray
+
+	param snes:	slownessvalue of the desired extracted phase
+	type snes:	int
+	"""
+	
+	epidist=y_dist
+	freq = np.zeros((len(ArrayData), len(ArrayData[0]))) + 1j
+
+	for i in range(len(ArrayData)):
+		freq_new = np.fft.fftn(ArrayData[i])
+		freq[i] = freq_new
+
+	freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
+	knum = np.zeros( ( len(freqT), len(freqT[0]) ) )
+	period_range = np.linspace(min_wavelength, max_wavelength, len(freqT[0]))
+			    
+	for j in range(len(freqT)):
+		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
+		knum[j] = k_new
+			
+	fkspectra = transpose(knum)
+	
+	if maxk:
+		max_k = maxrow(fkspectra)
+		print("maximum wavenumber k is %f" % max_k)
+		dsfft = line_cut(fkspectra, max_k)
+	else:
+		dsfft = line_cut(fkspectra, 0, radius)
+	
+	return(fkspectra)
+
+def _fk_ls_filter_eliminate_phase_sp(ArrayData, min_wavelength, max_wavelength,  
+				   y_dist=False, radius=None, maxk=False):
+	"""
+	Only use with the function fk_filter!
+	Function to test the fk workflow with synthetic data
+	param data:	data of the array
+	type data:	numpy.ndarray
+
+	param snes:	slownessvalue of the desired extracted phase
+	type snes:	int
+	"""
+	epidist=y_dist
+	freq = np.zeros((len(ArrayData), len(ArrayData[0]))) + 1j
+
+	for i in range(len(ArrayData)):
+		freq_new = np.fft.fftn(ArrayData[i])
+		freq[i] = freq_new
+
+	freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
+	knum = np.zeros( ( len(freqT), len(freqT[0]) ) )
+	period_range = np.linspace(min_wavelength, max_wavelength, len(freqT[0]))
+
+	for j in range(len(freqT)):
+		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
+		knum[j] = k_new
+			
+	fkspectra = transpose(knum)
+	
+	if maxk:
+		max_k = maxrow(fkspectra)
+		print("maximum wavenumber k is %f" % max_k)
+		dsfft = line_cut(fkspectra, max_k)
+	else:
+		dsfft = line_cut(fkspectra, 0, radius)
+	
+	return(fkspectra)
 
 
 
+# FFT FUNCTIONS ############################################################################
 
-def fk_filter_extract_phase(data, snes=False, y_dist=False, radius=None, maxk=False):
+def _fk_fft_filter_extract_phase(data, snes=False, y_dist=False, radius=None, maxk=False):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
@@ -197,7 +331,7 @@ def fk_filter_extract_phase(data, snes=False, y_dist=False, radius=None, maxk=Fa
 
 	return(data_fk.real)
 
-def fk_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None, maxk=False):
+def _fk_fft_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None, maxk=False):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
