@@ -1,10 +1,3 @@
-"""
-perform 2d fft
-ordne k richtig zu, Formel finden!
-Synthetics mit sinus wavelet und multiplen dessen
-damit erstmal testen
-"""
-
 import obspy
 import numpy
 import numpy as np
@@ -23,7 +16,7 @@ except(ImportError):
 	gatspylib = False
 
 def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=True,
-	      min_wavelength=1000 , max_wavelength=1000000, knout=10000):
+	      min_wavelength=10 , max_wavelength=2500, knout=10000):
 	"""
 	At this point prework with programs like seismic handler or SAC is needed to perform correctly
 
@@ -53,10 +46,10 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	param fktype: type of fk-filter, extraction or elimination
 	type fktype: string
 	
-	param min_wavelength: minimum wavelength for wavenumber in m
+	param min_wavelength: minimum wavelength for wavenumber in degrees
 	type min_wavelength: int
 	
-	param max_wavelength: maximum wavelength for wavenumber in m
+	param max_wavelength: maximum wavelength for wavenumber in degrees
 	type max_wavelength: int
 	
 	param knout: number of k-values to be checked
@@ -71,6 +64,8 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	
 	# 2D FFT-LS #####################################################################
 	if ftype == "LS":
+		
+		ArrayData = stream2array(st)
 		if st and inv and cat:
 			epidist = epidist2list(epidist_stream(st, inv, cat))
 
@@ -79,30 +74,43 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 			print("epi_dist is about to be read here")
 
 
-		xstat = []
 		freq = []
 		knum = []
 		if gatspylib:
 			model = periodic.LombScargleFast(fit_period=True)
-			#model.optimizer.period_range = (min_wavelength, max_wavelength)
+			model.optimizer.period_range = (min_wavelength, max_wavelength)
 
 			for i in range(len(ArrayData)):
-				freq.append(np.fft.fftn(ArrayData[i]))
-				for j in range(len(ArrayData[i])):
-					xstat.append(ArrayData[j][i])
-				
-				knum.append(model.fit(epidist, xstat))
+				if i == 0:
+					freq = np.append( [ freq ], [ np.fft.fftn(ArrayData[i]) ] )
+				elif i == 1:
+					freq = np.append( [ freq ], [ np.fft.fftn(ArrayData[i]) ], axis=0 )
+				else:
+					freq = np.append( freq , [ np.fft.fftn(ArrayData[i]) ], axis=0 )
+
+			ArrayDataT = np.reshape(ArrayData, ArrayData.size, order='F').reshape(len(ArrayData[0]),len(ArrayData))
+			for j in range(len(ArrayDataT)):			
+				knum.append(model.fit(epidist, ArrayDataT[j]))
 				
 		if not gatspylib:
 			period_range = np.linspace(min_wavelength, max_wavelength, knout)
 
 			for i in range(len(ArrayData)):
-				freq.append(np.fft.fftn(ArrayData[i]))
-				for j in range(len(ArrayData[i])):
-					xstat.append(ArrayData[j][i])
+				if i == 0:
+					freq = np.append( [ freq ], [ np.fft.fftn(ArrayData[i]) ] )
+				elif i == 1:
+					freq = np.append( [ freq ], [ np.fft.fftn(ArrayData[i]) ], axis=0 )
+				else:
+					freq = np.append( freq , [ np.fft.fftn(ArrayData[i]) ], axis=0 )
+
+			ArrayDataT = np.reshape(ArrayData, ArrayData.size, order='F').reshape(len(ArrayData[0]),len(ArrayData))
+			for j in range(len(ArrayDataT)):			
 				knum.append(signal.lombscargle(epidist, xstat, period_range))
+
+		return(freq, knum)
+				
 		
-		ArrayData = stream2array(st,normalize)
+		#stream_filtered = 
 		
 
 			
@@ -128,6 +136,8 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 		for i in range(len(stream_filtered)):
 			stream_filtered[i].meta = st[i].meta
 	
+		return(stream_filtered)
+
 	else:
 		print("No valid input for type of filter")
 		raise TypeError
@@ -135,7 +145,6 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	"""
 	return stream with filtered data ####################################
 	"""
-	return(stream_filtered)
 
 
 
@@ -325,7 +334,7 @@ def plot_fft(x, logscale=False, fftshift=False, scaling=1):
 	type scaling:	int
 	"""
 	
-	if not type(x) == np.array:
+	if not type(x) == np.array or numpy.ndarray:
 		fftx = stream2array(x)	
 	else:
 		fftx = x
@@ -434,7 +443,7 @@ def read_file(stream, inventory, catalog, array=False):
   
 def epidist_inv(inventory, catalog):
 	"""
-	Calculates the epicentral distance between event and stations of the inventory
+	Calculates the epicentral distance between event and stations of the inventory in degrees.
 
 	param inventory: 
 	type inventory:
@@ -565,11 +574,10 @@ def extract_nonzero(array):
 	newindex = np.unique(array.nonzero()[0])
 	return(newarray, newindex)
 
+def transpose(array):
+	arrayt = np.reshape(array, array.size, order='F').reshape(len(array[0]),len(array))	
+	return(arrayt)
 
-stream="WORK_D.MSEED"
-inventory="2011-03-11T05:46:23.MSEED_inv.xml"
-catalog="2011-03-11T05:46:23.MSEED_cat.xml"
-phase="PP"
 
 """
 import fk_work as fkw
