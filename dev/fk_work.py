@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import Muenster_Array_Seismology as MAS
 from Muenster_Array_Seismology import get_coords
 from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees
+import datetime
 
 #Lib for Lomb-Scargle
 try:
@@ -13,7 +14,7 @@ try:
 except(ImportError):
 	import scipy as sp
 	import scipy.signal as signal
-	gatspylib = False
+	scipylib = True
 
 def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=True,
 	      min_wavelength=10 , max_wavelength=2500, knout=10000):
@@ -61,14 +62,15 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	"""
 	2D Wavenumber-Frequency Filter #########################################################
 	"""
-	
+	scipylib=True
+	gatspylib=False
 	# 2D FFT-LS #####################################################################
 	if ftype == "LS":
-		
+		tstart=datetime.datetime.now()
 		ArrayData = stream2array(st)
 		if st and inv and cat:
-			epidist = epidist2list(epidist_stream(st, inv, cat))
-
+			epidist = epidist2nparray(epidist_stream(st, inv, cat))
+		
 		if not epi_dist == None:
 			# read epi_dist here: epidist = 
 			print("epi_dist is about to be read here")
@@ -76,38 +78,59 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 
 		freq = []
 		knum = []
+		# Using gatspy library ##################################################
 		if gatspylib:
 			model = periodic.LombScargleFast(fit_period=True)
 			model.optimizer.period_range = (min_wavelength, max_wavelength)
 
 			for i in range(len(ArrayData)):
+				freq_new = np.fft.fftn(ArrayData[i])
 				if i == 0:
-					freq = np.append( [ freq ], [ np.fft.fftn(ArrayData[i]) ] )
+					freq = np.append( [ freq ], [ freq_new ] )
 				elif i == 1:
-					freq = np.append( [ freq ], [ np.fft.fftn(ArrayData[i]) ], axis=0 )
+					freq = np.append( [ freq ], [ freq_new ], axis=0 )
 				else:
-					freq = np.append( freq , [ np.fft.fftn(ArrayData[i]) ], axis=0 )
+					freq = np.append( freq , [ freq_new ], axis=0 )
 
-			ArrayDataT = np.reshape(ArrayData, ArrayData.size, order='F').reshape(len(ArrayData[0]),len(ArrayData))
+			freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
 			for j in range(len(ArrayDataT)):			
-				knum.append(model.fit(epidist, ArrayDataT[j]))
-				
-		if not gatspylib:
+				k_new = model.fit(epidist, freqT[j])
+				if j == 0:
+					knum = np.append( [ knum ], [k_new] )
+				elif j == 1:
+					knum = np.append( [ knum ], [k_new], axis=0 )
+				else:
+					knum = np.append( knum , [k_new], axis=0 )
+		# Using scipy library ##################################################	
+		if scipylib:
 			period_range = np.linspace(min_wavelength, max_wavelength, knout)
 
 			for i in range(len(ArrayData)):
+				freq_new = np.fft.fftn(ArrayData[i])
 				if i == 0:
-					freq = np.append( [ freq ], [ np.fft.fftn(ArrayData[i]) ] )
+					freq = np.append( [ freq ], [ freq_new ] )
 				elif i == 1:
-					freq = np.append( [ freq ], [ np.fft.fftn(ArrayData[i]) ], axis=0 )
+					freq = np.append( [ freq ], [ freq_new ], axis=0 )
 				else:
-					freq = np.append( freq , [ np.fft.fftn(ArrayData[i]) ], axis=0 )
+					freq = np.append( freq , [ freq_new ], axis=0 )
 
-			ArrayDataT = np.reshape(ArrayData, ArrayData.size, order='F').reshape(len(ArrayData[0]),len(ArrayData))
-			for j in range(len(ArrayDataT)):			
-				knum.append(signal.lombscargle(epidist, xstat, period_range))
-
-		return(freq, knum)
+			freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
+			for j in range(len(freqT)):
+				print("Doing %i of %i" % (j, len(freqT)))
+				
+				k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
+				if j == 0:
+					knum = np.append( [ knum ], [k_new] )
+				elif j == 1:
+					knum = np.append( [ knum ], [k_new], axis=0 )
+				else:
+					knum = np.append( knum , [k_new], axis=0 )
+					
+		
+		fkspectra = knum
+		tend=datetime.datetime.now()
+		print(tend-tstart)
+		return(fkspectra, period_range, freq)
 				
 		
 		#stream_filtered = 
@@ -118,6 +141,7 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	#2D FFT #########################################################################
 	
 	elif ftype == "FFT":
+		tstart=datetime.datetime.now()
 		#Convert to numpy.ndarray, stream info still in st
 		ArrayData = stream2array(st, normalize)
 		
@@ -136,6 +160,8 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 		for i in range(len(stream_filtered)):
 			stream_filtered[i].meta = st[i].meta
 	
+		tend=datetime.datetime.now()
+		print(tend-tstart)
 		return(stream_filtered)
 
 	else:
@@ -509,6 +535,13 @@ def epidist2list(epidist):
 
 	return(epidist_list)
 
+def epidist2nparray(epidist):
+	epidist_np = []
+	for scode in epidist:
+		epidist_np = np.append(epidist_np, [epidist[scode]["epidist"]])
+		
+	return(epidist_np)
+
 def kill(data, stat):
 	"""
 	Deletes the trace of a selected station from the array
@@ -591,6 +624,43 @@ stream="../data/WORK_D.MSEED"
 inventory="../data/2011-03-11T05:46:23.MSEED_inv.xml"
 catalog="../data/2011-03-11T05:46:23.MSEED_cat.xml"
 st, inv, cat = fkw.read_file(stream, inventory, catalog)
+ad = fkw.stream2array(st)
+adt = fkw.transpose(ad)
+epid = fkw.epidist_stream(st, inv, cat)
+"""
+
+"""
+testsignal for FFT and LS
+import datetime
+
+A = 2.
+w = 1.
+phi = 0.5 * np.pi
+nin = 1000
+nout = 100000
+frac_points = 0.9 # Fraction of points to select
+
+r = np.random.rand(nin)
+x = np.linspace(0.01, 10*np.pi, nin)
+x = x[r >= frac_points]
+normval = x.shape[0] # For normalization of the periodogram
+y = A * np.sin(w*x+phi)
+f = np.linspace(0.01, 10, nout)
+def test(x,y,f):
+	t1=datetime.datetime.now()
+	pgram = signal.lombscargle(x, y, f)
+	t2=datetime.datetime.now()
+	print(t2-t1)
+	return(pgram)
+
+def testfft(x):
+	t1=datetime.datetime.now()
+	xfft = np.fft.fftn(x)
+	t2=datetime.datetime.now()
+	print(t2-t1)
+	return(xfft)
+
+
 """
 
 #fk_filter(stream, inventory, catalog, phase)
