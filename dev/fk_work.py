@@ -104,29 +104,19 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 		# Using scipy library ##################################################	
 		if scipylib:
 			period_range = np.linspace(min_wavelength, max_wavelength, knout)
+			freq = np.zeros((len(ArrayData), len(ArrayData[0]))) + 1j
 
 			for i in range(len(ArrayData)):
 				freq_new = np.fft.fftn(ArrayData[i])
-				if i == 0:
-					freq = np.append( [ freq ], [ freq_new ] )
-				elif i == 1:
-					freq = np.append( [ freq ], [ freq_new ], axis=0 )
-				else:
-					freq = np.append( freq , [ freq_new ], axis=0 )
+				freq[i] = freq_new
 
 			freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
+			knum = np.zeros((len(ArrayData), len(ArrayData[0])))
 			for j in range(len(freqT)):
 				print("Doing %i of %i" % (j, len(freqT)))
-				
 				k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
-				if j == 0:
-					knum = np.append( [ knum ], [k_new] )
-				elif j == 1:
-					knum = np.append( [ knum ], [k_new], axis=0 )
-				else:
-					knum = np.append( knum , [k_new], axis=0 )
+				knum[j] = k_new
 					
-		
 		fkspectra = knum
 		tend=datetime.datetime.now()
 		print(tend-tstart)
@@ -613,6 +603,7 @@ def transpose(array):
 
 
 """
+import fk_work
 import fk_work as fkw
 import matplotlib.pyplot as plt
 import matplotlib as mpl
