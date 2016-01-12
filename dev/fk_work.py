@@ -6,14 +6,13 @@ import Muenster_Array_Seismology as MAS
 from Muenster_Array_Seismology import get_coords
 from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees
 import datetime
-
+import scipy as sp
+import scipy.signal as signal
 #Lib for Lomb-Scargle
 try:
 	from gatspy import periodic
 	gatspylib = True
 except(ImportError):
-	import scipy as sp
-	import scipy.signal as signal
 	scipylib = True
 
 def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=True,
@@ -72,8 +71,7 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 			epidist = epidist2nparray(epidist_stream(st, inv, cat))
 		
 		if not epi_dist == None:
-			# read epi_dist here: epidist = 
-			print("epi_dist is about to be read here")
+			epidist = epi_dist
 
 
 		# Using gatspy library ##################################################
@@ -87,14 +85,16 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 			else:
 				print("No type of fk-filter specified")
 				raise TypeError
+
+			periods = None
 			
 		# Using scipy library ##################################################	
 		if scipylib:
 			if fktype == "eliminate":
-				array_filtered = _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=epidist, 
+				array_filtered, periods = _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=epidist, 
 									min_wavelength=min_wavelength, max_wavelength=max_wavelength)
 			elif fktype == "extract":
-				array_filtered = _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=epidist, 
+				array_filtered, periods = _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=epidist, 
 									min_wavelength=min_wavelength, max_wavelength=max_wavelength)
 			else:
 				print("No type of fk-filter specified")
@@ -103,7 +103,11 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 		fkspectra=array_filtered
 		tend=datetime.datetime.now()
 		print( tend-tstart )
-		return(fkspectra)
+		return(fkspectra, periods)
+
+		"""
+		perform ifft using fkspectra and periods, should be possible!
+		"""
 				
 		
 		
@@ -256,7 +260,7 @@ def _fk_ls_filter_extract_phase_sp(ArrayData, min_wavelength, max_wavelength,
 	else:
 		dsfft = line_cut(fkspectra, 0, radius)
 	
-	return(fkspectra)
+	return(fkspectra, period_range)
 
 def _fk_ls_filter_eliminate_phase_sp(ArrayData, min_wavelength, max_wavelength,  
 				   y_dist=False, radius=None, maxk=False):
@@ -293,7 +297,7 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, min_wavelength, max_wavelength,
 	else:
 		dsfft = line_cut(fkspectra, 0, radius)
 	
-	return(fkspectra)
+	return(fkspectra, period_range)
 
 
 
