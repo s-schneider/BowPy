@@ -245,7 +245,12 @@ def _fk_ls_filter_extract_phase_sp(ArrayData, min_wavelength, max_wavelength,
 
 	freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
 	knum = np.zeros( ( len(freqT), len(freqT[0]) ) )
-	period_range = np.linspace(min_wavelength, max_wavelength, len(freqT[0]))
+
+	#calc best range
+	steps = len(freqT[0])
+	max_bound = ( max_wavelength/(min_wavelength*steps**2) ) *steps**2 * min_wavelength
+	
+	period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]), dtype=int)
 			    
 	for j in range(len(freqT)):
 		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
@@ -282,7 +287,12 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, min_wavelength, max_wavelength,
 
 	freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
 	knum = np.zeros( ( len(freqT), len(freqT[0]) ) )
-	period_range = np.linspace(min_wavelength, max_wavelength, len(freqT[0]))
+	
+	#calc best range
+	steps = len(freqT[0])
+	max_bound = ( max_wavelength/(min_wavelength*steps**2) ) *steps**2 * min_wavelength
+	
+	period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]), dtype=int)
 
 	for j in range(len(freqT)):
 		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
@@ -549,6 +559,29 @@ def plot_data(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
 			plt.plot(zoom*data[i]+ y_dist[i])
 	plt.show()
 
+def plot_data_sets(st1, st2, zoom=1, y_dist1=1, y_dist2=1):
+	"""
+	Alpha Version!
+	"""
+	data1 = st1
+	data2 = st2
+
+	plt.subplot(2,1,1)
+	for i in range(len(data1)):
+		if type(y_dist1) == int:
+			plt.plot(zoom*data1[i]+ y_dist1*i)
+		if type(y_dist1) == list or type(y_dist2) == numpy.ndarray:
+			plt.plot(zoom*data1[i]+ y_dist1[i])
+	
+	plt.subplot(2,1,2)
+	for i in range(len(data2)):
+		if type(y_dist2) == int:
+			plt.plot(zoom*data2[i]+ y_dist2*i)
+		if type(y_dist2) == list or type(y_dist2) == numpy.ndarray:
+			plt.plot(zoom*data2[i]+ y_dist2[i])
+			
+	plt.show()
+
 def stream2array(stream, normalize=True):
 
 	st = stream
@@ -755,8 +788,22 @@ catalog="../data/2011-03-11T05:46:23.MSEED_cat.xml"
 st, inv, cat = fkw.read_file(stream, inventory, catalog)
 ad = fkw.stream2array(st)
 adt = fkw.transpose(ad)
-epid = fkw.epidist_stream(st, inv, cat)
+epid = fkw.epidist2nparray(fkw.epidist_stream(st, inv, cat))
+fkspectra, periods = fkw.fk_filter(st, ftype='LS', inv=inv, cat=cat, fktype="eliminate")
+fkfft = abs(np.fft.fftn(ad))
 """
+
+"""
+testplot
+plt.subplot(2,1,1)
+plt.imshow(np.log(np.fft.fftshift(fkfft)), origin='lower', cmap=None, aspect=3000)
+plt.subplot(2,1,2)
+plt.imshow(np.log(np.fft.fftshift(fkspectra)), origin='lower', cmap=None, aspect=3000)
+plt.show()
+
+
+"""
+
 
 """
 testsignal for FFT and LS
