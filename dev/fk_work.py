@@ -292,8 +292,8 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, min_wavelength, max_wavelength,
 	steps = len(freqT[0])
 	max_bound = ( max_wavelength/(min_wavelength*steps**2) ) *steps**2 * min_wavelength
 	
-	period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]), dtype=int)
-
+	period_range = np.linspace(min_wavelength, max_bound, len(freqT[0])) #, dtype=int)
+	#period_range = np.linspace(min_wavelength, max_wavelength, len(freqT[0]))
 	for j in range(len(freqT)):
 		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
 		knum[j] = k_new
