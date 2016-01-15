@@ -250,12 +250,14 @@ def _fk_ls_filter_extract_phase_sp(ArrayData, min_wavelength, max_wavelength,
 	steps = len(freqT[0])
 	max_bound = ( max_wavelength/(min_wavelength*steps**2) ) *steps**2 * min_wavelength
 	
-	period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]), dtype=int)
+	period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]))
 			    
 	for j in range(len(freqT)):
 		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
 		knum[j] = k_new
 			
+	#change dtype to integer, for further processing
+	period_range = period_range.astype('int')
 	fkspectra = transpose(knum)
 	
 	if maxk:
@@ -292,12 +294,13 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, min_wavelength, max_wavelength,
 	steps = len(freqT[0])
 	max_bound = ( max_wavelength/(min_wavelength*steps**2) ) *steps**2 * min_wavelength
 	
-	period_range = np.linspace(min_wavelength, max_bound, len(freqT[0])) #, dtype=int)
-	#period_range = np.linspace(min_wavelength, max_wavelength, len(freqT[0]))
+	period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]))
 	for j in range(len(freqT)):
 		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
 		knum[j] = k_new
-			
+		
+	#change dtype to integer, for further processing
+	period_range = period_range.astype('int')
 	fkspectra = transpose(knum)
 	
 	if maxk:
@@ -835,9 +838,35 @@ def testfft(x):
 	t2=datetime.datetime.now()
 	print(t2-t1)
 	return(xfft)
+"""
+
 
 
 """
+Test Sinus
+A = 2.
+w = 1.
+phi = 0.5 * np.pi
+
+nin = 1000
+nout = 100000
+x = np.linspace(0.01, 10*np.pi, nin)
+y = A * np.sin(w*x+phi)
+
+yfft = np.fft.fft(y)
+yfft = yfft/max(yfft)
+
+f_fft = np.fft.fftfreq(y.size, max(x)/y.size) * 2. * np.pi
+
+frange = np.linspace(0.01, 10, nin)
+yls = signal.lombscargle(x, y, frange)
+yls = yls/max(yls)
+
+
+
+"""
+
+
 
 #fk_filter(stream, inventory, catalog, phase)
 #data=create_signal(no_of_traces=1,len_of_traces=12,multiple=False)
