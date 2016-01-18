@@ -83,12 +83,6 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 		"""
 		perform ifft using fkspectra and periods, should be possible!
 		"""
-				
-		
-		
-
-			
-	
 	#2D FFT #########################################################################
 	
 	elif ftype == "FFT":
@@ -143,7 +137,7 @@ def _fk_ls_filter_extract_phase_sp(ArrayData, min_wavelength, max_wavelength,
 		freq_new = np.fft.fftn(ArrayData[i])
 		freq[i] = freq_new
 
-	freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
+	freqT = transpose(freq)
 	knum = np.zeros( ( len(freqT), len(freqT[0]) ) )
 	
 	#Temporary Array, to calculate the length of the period_range
@@ -151,14 +145,15 @@ def _fk_ls_filter_extract_phase_sp(ArrayData, min_wavelength, max_wavelength,
 		     
 		     
 	#calc best range
-	steps = len(freqT[0])
-	max_bound = ( max_wavelength/(min_wavelength*steps**2) ) *steps**2 * min_wavelength
+	N = len(freqT[0])
+	max_bound = ( max_wavelength/(min_wavelength*N**2) ) *N**2 * min_wavelength
+	dN = ( max(freqT[0]) - min(freqT[0]) / N )
 	
-	for j in range(len(freqT)):
-		fft_temp = np.fft.rfft(freqT[j])
-		f_temp = np.fft.rfftfreq(fft_temp, steps) * steps * 2.* np.pi
+	fft_temp = np.fft.rfft(freqT[0])
+	f_temp = np.fft.rfftfreq(len(freqT[0]), dN) * N * 2.* np.pi
 
-	period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]))
+	#period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]))
+	period_range = np.linspace(f_temp[1], max(f_temp), N/2)
 			    
 	for j in range(len(freqT)):
 		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
@@ -195,23 +190,24 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, min_wavelength, max_wavelength,
 		freq_new = np.fft.fftn(ArrayData[i])
 		freq[i] = freq_new
 
-	freqT = np.reshape(freq, freq.size, order='F').reshape(len(freq[0]),len(freq))
-	knum = np.zeros( ( len(freqT), len(freqT[0]) ) )
+	freqT = transpose(freq)
+	knum = np.zeros( ( len(freqT), len(freqT[0])/2 ) )
 	
 	#Temporary Array, to calculate the length of the period_range
-	knum_fft = np.zeros( ( len(freqT), len(freqT[0])) )
 		     
 		     
 	#calc best range
-	steps = len(freqT[0])
-	max_bound = ( max_wavelength/(min_wavelength*steps**2) ) *steps**2 * min_wavelength
+	N = len(freqT[0])
+	max_bound = ( max_wavelength/(min_wavelength*N**2) ) *N**2 * min_wavelength
+	dN = ( max(freqT[0]) - min(freqT[0]) / N )
 	
-	for j in range(len(freqT)):
-		fft_temp = np.fft.rfft(freqT[j])
-		f_temp = np.fft.rfftfreq(fft_temp, steps) * steps * 2.* np.pi
+	fft_temp = np.fft.rfft(freqT[0])
+	f_temp = np.fft.rfftfreq(len(freqT[0]), dN) * N * 2.* np.pi
 
-	period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]))
-			    
+	#period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]))
+	period_range = np.linspace(f_temp[1], max(f_temp), N/2)
+	period_range = period_range.astype('float')
+
 	for j in range(len(freqT)):
 		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
 		knum[j] = k_new
@@ -223,9 +219,9 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, min_wavelength, max_wavelength,
 	if maxk:
 		max_k = maxrow(fkspectra)
 		print("maximum wavenumber k is %f" % max_k)
-		dsfft = line_cut(fkspectra, max_k)
+		dsfft = line_set_zero(fkspectra, max_k)
 	else:
-		dsfft = line_cut(fkspectra, 0, radius)
+		dsfft = line_set_zero(fkspectra, 0, radius)
 	
 	return(fkspectra, period_range)
 
@@ -693,12 +689,19 @@ def transpose(array):
 	arrayt = np.reshape(array, array.size, order='F').reshape(len(array[0]),len(array))	
 	return(arrayt)
 
-
-
 def convert_lsindex(ls_range, steps):
 	n = len(ls_range)
 	fft_range = ls_range * n * steps
 	return(fft_range)
+
+def ls2ifft_prep(ls_periodogram):
+	"""
+	Converts a periodogram of the lombscargle function into an array, that can be used
+	to perform an IRFFT
+	"""
+	fft_prep = np.roll(ls_periodogram, 1)
+	fft_prep[0] = 0
+	return(fft_prep)
 
 """
 import fk_work
@@ -718,6 +721,7 @@ adt = fkw.transpose(ad)
 epid = fkw.epidist2nparray(fkw.epidist_stream(st, inv, cat))
 fkspectra, periods = fkw.fk_filter(st, ftype='LS', inv=inv, cat=cat, fktype="eliminate")
 fkfft = abs(np.fft.rfftn(ad))
+samplingrate = 0.025
 """
 
 """
