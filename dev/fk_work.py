@@ -331,7 +331,7 @@ def _fk_fft_filter_extract_phase(data, snes=False, y_dist=False, radius=None, ma
 	else:
 		ds = data
 	
-	dsfft = np.fft.fftn(ds)
+	dsfft = np.fft.rfftn(ds)
 	
 	if maxk:
 		max_k = maxrow(dsfft)
@@ -340,7 +340,7 @@ def _fk_fft_filter_extract_phase(data, snes=False, y_dist=False, radius=None, ma
 	else:
 		dsfft = line_cut(dsfft, 0,radius)
 	
-	ds = np.fft.ifftn(dsfft)
+	ds = np.fft.irfftn(dsfft)
 	if snes:
 		data_fk = shift_array(ds, -snes, y_dist)
 	else:
@@ -364,7 +364,7 @@ def _fk_fft_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None, 
 	else:
 		ds = data
 		
-	dsfft = np.fft.fftn(ds)
+	dsfft = np.fft.rfftn(ds)
 	
 	if maxk:
 		max_k = maxrow(dsfft)
@@ -373,7 +373,7 @@ def _fk_fft_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None, 
 	else:
 		dsfft = line_set_zero(dsfft, 0, radius)
 	
-	ds = np.fft.ifftn(dsfft)
+	ds = np.fft.irfftn(dsfft)
 	
 	if snes:
 		data_fk = shift_array(ds, -snes, y_dist)
@@ -853,10 +853,10 @@ nout = 100000
 x = np.linspace(0.01, 10*np.pi, nin)
 y = A * np.sin(w*x+phi)
 
-yfft = np.fft.fft(y)
+yfft = np.fft.rfft(y)
 yfft = yfft/max(yfft)
 
-f_fft = np.fft.fftfreq(y.size, max(x)/y.size) * 2. * np.pi
+f_fft = np.fft.rfftfreq(y.size, max(x)/y.size) * 2. * np.pi
 
 frange = np.linspace(0.01, 10, nin)
 yls = signal.lombscargle(x, y, frange)
