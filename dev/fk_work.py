@@ -131,14 +131,14 @@ def _fk_ls_filter_extract_phase_sp(ArrayData, min_wavelength, max_wavelength,
 	"""
 	
 	epidist=y_dist
-	freq = np.zeros((len(ArrayData), len(ArrayData[0]))) + 1j
+	freq = np.zeros((len(ArrayData), len(ArrayData[0]) / 2  + 1)) + 1j
 
 	for i in range(len(ArrayData)):
-		freq_new = np.fft.fftn(ArrayData[i])
+		freq_new = np.fft.rfftn(ArrayData[i])
 		freq[i] = freq_new
 
 	freqT = transpose(freq)
-	knum = np.zeros( ( len(freqT), len(freqT[0]) ) )
+	knum = np.zeros( ( len(freqT), len(freqT[0])/2 ) )
 	
 	#Temporary Array, to calculate the length of the period_range
 	knum_fft = np.zeros( ( len(freqT), len(freqT[0])) )
@@ -146,18 +146,18 @@ def _fk_ls_filter_extract_phase_sp(ArrayData, min_wavelength, max_wavelength,
 		     
 	#calc best range
 	N = len(freqT[0])
-	max_bound = ( max_wavelength/(min_wavelength*N**2) ) *N**2 * min_wavelength
+	#max_bound = ( max_wavelength/(min_wavelength*N**2) ) *N**2 * min_wavelength
 	dN = ( max(freqT[0]) - min(freqT[0]) / N )
 	
-	fft_temp = np.fft.rfft(freqT[0])
-	f_temp = np.fft.rfftfreq(len(freqT[0]), dN) * N * 2.* np.pi
+	f_temp = np.fft.rfftfreq(len(freqT[0]), dN) * 2.* np.pi
 
 	#period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]))
 	period_range = np.linspace(f_temp[1], max(f_temp), N/2)
-			    
+	period_range = period_range.astype('float')
+	
 	for j in range(len(freqT)):
 		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
-		knum[j] = k_new
+		knum[j] = ls2ifft_prep(k_new)
 			
 	#change dtype to integer, for further processing
 	period_range = period_range.astype('int')
@@ -184,38 +184,35 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, min_wavelength, max_wavelength,
 	type snes:	int
 	"""
 	epidist=y_dist
-	freq = np.zeros((len(ArrayData), len(ArrayData[0]))) + 1j
+	freq = np.zeros((len(ArrayData), len(ArrayData[0]) / 2  + 1)) + 1j
 
 	for i in range(len(ArrayData)):
-		freq_new = np.fft.fftn(ArrayData[i])
+		freq_new = np.fft.rfftn(ArrayData[i])
 		freq[i] = freq_new
 
 	freqT = transpose(freq)
-	knum = np.zeros( ( len(freqT), len(freqT[0])/2 ) )
-	
-	#Temporary Array, to calculate the length of the period_range
-		     
+	knum = np.zeros( ( len(freqT), len(freqT[0]) ) )
 		     
 	#calc best range
 	N = len(freqT[0])
-	max_bound = ( max_wavelength/(min_wavelength*N**2) ) *N**2 * min_wavelength
+	#max_bound = ( max_wavelength/(min_wavelength*N**2) ) *N**2 * min_wavelength
 	dN = ( max(freqT[0]) - min(freqT[0]) / N )
 	
-	fft_temp = np.fft.rfft(freqT[0])
-	f_temp = np.fft.rfftfreq(len(freqT[0]), dN) * N * 2.* np.pi
+	f_temp = np.fft.rfftfreq(len(freqT[0]), dN) * 2.* np.pi
 
 	#period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]))
-	period_range = np.linspace(f_temp[1], max(f_temp), N/2)
+	period_range = np.linspace(f_temp[1], max(f_temp), N)
 	period_range = period_range.astype('float')
-
+	
 	for j in range(len(freqT)):
 		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
 		knum[j] = k_new
+		#knum[j] = ls2ifft_prep(k_new)
+
 			
 	#change dtype to integer, for further processing
 	period_range = period_range.astype('int')
-	fkspectra = transpose(knum)
-	
+	fkspectra = knum
 	if maxk:
 		max_k = maxrow(fkspectra)
 		print("maximum wavenumber k is %f" % max_k)
@@ -223,7 +220,7 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, min_wavelength, max_wavelength,
 	else:
 		dsfft = line_set_zero(fkspectra, 0, radius)
 	
-	return(fkspectra, period_range)
+	return(transpose(fkspectra), period_range)
 
 
 
@@ -433,6 +430,43 @@ def plot_fft(x, logscale=False, fftshift=False, scaling=1):
 
 	plt.colorbar()
 	plt.show()
+	
+def plot_fft_subplot(x, logscale=False, fftshift=False, scaling=1):
+	"""
+	Doing an fk-trafo and plotting it.
+
+	param x:	Data of the array
+	type x:		np.array
+
+	param logscale:	Sets scaling of the plot to logarithmic
+	type logscale:	boolean
+
+	param fftshift: Ir True shifts zero values of f and k into the center of the plot
+	type fftshift:	boolean
+
+	param scaling:	Sets the scaling of the plot in terms of aspectratio y/x
+	type scaling:	int
+	"""
+	
+#	if not type(x) == np.array or numpy.ndarray:
+#		fftx = stream2array(x)	
+#	else:
+	fftx = x
+
+	if fftshift:
+		plt.imshow((np.abs(x)), origin='lower',cmap=None, aspect=scaling)
+		if logscale:
+			plt.imshow(np.log(np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
+		else:
+			plt.imshow((np.abs(np.fft.fftshift(fftx))), origin='lower',cmap=None, aspect=scaling)
+	if not fftshift:
+		if logscale:
+			plt.imshow(np.log(np.abs(fftx)), origin='lower',cmap=None, aspect=scaling)
+		else:
+			plt.imshow((np.abs(fftx)), origin='lower',cmap=None, aspect=scaling)
+
+	plt.colorbar()
+
 
 def plot_data_im(x, color='Greys', scaling=30):
 	plt.imshow(x, origin='lower', cmap=color, interpolation='nearest', aspect=scaling)
@@ -476,27 +510,13 @@ def plot_data(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
 			plt.plot(zoom*data[i]+ y_dist[i])
 	plt.show()
 
-def plot_data_sets(st1, st2, zoom=1, y_dist1=1, y_dist2=1):
-	"""
-	Alpha Version!
-	"""
-	data1 = st1
-	data2 = st2
-
-	plt.subplot(2,1,1)
-	for i in range(len(data1)):
-		if type(y_dist1) == int:
-			plt.plot(zoom*data1[i]+ y_dist1*i)
-		if type(y_dist1) == list or type(y_dist2) == numpy.ndarray:
-			plt.plot(zoom*data1[i]+ y_dist1[i])
 	
+def multplot(data1, data2, Log, scale1, scale2):
+	
+	plt.subplot(2,1,1)
+	plot_fft_subplot(data1, logscale=Log, scaling=scale1)
 	plt.subplot(2,1,2)
-	for i in range(len(data2)):
-		if type(y_dist2) == int:
-			plt.plot(zoom*data2[i]+ y_dist2*i)
-		if type(y_dist2) == list or type(y_dist2) == numpy.ndarray:
-			plt.plot(zoom*data2[i]+ y_dist2[i])
-			
+	plot_fft_subplot(data2, logscale=Log, scaling=scale2)
 	plt.show()
 
 def stream2array(stream, normalize=False):
@@ -686,12 +706,13 @@ def extract_nonzero(array):
 	return(newarray, newindex)
 
 def transpose(array):
-	arrayt = np.reshape(array, array.size, order='F').reshape(len(array[0]),len(array))	
+	arrayt = np.reshape(array, array.size, order='F').reshape(len(array[0]),len(array))
+	arrayt = arrayt.astype('float')
 	return(arrayt)
 
-def convert_lsindex(ls_range, steps):
+def convert_lsindex(ls_range, samplespacing):
 	n = len(ls_range)
-	fft_range = ls_range * n * steps
+	fft_range = ls_range * n * samplespacing
 	return(fft_range)
 
 def ls2ifft_prep(ls_periodogram):
@@ -700,7 +721,7 @@ def ls2ifft_prep(ls_periodogram):
 	to perform an IRFFT
 	"""
 	fft_prep = np.roll(ls_periodogram, 1)
-	fft_prep[0] = 0
+	fft_prep[0] = 0.001
 	return(fft_prep)
 
 """
@@ -725,50 +746,46 @@ samplingrate = 0.025
 """
 
 """
-testplot
-plt.subplot(2,1,1)
-plt.imshow(np.log(np.fft.fftshift(fkfft)), origin='lower', cmap=None, aspect=3000)
-plt.subplot(2,1,2)
-plt.imshow(np.log(np.fft.fftshift(fkspectra)), origin='lower', cmap=None, aspect=3000)
+Example data flow 20.01.2016
+trace = ad[0]
+xrange = np.linspace(0, trace.size*0.025, trace.size)
+
+
+
+
+tracefft = np.fft.rfft(trace)
+freq = np.fft.rfftfreq(trace.size, samplingrate)
+freq = freq * 2. * np.pi
+
+
+frange_new = np.linspace(freq[1], max(freq), trace.size/2 + 1)
+epidist = np.linspace(0, trace.size, trace.size) * 0.025
+tracels_new = signal.lombscargle(epidist, trace.astype('float'), frange_new)
+
+
+tracels = fkw.ls2ifft_prep(tracels_new)
+fls = fkw.convert_lsindex(frange_new, 0.025)
+
+
+
+plt.plot(freq, abs((tracefft/max(tracefft)).real))
+plt.plot(frange_new,tracels_new/max(tracels_new))
+plt.plot(fls, tracels_new/max(tracels_new))
+plt.plot(abs((tracefft/max(tracefft)).real))
 plt.show()
 
 
+
+plt.plot(tracels/max(tracels))
+plt.plot(abs((tracefft/max(tracefft)).real))
+plt.show()
+
+plt.plot(np.fft.irfft(tracels))
+plt.show()
+
+
+
 """
-
-
-"""
-testsignal for FFT and LS
-import datetime
-
-A = 2.
-w = 1.
-phi = 0.5 * np.pi
-nin = 1000
-nout = 100000
-frac_points = 0.9 # Fraction of points to select
-
-r = np.random.rand(nin)
-x = np.linspace(0.01, 10*np.pi, nin)
-x = x[r >= frac_points]
-normval = x.shape[0] # For normalization of the periodogram
-y = A * np.sin(w*x+phi)
-f = np.linspace(0.01, 10, nout)
-def test(x,y,f):
-	t1=datetime.datetime.now()
-	pgram = signal.lombscargle(x, y, f)
-	t2=datetime.datetime.now()
-	print(t2-t1)
-	return(pgram)
-
-def testfft(x):
-	t1=datetime.datetime.now()
-	xfft = np.fft.fftn(x)
-	t2=datetime.datetime.now()
-	print(t2-t1)
-	return(xfft)
-"""
-
-
 
 """
 Test Sinus
@@ -792,14 +809,15 @@ f_fft = np.fft.rfftfreq(y.size, steps) * 2. * np.pi
 frange = np.linspace(f_fft[1], max(f_fft), nin/2)
 yls = signal.lombscargle(x, y, frange)
 yls = yls/max(yls)
-
-frange_inv = fkw.convert_lsindex(frange, steps)
+yls2ifft = fkw.ls2ifft_prep(yls)
 
 
 
 """
 
-
+"""
+Example data flow
+"""
 
 #fk_filter(stream, inventory, catalog, phase)
 #data=create_signal(no_of_traces=1,len_of_traces=12,multiple=False)
