@@ -715,13 +715,18 @@ def convert_lsindex(ls_range, samplespacing):
 	fft_range = ls_range * n * samplespacing
 	return(fft_range)
 
-def ls2ifft_prep(ls_periodogram):
+def ls2ifft_prep(ls_periodogram, data):
 	"""
 	Converts a periodogram of the lombscargle function into an array, that can be used
 	to perform an IRFFT
 	"""
 	fft_prep = np.roll(ls_periodogram, 1)
-	fft_prep[0] = 0.001
+	N = data[0].size
+	a = 0
+	for i in range(N):
+		a = a + data[0][i]
+	a = a/N
+	fft_prep[0] = a
 	return(fft_prep)
 
 """
@@ -743,10 +748,8 @@ epid = fkw.epidist2nparray(fkw.epidist_stream(st, inv, cat))
 fkspectra, periods = fkw.fk_filter(st, ftype='LS', inv=inv, cat=cat, fktype="eliminate")
 fkfft = abs(np.fft.rfftn(ad))
 samplingrate = 0.025
-"""
 
-"""
-Example data flow 20.01.2016
+#Example data flow 20.01.2016
 trace = ad[0]
 xrange = np.linspace(0, trace.size*0.025, trace.size)
 
@@ -763,7 +766,7 @@ epidist = np.linspace(0, trace.size, trace.size) * 0.025
 tracels_new = signal.lombscargle(epidist, trace.astype('float'), frange_new)
 
 
-tracels = fkw.ls2ifft_prep(tracels_new)
+tracels = fkw.ls2ifft_prep(tracels_new, ad)
 fls = fkw.convert_lsindex(frange_new, 0.025)
 
 
