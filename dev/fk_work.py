@@ -9,8 +9,7 @@ import datetime
 import scipy as sp
 import scipy.signal as signal
 
-def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=False,
-	      min_wavelength=10 , max_wavelength=2500):
+def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=False):
 	"""
 	At this point prework with programs like seismic handler or SAC is needed to perform correctly
 
@@ -66,11 +65,9 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 			epidist = epi_dist
 
 		if fktype == "eliminate":
-			array_filtered, periods = _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=epidist, 
-								min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+			array_filtered, periods = _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=epidist)
 		elif fktype == "extract":
-			array_filtered, periods = _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=epidist, 
-								min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+			array_filtered, periods = _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=epidist)
 		else:
 			print("No type of fk-filter specified")
 			raise TypeError		
@@ -118,8 +115,7 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	"""
 	
 # LS FUNCTIONS ############################################################################
-def _fk_ls_filter_extract_phase_sp(ArrayData, min_wavelength, max_wavelength,  
-				   y_dist=False, radius=None, maxk=False):
+def _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=False, radius=None, maxk=False):
 	"""
 	Only use with the function fk_filter!
 	FK-filter using the Lomb-Scargle Periodogram with the scipy library
@@ -172,8 +168,7 @@ def _fk_ls_filter_extract_phase_sp(ArrayData, min_wavelength, max_wavelength,
 	
 	return(fkspectra, period_range)
 
-def _fk_ls_filter_eliminate_phase_sp(ArrayData, min_wavelength, max_wavelength,  
-				   y_dist=False, radius=None, maxk=False):
+def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=False):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
