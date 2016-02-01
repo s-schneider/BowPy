@@ -103,7 +103,7 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 
 		for i in range(len(stream_filtered)):
 			stream_filtered[i].meta = st[i].meta
-	
+
 		tend=datetime.datetime.now()
 		print(tend-tstart)
 		return(stream_filtered)
@@ -127,48 +127,7 @@ def _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=False, radius=None, maxk=Fa
 	param snes:	slownessvalue of the desired extracted phase
 	type snes:	int
 	"""
-	
-	epidist=y_dist
-	freq = np.zeros((len(ArrayData), len(ArrayData[0]) / 2  + 1)) + 1j
-
-	for i in range(len(ArrayData)):
-		freq_new = np.fft.rfftn(ArrayData[i])
-		freq[i] = freq_new
-
-	freqT = transpose(freq)
-	knum = np.zeros( ( len(freqT), len(freqT[0])/2 ) )
-	
-	#Temporary Array, to calculate the length of the period_range
-	knum_fft = np.zeros( ( len(freqT), len(freqT[0])) )
-		     
-		     
-	#calc best range
-	N = len(freqT[0])
-	#max_bound = ( max_wavelength/(min_wavelength*N**2) ) *N**2 * min_wavelength
-	dN = ( max(freqT[0]) - min(freqT[0]) / N )
-	
-	f_temp = np.fft.rfftfreq(len(freqT[0]), dN) * 2.* np.pi
-
-	#period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]))
-	period_range = np.linspace(f_temp[1], max(f_temp), N/2)
-	period_range = period_range.astype('float')
-	
-	for j in range(len(freqT)):
-		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
-		knum[j] = ls2ifft_prep(k_new)
-			
-	#change dtype to integer, for further processing
-	period_range = period_range.astype('int')
-	fkspectra = transpose(knum)
-	
-	if maxk:
-		max_k = maxrow(fkspectra)
-		print("maximum wavenumber k is %f" % max_k)
-		dsfft = line_cut(fkspectra, max_k)
-	else:
-		dsfft = line_cut(fkspectra, 0, radius)
-	
-	return(fkspectra, period_range)
+	return()
 
 def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=False):
 	"""
@@ -238,7 +197,7 @@ def _fk_fft_filter_extract_phase(data, snes=False, y_dist=False, radius=None, ma
 	else:
 		ds = data
 	
-	dsfft = np.fft.rfftn(ds)
+	dsfft = np.fft.fftn(ds)
 	
 	if maxk:
 		max_k = maxrow(dsfft)
@@ -247,7 +206,7 @@ def _fk_fft_filter_extract_phase(data, snes=False, y_dist=False, radius=None, ma
 	else:
 		dsfft = line_cut(dsfft, 0,radius)
 	
-	ds = np.fft.irfftn(dsfft)
+	ds = np.fft.ifftn(dsfft)
 	if snes:
 		data_fk = shift_array(ds, -snes, y_dist)
 	else:
@@ -265,13 +224,12 @@ def _fk_fft_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None, 
 	param snes:	slownessvalue of the desired extracted phase
 	type snes:	int
 	"""
-
 	if snes:
 		ds = shift_array(data, snes, y_dist)
 	else:
 		ds = data
 		
-	dsfft = np.fft.rfftn(ds)
+	dsfft = np.fft.fftn(ds)
 	
 	if maxk:
 		max_k = maxrow(dsfft)
@@ -280,8 +238,7 @@ def _fk_fft_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None, 
 	else:
 		dsfft = line_set_zero(dsfft, 0, radius)
 	
-	ds = np.fft.irfftn(dsfft)
-	
+	ds = np.fft.ifftn(dsfft)
 	if snes:
 		data_fk = shift_array(ds, -snes, y_dist)
 	else:
@@ -502,9 +459,9 @@ def plot_data(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
 
 	for i in range(len(data)):
 		if type(y_dist) == int:
-			plt.plot(zoom*data[i]+ y_dist*i)
+			plt.plot(zoom*data[i]+ y_dist*i, color='black')
 		if type(y_dist) == list or type(y_dist) == numpy.ndarray:
-			plt.plot(zoom*data[i]+ y_dist[i])
+			plt.plot(zoom*data[i]+ y_dist[i], color='black')
 	plt.show()
 
 	
@@ -734,6 +691,11 @@ import matplotlib as mpl
 import numpy as np
 import scipy as sp
 import scipy.signal as signal
+import obspy
+from numpy import genfromtxt
+import fk_work as fkw
+from fk_work import fk_filter
+import os
 
 stream="../data/WORK_D.MSEED"
 inventory="../data/2011-03-11T05:46:23.MSEED_inv.xml"
@@ -743,7 +705,7 @@ ad = fkw.stream2array(st)
 adt = fkw.transpose(ad)
 epid = fkw.epidist2nparray(fkw.epidist_stream(st, inv, cat))
 fkspectra, periods = fkw.fk_filter(st, ftype='LS', inv=inv, cat=cat, fktype="eliminate")
-fkfft = abs(np.fft.rfftn(ad))
+fkfft = abs(np.fft.fftn(ad))
 samplingrate = 0.025
 
 #Example data flow 20.01.2016
@@ -821,7 +783,7 @@ Example data flow
 
 #fk_filter(stream, inventory, catalog, phase)
 #data=create_signal(no_of_traces=1,len_of_traces=12,multiple=False)
-#data=create_sine(no_of_traces=1, no_of_periods=2)
+#datatest=fkw.create_sine(no_of_traces=1, no_of_periods=2)
 
 
 
