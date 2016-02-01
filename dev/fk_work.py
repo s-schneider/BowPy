@@ -156,14 +156,22 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=
 	
 	f_temp = np.fft.rfftfreq(len(freqT[0]), dN) * 2.* np.pi
 
+	#1. try: 
 	#period_range = np.linspace(min_wavelength, max_bound, len(freqT[0]))
-	period_range = np.linspace(f_temp[1], max(f_temp), N)
+	#2. try: 
+	#period_range = np.linspace(f_temp[1], max(f_temp), N)
+	#3. try:
+	period_range = f_temp
+	#period_range = period_range.astype('float')
+	period_range[0] = 1.
+	#after this change the first outputparameter of the periodogram to a 
+	#correlation between the signal and a e^0 function ;)
 	period_range = period_range.astype('float')
 	
 	for j in range(len(freqT)):
 		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
+		k_new = ls2ifft_prep(k_new, abs(freqT[j]))
 		knum[j] = k_new
-		#knum[j] = ls2ifft_prep(k_new)
 
 			
 	#change dtype to integer, for further processing
