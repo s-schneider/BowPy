@@ -56,6 +56,7 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	"""
 	# 2D FFT-LS #####################################################################
 	if ftype == "LS":
+		print("using LS")
 		tstart=datetime.datetime.now()
 		ArrayData = stream2array(st)
 		if st and inv and cat:
@@ -83,6 +84,7 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	#2D FFT #########################################################################
 	
 	elif ftype == "FFT":
+		print("using FFT")
 		tstart=datetime.datetime.now()
 		#Convert to numpy.ndarray, stream info still in st
 		ArrayData = stream2array(st, normalize)
@@ -97,7 +99,7 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 			raise TypeError
 
 		#Convert to Stream object
-		stream_filtered = array2stream(ArrayData_filtered)
+		stream_filtered = array2stream(array_filtered)
 
 		for i in range(len(stream_filtered)):
 			stream_filtered[i].meta = st[i].meta
