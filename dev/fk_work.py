@@ -147,7 +147,7 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=
 		freq[i] = freq_new
 
 	freqT = transpose(freq)
-	knum = np.zeros( ( len(freqT), len(freqT[0]) ) )
+	knum = np.zeros( ( len(freqT), len(freqT[0])  /2 +1 ))
 		     
 	#calc best range
 	N = len(freqT[0])
@@ -683,10 +683,10 @@ def ls2ifft_prep(ls_periodogram, data):
 	to perform an IRFFT
 	"""
 	fft_prep = np.roll(ls_periodogram, 1)
-	N = data[0].size
+	N = data.size
 	a = 0
 	for i in range(N):
-		a = a + data[0][i]
+		a = a + data[i]
 	a = a/N
 	fft_prep[0] = a
 	return(fft_prep)
