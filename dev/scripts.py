@@ -1,4 +1,13 @@
-"""
+import obspy
+import numpy
+import numpy as np
+import matplotlib.pyplot as plt
+import Muenster_Array_Seismology as MAS
+from Muenster_Array_Seismology import get_coords
+from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees
+import datetime
+import scipy as sp
+import scipy.signal as signal
 import fk_work
 import fk_work as fkw
 import matplotlib.pyplot as plt
@@ -62,9 +71,6 @@ plt.show()
 
 
 
-"""
-
-"""
 Test Sinus
 A = 2.
 w = 1.
@@ -121,11 +127,34 @@ m_tp =3.177e24 / 1E7,
 origin_time=obspy.UTCDateTime(2016,2,9,18,41,1)
 )
 
+x = []
 for i in range(20):
-    lon = str(i*0.1)
-    name="x"+lon
-    x.append(ins.Receiver(latitude="0", longitude=lon, network="LA", station=lon ))
-    print(lon)
+    lon = str(i*0.1 + 100)
+    name="X"+str(i)
+    x.append(ins.Receiver(latitude="0", longitude=lon, network="LA", station=name ))
+
+st_synth = []    
 for i in range(20):
-    st.append(db.get_seismograms(source=source, receiver=x[i]))
-"""
+    st_synth.append(db.get_seismograms(source=source, receiver=x[i]))
+
+
+stream=st_synth[0]
+for i in range(len(st_synth))[1:]:
+    stream.append(st_synth[i].select(component="Z")[0])
+
+
+
+#echo "PS41    lat:     0.0 lon:     $i elevation:   0.0000 array:LA  xrel:      $latdiff yrel:      0.00 name:ADDED BY SIMON" > TEST.QST
+
+with open("SYNTH.QST", "w") as fh:
+	for i in range(20):
+		lon=i*0.1 + 100
+		latdiff = gps2DistAzimuth(10,0,10,lon)[0]/1000.
+		#print "X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON" % (i, lon, latdiff)
+		fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, lon, latdiff))
+
+
+
+
+
+
