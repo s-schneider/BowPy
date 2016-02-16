@@ -112,7 +112,7 @@ yls2ifft = fkw.ls2ifft_prep(yls)
 ##################INSTASEIS###############################
 
 """
-get data with instaseis
+#get data with instaseis
 
 import instaseis as ins
 import obspy
@@ -124,7 +124,7 @@ tofe = obspy.UTCDateTime(2016,2,9,18,41,1)
 lat = 0.0
 lon = 0.0
 depth = 100000
-
+stationstep = 0.5
 source = ins.Source(
 latitude=lat, longitude=lon, depth_in_m=depth,
 m_rr = 3.71e23 / 1E7,
@@ -137,7 +137,7 @@ origin_time=tofe
 
 x = []
 for i in range(20):
-    lon = str(i*0.1 + 100)
+    lon = str(i*stationstep + 100)
     name="X"+str(i)
     x.append(ins.Receiver(latitude="0", longitude=lon, network="LA", station=name ))
 
@@ -220,7 +220,7 @@ with open("synth_inv.xml", "w") as fh:
 	fh.write("    <SelectedNumberStations>20</SelectedNumberStations>\n")
 
 	for i in range(len(stream)):
-		lon=i*0.1 + 100
+		lon=i*stationstep + 100
 		lat=0.0
 		fh.write("    <Station code=\"X%s\" endDate=\"2011-11-17T23:59:59+00:00\" restrictedStatus=\"open\" startDate=\"2010-01-08T00:00:00+00:00\">\n" % i)
 		fh.write("      <Latitude unit=\"DEGREES\">%f</Latitude>\n" % lat)
@@ -236,10 +236,10 @@ with open("synth_inv.xml", "w") as fh:
 
 
 #create Q station-file
-with open("SYNTH.QST", "w") as fh:
+with open("SYNTH05.QST", "w") as fh:
 	for i in range(20):
-		lon=i*0.1 + 100
-		latdiff = gps2DistAzimuth(10,0,10,lon)[0]/1000.
+		lon=i*stationstep + 100
+		latdiff = gps2DistAzimuth(0.1,0,0.1,lon)[0]/1000.
 		#print "X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON" % (i, lon, latdiff)
 		fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, lon, latdiff))
 
@@ -257,7 +257,7 @@ epidist = []
 arrivaltime = []
 
 for i in range(len(stream)):
-	elat =  latitude
+	elat = latitude
 	elon = longitude
 	slat =  inv[0][i].latitude
 	slon =  inv[0][i].longitude
