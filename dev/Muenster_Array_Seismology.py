@@ -5,7 +5,7 @@ import numpy as np
 import os
 import shutil
 import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap
+#from mpl_toolkits.basemap import Basemap
 from matplotlib.ticker import MaxNLocator
 from obspy import UTCDateTime, Stream
 from obspy.core import AttribDict
@@ -305,7 +305,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
         stream.filter('bandpass', freqmin=frqlow, freqmax=frqhigh,
                       zerophase=True)
 
-    print stream
+    print(stream)
     spl = stream.copy()
 
     tmpdir = tempfile.mkdtemp(prefix="obspy-")
@@ -344,7 +344,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
             # here we do the array processing
             start = UTCDateTime()
             out = array_processing(stream, **kwargs)
-            print "Total time in routine: %f\n" % (UTCDateTime() - start)
+            print("Total time in routine: %f\n") % (UTCDateTime() - start)
 
             # make output human readable, adjust backazimuth to values
             # between 0 and 360
@@ -368,7 +368,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
             # here we do the array processing
             start = UTCDateTime()
             out = beamforming(stream, **kwargs)
-            print "Total time in routine: %f\n" % (UTCDateTime() - start)
+            print("Total time in routine: %f\n") % (UTCDateTime() - start)
 
             # make output human readable, adjust backazimuth to values
             # between 0 and 360
@@ -428,7 +428,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                 en = endtime
             else:
                 en = st + wlen
-            print UTCDateTime(t[i])
+            print(UTCDateTime(t[i]))
             # add polar and colorbar axes
             fig = plt.figure(figsize=(12, 12))
             ax1 = fig.add_axes([0.1, 0.87, 0.7, 0.10])
@@ -551,7 +551,7 @@ def get_spoint(stream, stime, etime):
         raise ValueError(msg)
     if (eearliest - etime) < -stream[0].stats.delta/2.:
         msg = "Specified end-time bigger is than endtime in stream"
-        print eearliest, etime
+        print(eearliest, etime)
         raise ValueError(msg)
     for i in xrange(nostat):
         offset = int(((stime - slatest) / stream[i].stats.delta + 1.))
@@ -711,8 +711,8 @@ def beamforming(stream, sll_x, slm_x, sll_y, slm_y, sl_s, frqlow, frqhigh,
         nsamp = int(win_len * fs)
 
     if nsamp <= 0:
-        print 'Data window too small for slowness grid'
-        print 'Must exit'
+        print('Data window too small for slowness grid')
+        print('Must exit')
         quit()
 
     nstep = int(nsamp * win_frac)
@@ -827,7 +827,7 @@ def beamforming(stream, sll_x, slm_x, sll_y, slm_y, sl_s, frqlow, frqhigh,
         if store is not None:
             store(abspow_map, beam_max, count)
         count += 1
-        print count
+        print(count)
         # here we compute baz, slow
         slow_x = sll_x + ix * sl_s
         slow_y = sll_y + iy * sl_s
@@ -1125,7 +1125,7 @@ def array_processing(stream, win_len, win_frac, sll_x, slm_x, sll_y, slm_y,
     fs = stream[0].stats.sampling_rate
     if win_len < 0.:
         nsamp = int((etime - stime)*fs)
-        print nsamp
+        print(nsamp)
         nstep = 1
     else:
         nsamp = int(win_len * fs)
@@ -1516,7 +1516,7 @@ def vespagram(stream, ev, inv, method, frqlow, frqhigh, baz, scale, nthroot=4,
     sz.trim(stt, e)
     sz.detrend('simple')
 
-    print sz
+    print(sz)
     fl, fh = frqlow, frqhigh
     if filter:
         sz.filter('bandpass', freqmin=fl, freqmax=fh, zerophase=True)
@@ -1567,12 +1567,12 @@ def vespagram(stream, ev, inv, method, frqlow, frqhigh, baz, scale, nthroot=4,
 
     start = UTCDateTime()
     slow, beams, max_beam, beam_max = vespagram_baz(sz, **kwargs)
-    print "Total time in routine: %f\n" % (UTCDateTime() - start)
+    print("Total time in routine: %f\n") % (UTCDateTime() - start)
 
     df = sz[0].stats.sampling_rate
     # Plot the seismograms
     npts = len(beams[0])
-    print npts
+    print(npts)
     T = np.arange(0, npts/df, 1/df)
     sll *= KM_PER_DEG
     slm *= KM_PER_DEG

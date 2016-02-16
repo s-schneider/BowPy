@@ -96,8 +96,7 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 			array_filtered = _fk_fft_filter_extract_phase(ArrayData, radius=None)
 		else:
 			print("No type of fk-filter specified")
-			raise TypeError
-
+			raise TypeErr
 		#Convert to Stream object
 		stream_filtered = array2stream(array_filtered)
 
@@ -267,7 +266,7 @@ def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
     for i in range(signal_len):
         data_temp[0][i] = np.sin(i*deltax)
         t.append((float(i) + float(i)/signal_len)*2*np.pi/signal_len)
-	data = data_temp
+        data = data_temp
 	
     # other traces
     for i in range(no_of_traces)[1:]:
@@ -336,7 +335,7 @@ def standard_test_signal(snes1=1, snes2=3, noise=0, nonequi=False):
         						non_equi=nonequi)
         a = x + y
         y_index = np.sort(np.unique(np.append(yindices, xindices)))
-	return(a, y_index)
+        return(a, y_index)
 
 def shift_array(array, shift_value=0, y_dist=False):
 	array_shift = array
