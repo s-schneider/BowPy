@@ -1,3 +1,0 @@
-<FDSNStationXML schemaVersion="1.0" xmlns="http://www.fdsn.org/xml/station/1">
-	<Source>IRIS-DMC</Source>
-		<Sender>IRIS-DMC</Sender>
