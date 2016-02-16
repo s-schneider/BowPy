@@ -2,7 +2,7 @@ import obspy
 import numpy
 import numpy as np
 import matplotlib.pyplot as plt
-import Muenster_Array_Seismology as MAS
+import Muenster_Array_Seismology_Vespagram as MAS
 from Muenster_Array_Seismology import get_coords
 from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees
 import datetime
@@ -433,10 +433,48 @@ def plot_data_im(x, color='Greys', scaling=30):
 	plt.imshow(x, origin='lower', cmap=color, interpolation='nearest', aspect=scaling)
 	plt.show()
 
-def plot_data(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
+def plot_data_orig(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
 	"""
 	Alpha Version!
 	Time axis has no time-ticks
+	
+	Needs inventory and catalog for yinfo using
+
+	param st: 	array of data or stream
+	type st:	np.array obspy.core.stream.Stream
+
+	param zoom: zoom factor of the traces
+	type zoom:	float
+
+	param y_dist:	separating distance between traces, for example equidistant with "1" 
+					or import epidist-list via epidist
+	type y_dist:	int or list
+	"""
+	if type(st) == obspy.core.stream.Stream:
+		data = stream2array(st, normalize=True)
+	else:
+		data = st
+
+	if yinfo:
+		if inv and cat:
+			#Calculates y-axis info using epidistance information of the stream
+			epidist = epidist_stream(st, inv, cat) 
+			y_dist = epidist2list(epidist)
+		else:
+			print("no inventory and catalog given")
+			raise ValueError
+
+	for i in range(len(data)):
+		if type(y_dist) == int:
+			plt.plot(zoom*data[i]+ y_dist*i, color='black')
+		if type(y_dist) == list or type(y_dist) == numpy.ndarray:
+			plt.plot(zoom*data[i]+ y_dist[i], color='black')
+	plt.show()
+
+def plot_data(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
+	"""
+	Alpha Version!
+	Time axis has no time-ticks --> Working on right now
 	
 	Needs inventory and catalog for yinfo using
 
