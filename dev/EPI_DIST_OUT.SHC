@@ -3,6 +3,8 @@
 !
 ! alternated version of Simon Schneider, writes epidistances out to file
 
+default 1 0.   epicentre latitude
+default 2 0.   epicentre longitude
 
 sdef dist      ! distance
 sdef azim      ! azimuth
@@ -13,12 +15,16 @@ sdef slon      ! station longitude
 loop_start:
    if  "cnt gti $dsptrcs  goto/forward loop_exit:
    call statloc ^station("cnt) &slat &slon
-   call locdiff "slat "slon ^lat(1) ^lon(1) &dist &azim
+   call locdiff "slat "slon #1 #2 &dist &azim
+   set/file "cnt distance "dist
+   set/file "cnt azimuth "azim
+   set/file "cnt lat #1
+   set/file "cnt lon #2
    calc/fmt=<%4.2@f> r &dist = "dist
+   echo set station ^station("cnt) distance "dist deg, azimuth "azim deg
    echo_epi "dist ^station("cnt)
    calc i &cnt = "cnt + 1
 goto loop_start:
 loop_exit:
-
 
 return

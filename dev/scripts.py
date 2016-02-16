@@ -117,7 +117,7 @@ yls2ifft = fkw.ls2ifft_prep(yls)
 import instaseis as ins
 import obspy
 
-
+uniform=False
 db = ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
 
 tofe = obspy.UTCDateTime(2016,2,9,18,41,1)
@@ -136,13 +136,27 @@ origin_time=tofe
 )
 
 x = []
-for i in range(20):
-    lon = str(i*stationstep + 100)
-    name="X"+str(i)
-    x.append(ins.Receiver(latitude="0", longitude=lon, network="LA", station=name ))
+
+with open("SYNTH05.QST", "w") as fh:
+	if uniform:
+		for i in range(20):
+			lon = str(i*stationstep + 100)
+			name="X"+str(i)
+			x.append(ins.Receiver(latitude="0", longitude=lon, network="LA", station=name ))
+			latdiff = gps2DistAzimuth(0.1,0,0.1,lon)[0]/1000.
+			fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, lon, latdiff))	
+	else:
+		range = np.random.rand(20)*10 +100
+		i = 0
+		for lon in range:
+			name="X"+str(lon).split(".")[0] + str(lon).split(".")[1][0]
+			x.append(ins.Receiver(latitude="0", longitude=lon, network="LA", station=name ))
+			latdiff = gps2DistAzimuth(0.1,0,0.1,lon)[0]/1000.
+			fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, lon, latdiff))		
+			i+=1
 
 st_synth = []    
-for i in range(20):
+for i in range(len(x)):
     st_synth.append(db.get_seismograms(source=source, receiver=x[i]))
 
 
