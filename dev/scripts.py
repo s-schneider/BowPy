@@ -172,6 +172,10 @@ with open("SYNTH05.QST", "w") as fh:
 		randrange = np.random.rand(20)*10. +100.
 		randrange[0] = 100.
 		randrange[19] = 19. * stationstep + 100.
+		while randrange.max() > randrage[19]:
+			i = randrange.argmax()
+			randrange[i] = randrange[i]-0.1
+		randrange.sort()
 		for lon in randrange:
 			name="X"+str(i)
 			x.append(ins.Receiver(latitude="0", longitude=lon, network="LA", station=name ))
