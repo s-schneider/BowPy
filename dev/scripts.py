@@ -113,7 +113,30 @@ yls2ifft = fkw.ls2ifft_prep(yls)
 
 """
 #get data with instaseis
+import obspy
+from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees, locations2degrees
+from obspy import read as read_st
+from obspy import read_inventory as read_inv
+from obspy import readEvents as read_cat
+from obspy.taup import TauPyModel
 
+import numpy
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import scipy as sp
+import scipy.signal as signal
+from numpy import genfromtxt
+
+import Muenster_Array_Seismology_Vespagram as MAS
+from Muenster_Array_Seismology import get_coords
+
+import os
+import datetime
+
+import fk_work
+import fk_work as fkw
+from fk_work import fk_filter
 import instaseis as ins
 import obspy
 
@@ -146,15 +169,14 @@ with open("SYNTH05.QST", "w") as fh:
 			latdiff = gps2DistAzimuth(0.1,0,0.1,lon)[0]/1000.
 			fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, lon, latdiff))	
 	else:
-		range = np.random.rand(20)*10 +100
-		i = 0
-		for lon in range:
-			name="X"+str(lon).split(".")[0] + str(lon).split(".")[1][0]
+		i=0
+		randrange = np.random.rand(20)*10 +100
+		for lon in randrange:
+			name="X"+str(i)
 			x.append(ins.Receiver(latitude="0", longitude=lon, network="LA", station=name ))
 			latdiff = gps2DistAzimuth(0.1,0,0.1,lon)[0]/1000.
-			fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, lon, latdiff))		
+			fh.write("%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, lon, latdiff))		
 			i+=1
-
 st_synth = []    
 for i in range(len(x)):
     st_synth.append(db.get_seismograms(source=source, receiver=x[i]))
