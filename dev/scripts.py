@@ -170,7 +170,9 @@ with open("SYNTH05.QST", "w") as fh:
 			fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, lon, latdiff))	
 	else:
 		i=0
-		randrange = np.random.rand(20)*10 +100
+		randrange = np.random.rand(20)*10. +100.
+		randrange[0] = 100.
+		randrange[19] = 19. * stationstep + 100.
 		for lon in randrange:
 			name="X"+str(i)
 			x.append(ins.Receiver(latitude="0", longitude=lon, network="LA", station=name ))
