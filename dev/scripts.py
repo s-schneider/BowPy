@@ -138,9 +138,8 @@ import fk_work
 import fk_work as fkw
 from fk_work import fk_filter
 import instaseis as ins
-import obspy
 
-uniform=False
+uniform=True
 db = ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
 
 tofe = obspy.UTCDateTime(2016,2,9,18,41,1)
@@ -163,9 +162,9 @@ x = []
 with open("SYNTH05.QST", "w") as fh:
 	if uniform:
 		for i in range(20):
-			lon = str(i*stationstep + 100)
+			lon = i*stationstep + 100
 			name="X"+str(i)
-			x.append(ins.Receiver(latitude="0", longitude=lon, network="LA", station=name ))
+			x.append(ins.Receiver(latitude="0", longitude=str(lon), network="LA", station=name ))
 			latdiff = gps2DistAzimuth(0.1,0,0.1,lon)[0]/1000.
 			fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, lon, latdiff))	
 	else:
