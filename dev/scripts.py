@@ -139,7 +139,7 @@ import fk_work as fkw
 from fk_work import fk_filter
 import instaseis as ins
 
-uniform=False
+uniform=True
 db = ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
 
 tofe = obspy.UTCDateTime(2016,2,9,18,41,1)
@@ -147,6 +147,10 @@ lat = 0.0
 lon = 0.0
 depth = 100000
 stationstep = 0.5
+aperture=20
+#in degrees
+distance_to_source=100
+
 source = ins.Source(
 latitude=lat, longitude=lon, depth_in_m=depth,
 m_rr = 3.71e23 / 1E7,
@@ -316,3 +320,36 @@ for i in range(len(stream)):
 	arrivaltime.append(m.get_travel_times(source_depth_in_km=100.0, distance_in_degree=epidist[i]))
 
 tofe
+
+"""
+Plotting
+"""
+pexuni = fkw.stream2array(read_st("../data/synthetics_uniform/SYNTH_UNIFORM_PP_FK_EX.QHD").normalize())
+pexuni = np.roll(pexuni, -35)
+pexran = fkw.stream2array(read_st("../data/synthetics_random/SYNTH_RAND_PP_FK_EX.QHD").normalize())
+pexran = np.roll(pexran, -35)
+
+pdiffuni = fkw.stream2array(read_st("../data/synthetics_uniform/SYNTH_UNIFORM_PP_FK.QHD").normalize())
+pdiffuni = np.roll(pdiffuni, -47)
+pdiffran = fkw.stream2array(read_st("../data/synthetics_random/SYNTH_RAND_PP_FK.QHD").normalize())
+
+uni = fkw.stream2array(read_st("../data/synthetics_uniform/SYNTH_UNIFORM_PP.QHD").normalize())
+uni = np.roll(uni, -35)
+ran = fkw.stream2array(read_st("../data/synthetics_random/SYNTH_RAND_PP.QHD").normalize())
+ran = np.roll(ran, -35)
+
+
+
+
+plt.ylim([-1,1])
+plt.xlim([200,550])
+#plt.plot(uni[0],label=("uniform, no filter"))
+plt.plot(ran[0],label=("random, no filter"))
+#plt.plot(pdiffuni[0],label=("uniform, Pdiff eliminated"))
+plt.plot(pdiffran[0],label=("random, Pdiff eliminated"))
+#plt.plot(pexuni[0],label=("uniform, PP extractet"))
+plt.plot(pexran[0],label=("random, PP extractet"))
+plt.legend()
+plt.show()
+
+

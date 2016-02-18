@@ -653,8 +653,9 @@ def kill(data, stat):
 	data = np.delete(data, stat, 0)
 	return(data)
 
-def line_cut(array, stat, radius=None):
+def line_cut_old(array, stat, radius=None):
 	"""
+	Old Version, if the new works fine --> delete
 	Sets the array to zero, except for the stat line and the radius values around it.
 	"Cuts" one line out. 
 	"""
@@ -674,6 +675,26 @@ def line_cut(array, stat, radius=None):
 			else:
 				new_array[y-i] = array[y-i]
 	
+	else:
+		new_array[stat] = array[stat]
+
+	
+	return(new_array)
+
+def line_cut(array, stat, radius=None):
+	"""
+	Sets the array to zero, except for the stat line and the radius values around it.
+	"Cuts" one line out. 
+	"""
+	new_array = np.zeros( (len(array[0]),len(array)) )
+
+	if radius:
+		for i in range(stat, stat + radius  + 1):
+			new_array[i] = array[i]
+			if i == 0:
+				new_array[y] = array[y]
+			else:
+				new_array[y-i] = array[y-i]
 	else:
 		new_array[stat] = array[stat]
 
