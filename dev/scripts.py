@@ -195,6 +195,16 @@ for i in range(len(st_synth))[1:]:
 #stream.write("../data/synth.sac", format="SAC")
 #stream.write("../data/SYNTH.QHD", format="Q")
 
+
+
+
+"""
+Read Q locfile
+"""
+with open("locfile.QST", "r") as fh:
+	#do something
+
+
 """
 Write quakeml file
 """
