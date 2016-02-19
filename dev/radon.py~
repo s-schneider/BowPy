@@ -152,7 +152,7 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 			#Initialize cost functions.
 			dCOST = float("Inf")
 			if inversion_model == "Cauchy":
-				COST_prev = np.linalg.norm( Mfft.T[i] - dot(A,Rfft.T[i]), 2 ) + lam*sum( np.log( abs(Rfft.T[i]**2 + b))
+				COST_prev = np.linalg.norm( Mfft.T[i] - dot(A,Rfft.T[i]), 2 ) + lam*sum( np.log( abs(Rfft.T[i]**2 + b) )
 			elif inversion_model == "L1":
 				COST_prev = np.linalg.norm( Mfft.T[i] - dot(A,Rfft.T[i]), 2 ) + lam*np.linalg.norm( abs(Rfft.T[i]+1), 1 )
 			itercount=1
