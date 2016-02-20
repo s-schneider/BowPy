@@ -62,11 +62,11 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 	# Check for Data type of variables.
 	if not type(t) == numpy.ndarray and type(delta) == ndarray:
 		print( "Wrong input type of t or delta, must be numpy.ndarray" )
-		raise TypeErr
+		raise TypeError
 	
 	if not type(hyperparameters) == list:
 		print( "Wrong input type of mu, must be list" )
-		raise TypeErr
+		raise TypeError
 
 	# Define some array/matrices lengths.
 	it=t.size
@@ -218,6 +218,16 @@ def radon_forward(t,p,R,delta,ref_dist,line_model):
 	 Author: R. Schultz, 2012
 	 Translated to Python by: S. Schneider, 2016
 	"""
+
+	# Check for Data type of variables.
+	if not type(t) == numpy.ndarray and type(delta) == ndarray:
+		print( "Wrong input type of t or delta, must be numpy.ndarray" )
+		raise TypeError
+	
+	if not type(hyperparameters) == list:
+		print( "Wrong input type of mu, must be list" )
+		raise TypeError
+
 	it=t.size
 	iF=int(math.pow(2,nextpow2(it)+1)) # Double length
 	iDelta=delta.size
