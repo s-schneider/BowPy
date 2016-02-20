@@ -42,9 +42,6 @@ inversion_model="L2"
 tic = datetime.datetime.now()
 R=radon.radon_inverse(t, IDelta, M, P_axis, np.ones(IDelta.size), Idelta, "Linear", "L2", mu)
 #radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperparameters)
-
-
-
 toc = datetime.datetime.now()
 time = toc-tic
 print( "Elapsed time is %s seconds." % str(time))
