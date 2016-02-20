@@ -137,7 +137,7 @@ def plot_fft(x, logscale=False, fftshift=False, scaling=1):
 	param logscale:	Sets scaling of the plot to logarithmic
 	type logscale:	boolean
 
-	param fftshift: Ir True shifts zero values of f and k into the center of the plot
+	param fftshift: If True shifts zero values of f and k into the center of the plot
 	type fftshift:	boolean
 
 	param scaling:	Sets the scaling of the plot in terms of aspectratio y/x
@@ -174,7 +174,7 @@ def plot_fft_subplot(x, logscale=False, fftshift=False, scaling=1):
 	param logscale:	Sets scaling of the plot to logarithmic
 	type logscale:	boolean
 
-	param fftshift: Ir True shifts zero values of f and k into the center of the plot
+	param fftshift: If True shifts zero values of f and k into the center of the plot
 	type fftshift:	boolean
 
 	param scaling:	Sets the scaling of the plot in terms of aspectratio y/x

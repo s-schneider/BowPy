@@ -74,7 +74,6 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	# 2D FFT-LS #####################################################################
 	# UNDER CONSTRUCTION
 	if ftype == "LS":
-		print("using LS")
 		#Convert format.
 		ArrayData = stream2array(st)
 		if st and inv and cat:
@@ -100,7 +99,6 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	# Decide when to use SSA to fill the gaps, calc mean distance of each epidist entry
 	# if it differs too much --> SSA
 	elif ftype == "FFT":
-		print("using FFT")
 		#Convert format.
 		ArrayData = stream2array(st, normalize)
 
