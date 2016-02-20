@@ -1,32 +1,11 @@
-import obspy
-from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees, locations2degrees
-from obspy import read as read_st
-from obspy import read_inventory as read_inv
-from obspy import readEvents as read_cat
-from obspy.taup import TauPyModel
-
 import numpy
 import numpy as np
-from numpy import genfromtxt
 from numpy import dot
 import math
 from math import pi
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 import scipy as sp
-import scipy.signal as signal
 from scipy import sparse
 
-
-import Muenster_Array_Seismology_Vespagram as MAS
-from Muenster_Array_Seismology import get_coords
-
-import os
-import datetime
-
-import fk_work
-import fk_work as fkw
-from fk_work import fk_filter, transpose
 
 def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperparameters):
 	#This function inverts move-out data to the Radon domain given the inputs:
@@ -67,10 +46,20 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 	# Author: R. Schultz, 2012
 	# Translated to Python by: S. Schneider, 2016
 
+
+	# Check for Data type of variables.
+	if not type(t) == numpy.ndarray and type(delta) == ndarray:
+		print( "Wrong input type of t or delta, must be numpy.ndarray" )
+		raise TypeErr
+	
+	if not type(hyperparameters) == list:
+		print( "Wrong input type of mu, must be list" )
+		raise TypeErr
+
 	# Define some array/matrices lengths.
-	it=len(t)
-	iF=math.pow(2,nextpow2(it)+1) # Double length
-	iDelta=len(delta)
+	it=t.size
+	iF=int(math.pow(2,nextpow2(it)+1)) # Double length
+	iDelta=delta.size
 	ip=len(p)
 	iw=len(weights)
 
@@ -98,23 +87,23 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 
 	#Preallocate space in memory.
 	R=np.zeros((ip,it)) #ok<NASGU>
-	Rfft=np.zeros((ip,iF))
-	A=np.zeros((iDelta,ip))
+	Rfft=np.zeros((ip,iF)) + 0j
+	A=np.zeros((iDelta,ip)) + 0j
 	Tshift=A
-	AtA=np.zeros((ip,ip))
-	AtM=np.zeros((ip,1))
+	AtA=np.zeros((ip,ip)) + 0j
+	AtM=np.zeros((ip,1)) + 0j
 	Ident=np.identity(ip)
-	
+
 	#Define some values
 	Dist_array=delta-ref_dist
-	dF=1./(t(1)-t(2))
+	dF=1./(t[0][0]-t[0][1])
 	Mfft=np.fft.fft(M,iF,1)
-	W=sparse.spdiags(weights.T, 0, iDelta, iDelta).A
+	W=sparse.spdiags(weights.conj().transpose(), 0, iDelta, iDelta).A
 	
-	dCOST=0
-	COST_curv=0
-	COST_prev=0
-	
+	dCOST=0.
+	COST_curv=0.
+	COST_prev=0.
+
 	#Populate ray parameter then distance data in time shift matrix.
 	for j in range(iDelta):
 		if line_model == "parabolic":
@@ -124,24 +113,24 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 	
 	for k in range(ip):
 		if line_model == 'parabolic':
-			Tshift.T[k]=(2. * ref_dist * Tshift.T[k] * Dist_array.T) + (Tshift.T[k] * (Dist_array**2).T)
+			Tshift[:,k]=(2. * ref_dist * Tshift[:,k] * Dist_array.conj().transpose()) + (Tshift[:,k] * (Dist_array**2).conj().transpose())
 		else: #Linear is default
-			Tshift.T[k]=Tshift.T[k] * Dist_array.T
+			Tshift[:,k]=Tshift[:,k] * Dist_array[0].conj().transpose()
 
 	# Loop through each frequency.
-	for i in range( math.floor((iF+1)/2) ):
+	for i in range( int(math.floor((iF+1)/2)) ):
 
 		# Make time-shift matrix, A.
-		f = ((i/iF)*dF)
-		A = math.exp( (0+2*j)*pi*f * Tshift )
+		f = ((float(i)/float(iF))*dF)
+		A = np.exp( (0.+1j)*2*pi*f * Tshift )
 
 		# M = A R ---> AtM = AtA R
 		# Solve the weighted, L2 least-squares problem for an initial solution.
-		AtA = dot( dot(A.T, W), A )
-		AtM = dot( dot(A.T, W), Mfft.T[i] )
+		AtA = dot( dot(A.conj().transpose(), W), A )
+		AtM = dot( A.conj().transpose(), dot( W, Mfft[:,i] ) )
 		mu = abs(np.trace(AtA)) * hyperparameters[0]
-		Rfft.T[i] = np.linalg.lstsq((AtA + mu*Ident), AtM)[0]
-		
+		Rfft[:,i] = sp.linalg.solve((AtA + mu*Ident), AtM)
+
 		#Non-linear methods use IRLS to solve, iterate until convergence to solution.
 		if inversion_model == "Cauchy" or inversion_model == "L1":
 			
@@ -152,9 +141,9 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 			#Initialize cost functions.
 			dCOST = float("Inf")
 			if inversion_model == "Cauchy":
-				COST_prev = np.linalg.norm( Mfft.T[i] - dot(A,Rfft.T[i]), 2 ) + lam*sum( np.log( abs(Rfft.T[i]**2 + b) ) )
+				COST_prev = np.linalg.norm( Mfft[:,i] - dot(A,Rfft[:,i]), 2 ) + lam*sum( np.log( abs(Rfft[:,i]**2 + b) ) )
 			elif inversion_model == "L1":
-				COST_prev = np.linalg.norm( Mfft.T[i] - dot(A,Rfft.T[i]), 2 ) + lam*np.linalg.norm( abs(Rfft.T[i]+1), 1 )
+				COST_prev = np.linalg.norm( Mfft[:,i] - dot(A,Rfft[:,i]), 2 ) + lam*np.linalg.norm( abs(Rfft[:,i]+1), 1 )
 			itercount=1
 			
 			#Iterate until negligible change to cost function.
@@ -162,27 +151,27 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 				
 				#Setup inverse problem.
 				if inversion_model == "Cauchy":
-					Q = sparse.spdiags( 1./( abs(Rfft.T[i]**2) + b), 0, ip, ip)
+					Q = sparse.spdiags( 1./( abs(Rfft[:,i]**2) + b), 0, ip, ip).A
 				elif inversion_model == "L1":
-					Q = sparse.spdiags( 1./( abs(Rfft.T[i]) + b), 0, ip, ip)
-				Rfft.T[i]=np.linalg.lstsq( ( lam * Q + AtA ), AtM )
+					Q = sparse.spdiags( 1./( abs(Rfft[:,i]) + b), 0, ip, ip).A
+				Rfft[:,i]=sp.linalg.solve( ( lam * Q + AtA ), AtM )
 				
 				#Determine change to cost function.
 				if inversion_model == "Cauchy":
-					COST_cur = np.linalg.norm( Mfft.T[i]-A*Rfft.T[i], 2 ) + lam*sum( np.log( abs(Rfft.T[i]**2 + b )-np.log(b) ) )
+					COST_cur = np.linalg.norm( Mfft[:,i]-A*Rfft[:,i], 2 ) + lam*sum( np.log( abs(Rfft[:,i]**2 + b )-np.log(b) ) )
 				elif inversion_model == "L1":
-					COST_cur = np.linalg.norm( Mfft.T[i]-A*Rfft.T[i], 2 ) + lam*np.linalg.norm( abs(Rfft.T[i]+1) + b, 1 )
+					COST_cur = np.linalg.norm( Mfft[:,i]-A*Rfft[:,i], 2 ) + lam*np.linalg.norm( abs(Rfft[:,i]+1) + b, 1 )
 				dCOST = 2*abs(COST_cur - COST_prev)/(abs(COST_cur) + abs(COST_prev))
 				COST_prev = COST_cur
 				
 				itercount += 1
 
 			#Assuming Hermitian symmetry of the fft make negative frequencies the complex conjugate of current solution.
-			if not i == 1:
-				Rfft.T[iF-i+1] = Rfft.T[i].conjugate()
-	
-	R = np.fft.ifftn(Rfft, iF, axes=1)
-	R = R.T[0:it]
+		if not i == 0:
+			Rfft[:,iF-i] = Rfft[:,i].conjugate()
+
+	R = np.fft.ifft(Rfft, iF)#, axes=1)
+	R = R[:,0:it]
 
 	return(R)
 
