@@ -19,9 +19,9 @@ from Muenster_Array_Seismology import get_coords
 import os
 import datetime
 
-import fk_work
-import fk_work as fkw
-from fk_work import fk_filter
+import fk
+import fkutilities as fku
+from fk import fk_filter
 
 
 stream="../data/WORK_D.MSEED"

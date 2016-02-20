@@ -96,16 +96,9 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 
 		return(fkspectra, periods)
 
-		"""
-		perform ifft using fkspectra and periods, should be possible!
-		"""
 	#2D FFT #########################################################################
-	"""
-	Decide when to use SSA to fill the gaps, calc mean distance of each epidist entry
-	if it differs too much --> SSA
-	"""
-
-
+	# Decide when to use SSA to fill the gaps, calc mean distance of each epidist entry
+	# if it differs too much --> SSA
 	elif ftype == "FFT":
 		print("using FFT")
 		#Convert format.
