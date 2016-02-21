@@ -11,18 +11,6 @@ import scipy.signal as signal
 
 from fkutilities import shift_array, array2stream, stream2array, epidist2nparray, transpose, ls2ifft_prep, line_cut, line_set_zero
 
-"""
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published
- by the Free Software Foundation, either version 3 of the License, or
- any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details: http://www.gnu.org/licenses/
-"""
-
 def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=False, SSA=False):
 	"""
 	At this point prework with programs like seismic handler or SAC is needed to perform correctly
@@ -64,6 +52,16 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	References: Yilmaz, Thomas
 
 	Author: S. Schneider 2016
+
+	 This program is free software: you can redistribute it and/or modify
+	 it under the terms of the GNU General Public License as published
+	 by the Free Software Foundation, either version 3 of the License, or
+	 any later version.
+
+	 This program is distributed in the hope that it will be useful,
+	 but WITHOUT ANY WARRANTY; without even the implied warranty of
+	 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	 GNU General Public License for more details: http://www.gnu.org/licenses/
 	"""
 
 

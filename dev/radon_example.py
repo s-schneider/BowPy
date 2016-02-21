@@ -45,3 +45,23 @@ R=radon.radon_inverse(t, IDelta, M, P_axis, np.ones(IDelta.size), Idelta, "Linea
 toc = datetime.datetime.now()
 time = toc-tic
 print( "Elapsed time is %s seconds." % str(time))
+
+# Mute all phases except the S670S arrival.
+R670=np.zeros(R.shape)
+R670.conj().transpose().flat[ indicies.astype('int').tolist() ]=1
+R670=R*R670
+
+# Apply forward operator to the muted Radon domain.
+
+# Delta_resampled=floor(min(Delta)):(ceil(max(Delta))-floor(min(Delta)))/20:ceil(max(Delta))
+
+Delta_resampled = np.arange( int(math.floor(min(Delta))), int(math.ceil(Delta))+1, int(math.ceil(max(Delta))) - int(math.floor(min(Delta))) )
+M670=radon.radon_forward(t, P_axis, R670, Delta_resampled, delta, 'Linear')
+
+
+
+
+
+
+
+
