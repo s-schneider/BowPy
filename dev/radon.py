@@ -101,7 +101,7 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 	R=np.zeros((ip,it)) #ok<NASGU>
 	Rfft=np.zeros((ip,iF)) + 0j
 	A=np.zeros((iDelta,ip)) + 0j
-	Tshift=A
+	Tshift=np.zeros((iDelta,ip)) + 0j
 	AtA=np.zeros((ip,ip)) + 0j
 	AtM=np.zeros((ip,1)) + 0j
 	Ident=np.identity(ip)
@@ -223,16 +223,11 @@ def radon_forward(t,p,R,delta,ref_dist,line_model):
 	if not type(t) == numpy.ndarray and type(delta) == ndarray:
 		print( "Wrong input type of t or delta, must be numpy.ndarray" )
 		raise TypeError
-	
-	if not type(hyperparameters) == list:
-		print( "Wrong input type of mu, must be list" )
-		raise TypeError
 
 	it=t.size
 	iF=int(math.pow(2,nextpow2(it)+1)) # Double length
 	iDelta=delta.size
 	ip=len(p)
-	iw=len(weights)
 
 	#Exit if inconsistent data is input.
 	if not R.shape == (ip, it):
@@ -241,9 +236,9 @@ def radon_forward(t,p,R,delta,ref_dist,line_model):
 		return(M)
 
 	#Preallocate space in memory.
-	Mfft = np.zeros((iDelta, iF))
-	A = np.zeros((iDelta, ip))
-	Tshift = A
+	Mfft = np.zeros((iDelta, iF)) + 0j
+	A = np.zeros((iDelta, ip)) + 0j
+	Tshift = np.zeros((iDelta, ip)) + 0j
 
 	#Define some values.
 	Dist_array=delta-ref_dist
@@ -253,25 +248,25 @@ def radon_forward(t,p,R,delta,ref_dist,line_model):
 	#Populate ray parameter then distance data in time shift matrix.
 	for j in range(iDelta):
 		if line_model == "parabolic":
-			Tshift[j]=p
+			Tshift[j,:]=p
 		else: #Linear is default
-			Tshift[j]=p
+			Tshift[j,:]=p
 	
 	for k in range(ip):
 		if line_model == 'parabolic':
 			Tshift[:,k]=(2. * ref_dist * Tshift[:,k] * Dist_array.conj().transpose()) + (Tshift[:,k] * (Dist_array**2).conj().transpose())
 		else: #Linear is default
-			Tshift[:,k]=Tshift[:,k] * Dist_array[0].conj().transpose()
+			Tshift[:,k]=Tshift[:,k] * Dist_array.conj().transpose()
 
 	# Loop through each frequency.
-	for i in range( int(math.floor((iF+1)/2)) ):
+	for i in range( int(math.floor((iF+1)/2))-1 ):
 
 		# Make time-shift matrix, A.
 		f = ((float(i)/float(iF))*dF)
 		A = np.exp( (0.+1j)*2*pi*f * Tshift )
 		
 		# Apply Radon operator.
-		Mfft[:,i]=dot(A, Rifft[:,i])
+		Mfft[:,i]=dot(A, Rfft[:,i])
 
 		# Assuming Hermitian symmetry of the fft make negative frequencies the complex conjugate of current solution.
 		if not i == 0:
