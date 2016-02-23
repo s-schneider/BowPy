@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def average_anti_diag(A):
+def aad(A):
 	"""
 	Given a Hankel matrix A,  this program retrieves
 	the signal that was used to make the Hankel matrix

@@ -3,7 +3,7 @@ import numpy as np
 from numpy import dot
 import math
 import scipy as sp
-from average_anti_diag import average_anti_diag as aad
+from average_anti_diag import aad
 from fkutilities import nextpow2
 
 
@@ -29,9 +29,12 @@ def ssa(d,nw,p,ssa_flag):
 		from numpy import cos
 		import matplotlib.pyplot as plt
 		from ssa import ssa
-
-		d = (cos(2*pi*0.01*np.linspace(1,200,200)) + 0.5*np.random.rand(1,200))[0]
-		d = d
+		from average_anti_diag import aad
+		import scipy.io as sio
+		
+		rand =  sio.loadmat("mtz_ssa/randomnumbers.mat")
+		r = rand['r']
+		d = (cos(2*pi*0.01*np.linspace(1,200,200)) + 0.5*r[:,0])
 		dp, sing, R = ssa(d,100,2,0)
 
 		plt.plot(d/d.max())
@@ -67,35 +70,42 @@ def ssa(d,nw,p,ssa_flag):
 		print( "Wrong input type of d, must be numpy.ndarray" )
 		raise TypeError
 
- 	nt = d.size
- 	N = nt-nw+1
- 	l = np.arange(0,nw,1)
-	R= np.zeros((nt,p))
+	nt = d.size
+	N = nt-nw+1
+	l = np.arange(0,nw,1)
+	R = np.zeros((nt,p))
 
  	# Make Hankel Matrix.
- 	M = np.zeros((N-1,N))
+	M = np.zeros((N-1,N))
+	Mp = np.zeros((N-1,N))
 
- 	for k in range(N):
- 		M[:,k] = d[k+l]
+	for k in range(N):
+		M[:,k] = d[k+l]
 
  	# Eigenimage decomposition
 
  	U,S,V = sp.linalg.svd(M)
+	
+
 
 	 # Reconstruct with one oscillatory component at the time.
 	if not ssa_flag == 0:
 	 	for k in range(p):
-	 		u = U[:,k]
-	 		Mp = dot( dot(u, u.conj().transpose()), M )
+			u = np.zeros((N-1,2))
+	 		u[:,0] = U[:,k]
+	 		Mp = dot( dot(u, u.transpose()), M )
 	 		R[:,k] = aad(Mp)
 	 	dp = sum(d)
+
 	else:
-	 	Mp = M
-	 	for k in range(p):
-	 		u = U[:,k]
-	 		Mp = Mp + dot( dot(u, u.conj().transpose()), M )
+	 	
+		for k in range(p):
+			u = np.zeros((N-1,2))
+			u[:,0] = U[:,k]
+			Mp = Mp + dot( dot(u, u.transpose()), M )
+
 		R = None
-	 	dp = aad(Mp)
+		dp = aad(Mp)
 		
 
 	sing = S
