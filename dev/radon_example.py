@@ -17,7 +17,7 @@ data = sio.loadmat("mtz_radon/Radon/data.mat")
 # t        - time axis.
 # Delta    - distance (offset) axis. --> epidist vector!
 # M        - Amplitudes of phase arrivals.
-# indicies - list of indicies relevent to the S670S phase.
+# indicies - list of indicies relevant to the S670S phase.
 
 # Define some variables for RT.
 
@@ -78,6 +78,3 @@ plt.xticks(xticksorg)
 plt.imshow(abs(M670), extent=[min(t[0]), max(t[0]), min(Delta_resampled), max(Delta_resampled)], aspect=16 )
 
 plt.show()
-
-
-

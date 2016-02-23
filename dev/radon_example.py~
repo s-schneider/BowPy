@@ -57,8 +57,7 @@ M670=radon.radon_forward(t, P_axis, R670, Delta_resampled, meandelta, 'Linear')
 
 # Plot figures.
 plt.subplot(3,1,1)
-plt.title('Aligned SS
-')
+plt.title('Aligned SS')
 yticksorg =  np.arange(int(math.ceil(min(IDelta[0]/10)))*10, int(math.ceil(max(IDelta[0]/10)))*10 + 10,10)[::1]
 xticksorg =  np.arange(int(math.ceil(min(t[0]/100)))*100, int(math.ceil(max(t[0]/100)))*100 + 100,100)[::2]
 plt.yticks(yticksorg)
@@ -79,6 +78,3 @@ plt.xticks(xticksorg)
 plt.imshow(abs(M670), extent=[min(t[0]), max(t[0]), min(Delta_resampled), max(Delta_resampled)], aspect=16 )
 
 plt.show()
-
-
-

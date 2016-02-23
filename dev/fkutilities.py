@@ -530,5 +530,9 @@ def nextpow2(i):
 		count+=1
 	return count
 
+def part_stack(st, yinfo):
+	ps_st=st
+	return ps_st
+
 
 

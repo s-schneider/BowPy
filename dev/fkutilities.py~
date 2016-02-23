@@ -521,5 +521,14 @@ def ls2ifft_prep(ls_periodogram, data):
 	fft_prep[0] = a
 	return(fft_prep)
 
+def nextpow2(i):
+	#See Matlab documentary
+	n = 1
+	count = 0
+	while n < abs(i):
+		n *= 2
+		count+=1
+	return count
+
 
 
