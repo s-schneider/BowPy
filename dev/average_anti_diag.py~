@@ -46,15 +46,17 @@ def average_anti_diag(A):
  	s = np.zeros(N)
 
  	for i in range(N):
+		print("i is %i" % i)
 		a = max(1,(i+1)-m+1)
 		b = min(n,(i+1))
 		
 		if a == b:
 			k = a
-			s[i] = s[i] + A[i-k+1,k-1]
+			s[i] = s[i] + A[i-k-1,k-1]
 		else:
 	 		for k in range(a,b+1):
-	 			s[i] = s[i] + A[i-k+1,k-1]
+				print "k is %i" % k
+	 			s[i] = s[i] + A[i-k-1,k-1]
 
 		s[i]= s[i]/(b-a+1)
  		

@@ -5,6 +5,7 @@ import math
 from math import pi
 import scipy as sp
 from scipy import sparse
+from fkutilities import nextpow2
 
 """
  This program is free software: you can redistribute it and/or modify
@@ -276,14 +277,3 @@ def radon_forward(t,p,R,delta,ref_dist,line_model):
 	M = M[:,0:it]		
 
 	return(M)
-
-
-
-def nextpow2(i):
-	#See Matlab documentary
-	n = 1
-	count = 0
-	while n < abs(i):
-		n *= 2
-		count+=1
-	return count
