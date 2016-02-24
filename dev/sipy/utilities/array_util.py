@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 from collections import defaultdict
 import tempfile
 import numpy as np
@@ -25,6 +25,15 @@ from obspy.core import Stream
 from obspy.signal.headers import clibsignal
 from obspy.signal.invsim import cosTaper
 from obspy.clients.fdsn import Client
+from obspy.taup import TauPyModel
+from sipy.utilities.base import stream2array
+
+
+"""
+Collection of useful functions for processing seismological array data
+
+Author: S. Schneider 2016
+"""
 
 
 def attach_coordinates_to_traces(stream, inventory, event=None):
@@ -302,3 +311,87 @@ def plot_gcp(slat, slon, qlat, qlon, plat, plon, savefigure=None):
         plt.savefig('plot_gcp.png', format="png", dpi=900)
     else:
         plt.show()
+
+def attach_network_to_traces(stream, network):
+	"""
+	Attaches the network-code of the inventory to each trace of the stream
+	"""
+	for trace in stream:
+		trace.meta.network = network.code
+
+def alignon(st, inv, event, phase, maxtimewindow=None):
+	"""
+	Aligns traces on a given phase
+	
+	:param st: stream
+	
+	:param inv: inventory
+
+	:param event: Eventdata
+
+	:phase: Phase to align the traces on
+	:type phase: str
+	"""
+	
+	# Calculate depth and distance of receiver and event.
+	attach_coordinates_to_traces(st, inv, event)
+	depth = event.origins[0]['depth']/1000.
+	
+	# Prepare Array of data.
+	stshift = stream2array(st)
+	no_x,no_t = stshift.shape
+	for j in range(no_x):
+		y_dist = st[j].meta.distance
+		origin = event.origins[0]['time']
+		m = TauPyModel('ak135')
+		time = m.get_travel_times(depth, y_dist)
+		for k in range(len(time)):
+			if time[k].name != phase:
+				continue
+			t = time[k].time
+		
+		phase_time = origin + t - st[j].stats.starttime
+		Phase_npt = int(phase_time/st[j].stats.delta)
+		if j == 0:
+			tref = Phase_npt
+			
+		else:
+			# Check for maximum Value in a timewindow of length 
+			# maxtimewindow around theoretical arrival
+			if maxtimewindow:
+				delta = st[j].meta.delta
+				tmin = Phase_npt - int( (maxtimewindow/2.)/delta )
+				tmax = Phase_npt + int( (maxtimewindow/2.)/delta )
+				stmax = stshift[j][Phase_npt]
+				mtw_index = Phase_npt
+				for k in range(tmin,tmax+1):
+					if stshift[j][k] > stmax:
+							stmax=stshift[j][k]
+							mtw_index = k
+				print("Phase delta is %i, best fit is %i" % (Phase_npt,mtw_index))
+				shift_index = tref - mtw_index
+			else:
+				shift_index = tref - Phase_npt
+
+			stshift[j,:] = np.roll(stshift[j,:], shift_index)
+		
+	return(stshift)
+
+	
+def shift_array(array, shift_value=0, y_dist=False):
+	array_shift = array
+	try:
+		for i in range(len(array)):
+			array_shift[i] = np.roll(array[i], -shift_value*y_dist[i])
+	except (AttributeError, TypeError):
+		for i in range(len(array)):
+			array_shift[i] = np.roll(array[i], -shift_value*i)
+	return(array_shift)
+	
+
+def part_stack(st, yinfo):
+	ps_st=st
+	return ps_st
+
+	
+	

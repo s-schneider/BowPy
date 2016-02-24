@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import obspy
 from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy import read as read_st
@@ -15,7 +16,8 @@ from numpy import genfromtxt
 
 import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
 from sipy.utilities.array_util import get_coords
-
+from sipy.utilities.array_util import attach_network_to_traces, attach_coordinates_to_traces
+from sipy.utilities.base import stream2array
 import os
 import datetime
 

@@ -8,7 +8,9 @@ import datetime
 import scipy as sp
 import scipy.signal as signal
 
-from sipy.utilities.fkutil import shift_array, array2stream, stream2array, epidist2nparray, transpose, ls2ifft_prep, line_cut, line_set_zero
+from sipy.utilities.base import  array2stream, stream2array, epidist2nparray
+from sipy.utilities.array_util import shift_array
+from sipy.utilities.fkutil import ls2ifft_prep, line_cut, line_set_zero
 
 def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=False, SSA=False):
 	"""
@@ -226,7 +228,7 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=
 		freq[i] = freq_new
 
 	# Define k Array
-	freqT = transpose(freq)
+	freqT = freq.conj().transpose()
 	knum = np.zeros( ( len(freqT), len(freqT[0])  /2 +1 ))
 		     
 	#calc best range
@@ -262,4 +264,4 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=
 	else:
 		dsfft = line_set_zero(fkspectra, 0, radius)
 	
-	return(transpose(fkspectra), period_range)
+	return(fkspectra.conj().transpose(), period_range)
