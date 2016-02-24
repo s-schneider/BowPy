@@ -1,6 +1,6 @@
 clear all; close all; clc;
 
-load ../slant/test_ssa.mat;
+load test_ssa.mat;
 
 pstack = pstack(1:500,:);
 t = t(1:500);

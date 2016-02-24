@@ -3,7 +3,7 @@ import numpy
 import numpy as np
 import matplotlib.pyplot as plt
 import Muenster_Array_Seismology_Vespagram as MAS
-from Muenster_Array_Seismology import get_coords
+from Muenster_Array_Seismology import get_coords, attach_coordinates_to_traces
 from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees
 import datetime
 import scipy as sp
@@ -230,7 +230,7 @@ def plot_data_orig(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
 	if yinfo:
 		if inv and cat:
 			#Calculates y-axis info using epidistance information of the stream
-			epidist = epidist_stream(st, inv, cat) 
+			epidist = epidist_inv(st, inv, cat) 
 			y_dist = epidist2list(epidist)
 		else:
 			print("no inventory and catalog given")
@@ -243,15 +243,20 @@ def plot_data_orig(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
 			plt.plot(zoom*data[i]+ y_dist[i], color='black')
 	plt.show()
 
-def plot_data(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
+def plot(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False, markphases=False):
 	"""
 	Alpha Version!
-	Time axis has no time-ticks --> Working on right now
 	
 	Needs inventory and catalog for yinfo using
 
-	param st: 	array of data or stream
-	type st:	np.array obspy.core.stream.Stream
+	param st: 	stream
+	type st:	obspy.core.stream.Stream
+
+	param inv:	inventory
+	type inv:
+
+	param cat:	event catalog
+	type cat:
 
 	param zoom: zoom factor of the traces
 	type zoom:	float
@@ -260,25 +265,45 @@ def plot_data(st, inv=None, cat=None, zoom=1, y_dist=1, yinfo=False):
 					or import epidist-list via epidist
 	type y_dist:	int or list
 	"""
-	if type(st) == obspy.core.stream.Stream:
-		data = stream2array(st, normalize=True)
-	else:
-		data = st
+
+	#check for Data input
+	if not type(st) == obspy.core.stream.Stream:
+		msg = "Wrong data input, must be obspy.core.stream.Stream"
+		raise TypeError(msg)
+
+	t_axis = np.linspace(0,st[0].stats.delta * st[0].stats.npts, st[0].stats.npts)
+	data = stream2array(st, normalize=True)
 
 	if yinfo:
 		if inv and cat:
 			#Calculates y-axis info using epidistance information of the stream
-			epidist = epidist_stream(st, inv, cat) 
-			y_dist = epidist2list(epidist)
+			epidist = epidist_inv(inv, cat) 
+			for i in range(len(data)):
+				station = st[i].meta.network + "." + st[i].meta.station
+				y_dist = epidist[station]['epidist']
+				plt.plot(t_axis,zoom*data[i]+ y_dist, color='black')
+
+				if markphases:
+					origin = inv[0].origins[0]['time']
+					#calculate phase arrival here
+					phase_time = origin + t - st[i].stats.starttime
+					Phase_npt = int(phase_time/st[i].stats.delta)
+					Phase = Phase_npt * st[i].stats.delta
+
+
+					plt.plot( (Phase,Phase),(-1,1) )			
+
 		else:
 			print("no inventory and catalog given")
 			raise ValueError
 
-	for i in range(len(data)):
-		if type(y_dist) == int:
-			plt.plot(zoom*data[i]+ y_dist*i, color='black')
-		if type(y_dist) == list or type(y_dist) == numpy.ndarray:
-			plt.plot(zoom*data[i]+ y_dist[i], color='black')
+	else:
+		for i in range(len(data)):
+			if type(y_dist) == int:
+				plt.plot(t_axis,zoom*data[i]+ y_dist*i, color='black')
+			else:
+				print("No y_dist given.")
+
 	plt.show()
 
 	

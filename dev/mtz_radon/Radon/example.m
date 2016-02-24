@@ -30,7 +30,7 @@ R670=R.*R670;
 % Apply forward operator to the muted Radon domain.
 Delta_resampled=floor(min(Delta)):(ceil(max(Delta))-floor(min(Delta)))/20:ceil(max(Delta));
 M670=Radon_forward(t, P_axis, R670, Delta_resampled, delta, 'Linear');
-
+%Radon_forward(t,p,R,delta,ref_dist,line_model)
 
 % Plot figures.
 figure(2); clf;

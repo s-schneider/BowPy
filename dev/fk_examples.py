@@ -1,8 +1,8 @@
 import obspy
-from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees, locations2degrees
+from obspy.geodetics import gps2DistAzimuth, kilometer2degrees, locations2degrees
 from obspy import read as read_st
 from obspy import read_inventory as read_inv
-from obspy import readEvents as read_cat
+from obspy import read_events as read_cat
 from obspy.taup import TauPyModel
 
 import numpy
@@ -27,11 +27,11 @@ from fk import fk_filter
 stream="../data/WORK_D.MSEED"
 inventory="../data/2011-03-11T05:46:23.MSEED_inv.xml"
 catalog="../data/2011-03-11T05:46:23.MSEED_cat.xml"
-st, inv, cat = fkw.read_file(stream, inventory, catalog)
-ad = fkw.stream2array(st)
-adt = fkw.transpose(ad)
-epid = fkw.epidist2nparray(fkw.epidist_stream(st, inv, cat))
-fkspectra, periods = fkw.fk_filter(st, ftype='LS', inv=inv, cat=cat, fktype="eliminate")
+st, inv, cat = fku.read_file(stream, inventory, catalog)
+ad = fku.stream2array(st)
+adt = fku.transpose(ad)
+epid = fku.epidist2nparray(fku.epidist_stream(st, inv, cat))
+fkspectra, periods = fk_filter(st, ftype='LS', inv=inv, cat=cat, fktype="eliminate")
 fkfft = abs(np.fft.fftn(ad))
 samplingrate = 0.025
 
@@ -52,8 +52,8 @@ epidist = np.linspace(0, trace.size, trace.size) * 0.025
 tracels_new = signal.lombscargle(epidist, trace.astype('float'), frange_new)
 
 
-tracels = fkw.ls2ifft_prep(tracels_new, trace)
-fls = fkw.convert_lsindex(frange_new, 0.025)
+tracels = fku.ls2ifft_prep(tracels_new, trace)
+fls = fku.convert_lsindex(frange_new, 0.025)
 
 
 
@@ -95,7 +95,7 @@ f_fft = np.fft.rfftfreq(y.size, steps) * 2. * np.pi
 frange = np.linspace(f_fft[1], max(f_fft), nin/2)
 yls = signal.lombscargle(x, y, frange)
 yls = yls/max(yls)
-yls2ifft = fkw.ls2ifft_prep(yls)
+yls2ifft = fku.ls2ifft_prep(yls)
 
 
 
@@ -106,7 +106,7 @@ yls2ifft = fkw.ls2ifft_prep(yls)
 
 #fk_filter(stream, inventory, catalog, phase)
 #data=create_signal(no_of_traces=1,len_of_traces=12,multiple=False)
-#datatest=fkw.create_sine(no_of_traces=1, no_of_periods=2)
+#datatest=fku.create_sine(no_of_traces=1, no_of_periods=2)
 
 """
 ##################INSTASEIS###############################
@@ -117,7 +117,7 @@ import obspy
 from obspy.core.util.geodetics import gps2DistAzimuth, kilometer2degrees, locations2degrees
 from obspy import read as read_st
 from obspy import read_inventory as read_inv
-from obspy import readEvents as read_cat
+from obspy import read_events as read_cat
 from obspy.taup import TauPyModel
 
 import numpy
@@ -134,22 +134,25 @@ from Muenster_Array_Seismology import get_coords
 import os
 import datetime
 
-import fk_work
-import fk_work as fkw
-from fk_work import fk_filter
+import fk
+from fk import fk_filter
+import fkutilities as fku
 import instaseis as ins
 
-uniform=True
+uniform=False
 db = ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
 
 tofe = obspy.UTCDateTime(2016,2,9,18,41,1)
 lat = 0.0
 lon = 0.0
 depth = 100000
-stationstep = 0.5
 aperture=20
-#in degrees
+no_of_stations=20
+# in degrees
 distance_to_source=100
+# magnitude of randomness 
+magn=2.
+
 
 source = ins.Source(
 latitude=lat, longitude=lon, depth_in_m=depth,
@@ -162,29 +165,32 @@ origin_time=tofe
 )
 
 x = []
-rage=2.
-with open("SYNTH05.QST", "w") as fh:
+
+with open("SYNTH_OUT.QST", "w") as fh:
+	station_range = np.linspace(0,aperture-1,no_of_stations) + 100.
 	if uniform:
-		for i in range(20):
-			lon = i*stationstep + 100
-			name="X"+str(i)
-			x.append(ins.Receiver(latitude="0", longitude=str(lon), network="LA", station=name ))
-			latdiff = gps2DistAzimuth(0.1,0,0.1,lon)[0]/1000.
+		for i in station_range:
+			slon = i
+			name="X"+str(int(i))
+			x.append(ins.Receiver(latitude="0", longitude=str(slon), network="LA", station=name ))
+			latdiff = gps2DistAzimuth(0.1,0,0.1,slon)[0]/1000.
 			fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, lon, latdiff))	
 	else:
 		i=0
-		randrange = np.random.rand(20)*rage +100.
-		randrange[0] = 100.
-		randrange[19] = 19. * stationstep + 100.
+		r = np.random.randn(no_of_stations)
+		randrange = station_range + magn * r  
+		randrange[0] = station_range[0]
+		randrange[no_of_stations-1] = station_range[no_of_stations-1]
 		while randrange.max() > randrange[19]:
 			i = randrange.argmax()
 			randrange[i] = randrange[i]-0.1
 		randrange.sort()
-		for lon in randrange:
-			name="X"+str(i)
-			x.append(ins.Receiver(latitude="0", longitude=lon, network="LA", station=name ))
-			latdiff = gps2DistAzimuth(0.1,0,0.1,lon)[0]/1000.
-			fh.write("%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, lon, latdiff))		
+		for slon in randrange:
+			name="X"+str(int(i))
+			print(name)
+			x.append(ins.Receiver(latitude="0", longitude=slon, network="LA", station=name ))
+			latdiff = gps2DistAzimuth(0.1,0,0.1,slon)[0]/1000.
+			fh.write("%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))		
 			i+=1
 st_synth = []    
 for i in range(len(x)):
@@ -193,20 +199,11 @@ for i in range(len(x)):
 
 stream=st_synth[0]
 for i in range(len(st_synth))[1:]:
-    stream.append(st_synth[i].select(component="Z")[0])
+    stream.append(st_synth[i][0])
 
 
 #stream.write("../data/synth.sac", format="SAC")
 #stream.write("../data/SYNTH.QHD", format="Q")
-
-
-
-
-"""
-Read Q locfile
-"""
-with open("locfile.QST", "r") as fh:
-	#do something
 
 
 """
@@ -274,29 +271,39 @@ with open("synth_inv.xml", "w") as fh:
 	fh.write("    <TotalNumberStations>20</TotalNumberStations>\n")
 	fh.write("    <SelectedNumberStations>20</SelectedNumberStations>\n")
 
-	for i in range(len(stream)):
-		lon=i*stationstep + 100
+	if not uniform:
+		station_range = randrange
+	j=0
+	for i in station_range:
+		slon=i
 		lat=0.0
-		fh.write("    <Station code=\"X%s\" endDate=\"2011-11-17T23:59:59+00:00\" restrictedStatus=\"open\" startDate=\"2010-01-08T00:00:00+00:00\">\n" % i)
+		name="X"+str(int(j))
+		fh.write("    <Station code=\"%s\" endDate=\"2011-11-17T23:59:59+00:00\" restrictedStatus=\"open\" startDate=\"2010-01-08T00:00:00+00:00\">\n" % name)
 		fh.write("      <Latitude unit=\"DEGREES\">%f</Latitude>\n" % lat)
-		fh.write("      <Longitude unit=\"DEGREES\">%f</Longitude>\n" % lon)
+		fh.write("      <Longitude unit=\"DEGREES\">%f</Longitude>\n" % slon)
 		fh.write("      <Elevation>0.0</Elevation>\n")
 		fh.write("      <Site>\n")
-		fh.write("        <Name> %s </Name>\n" % i)
+		fh.write("        <Name> %s </Name>\n" % name)
 		fh.write("      </Site>\n")
 		fh.write("    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>\n")
 		fh.write("    </Station>\n")
+		j += 1
 	fh.write("  </Network>\n")
 	fh.write("</FDSNStationXML>")
 
+inv=read_inv("synth_inv.xml")
+cat=read_cat("synth_cat.xml")
+st = stream.select(component="Z")
+st.write("SRNEW.QHD", format="Q")
 
+##########################################################################################
 #create Q station-file
-with open("SYNTH05.QST", "w") as fh:
-	for i in range(20):
-		lon=i*stationstep + 100
+with open("SYNTH.QST", "w") as fh:
+	for i in station_range:
+		slon=i
 		latdiff = gps2DistAzimuth(0.1,0,0.1,lon)[0]/1000.
-		#print "X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON" % (i, lon, latdiff)
-		fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, lon, latdiff))
+		#print "X%s    lat:     0.0 slon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON" % (i, lon, latdiff)
+		fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, slon, latdiff))
 
 
 
@@ -324,18 +331,18 @@ tofe
 """
 Plotting
 """
-pexuni = fkw.stream2array(read_st("../data/synthetics_uniform/SYNTH_UNIFORM_PP_FK_EX.QHD").normalize())
+pexuni = fku.stream2array(read_st("../data/synthetics_uniform/SYNTH_UNIFORM_PP_FK_EX.QHD").normalize())
 pexuni = np.roll(pexuni, -35)
-pexran = fkw.stream2array(read_st("../data/synthetics_random/SYNTH_RAND_PP_FK_EX.QHD").normalize())
+pexran = fku.stream2array(read_st("../data/synthetics_random/SYNTH_RAND_PP_FK_EX.QHD").normalize())
 pexran = np.roll(pexran, -35)
 
-pdiffuni = fkw.stream2array(read_st("../data/synthetics_uniform/SYNTH_UNIFORM_PP_FK.QHD").normalize())
+pdiffuni = fku.stream2array(read_st("../data/synthetics_uniform/SYNTH_UNIFORM_PP_FK.QHD").normalize())
 pdiffuni = np.roll(pdiffuni, -47)
-pdiffran = fkw.stream2array(read_st("../data/synthetics_random/SYNTH_RAND_PP_FK.QHD").normalize())
+pdiffran = fku.stream2array(read_st("../data/synthetics_random/SYNTH_RAND_PP_FK.QHD").normalize())
 
-uni = fkw.stream2array(read_st("../data/synthetics_uniform/SYNTH_UNIFORM_PP.QHD").normalize())
+uni = fku.stream2array(read_st("../data/synthetics_uniform/SYNTH_UNIFORM_PP.QHD").normalize())
 uni = np.roll(uni, -35)
-ran = fkw.stream2array(read_st("../data/synthetics_random/SYNTH_RAND_PP.QHD").normalize())
+ran = fku.stream2array(read_st("../data/synthetics_random/SYNTH_RAND_PP.QHD").normalize())
 ran = np.roll(ran, -35)
 
 

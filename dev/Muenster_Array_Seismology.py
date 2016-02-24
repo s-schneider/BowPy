@@ -11,8 +11,6 @@ from obspy import UTCDateTime, Stream
 from obspy.core import AttribDict
 from obspy.core.util.geodetics import locations2degrees, gps2DistAzimuth, \
    kilometer2degrees
-#from obspy.geodetics import locations2degrees, gps2DistAzimuth, \
-    #kilometer2degrees, degrees2kilometers
 from obspy.taup import getTravelTimes
 import scipy.interpolate as spi
 import scipy as sp
