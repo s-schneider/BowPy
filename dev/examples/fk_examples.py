@@ -114,7 +114,7 @@ yls2ifft = fku.ls2ifft_prep(yls)
 """
 #get data with instaseis
 import obspy
-from obspy.core.util.geodetics import gps2dist_azimuth, kilometer2degrees, locations2degrees
+from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy import read as read_st
 from obspy import read_inventory as read_inv
 from obspy import read_events as read_cat
@@ -128,7 +128,6 @@ import scipy as sp
 import scipy.signal as signal
 from numpy import genfromtxt
 
-import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
 from sipy.utilities.array_util import get_coords
 
 import os
@@ -153,6 +152,13 @@ distance_to_source=100
 # magnitude of randomness 
 magn=2.
 
+#output
+
+streamfile = "SYNTH_OUT.QHD"
+
+qstfile = "SYNTH_OUT.QST"
+invfile = "SYNTH_OUT_inv.xml"
+catfile = "SYNTH_OUT_cat.xml"
 
 source = ins.Source(
 latitude=lat, longitude=lon, depth_in_m=depth,
@@ -166,7 +172,7 @@ origin_time=tofe
 
 x = []
 
-with open("SYNTH_OUT.QST", "w") as fh:
+with open( qstfile, "w") as fh:
 	station_range = np.linspace(0,aperture-1,no_of_stations) + 100.
 	if uniform:
 		for i in station_range:
@@ -187,7 +193,6 @@ with open("SYNTH_OUT.QST", "w") as fh:
 		randrange.sort()
 		for slon in randrange:
 			name="X"+str(int(i))
-			print(name)
 			x.append(ins.Receiver(latitude="0", longitude=slon, network="LA", station=name ))
 			latdiff = gps2dist_azimuth(0.1,0,0.1,slon)[0]/1000.
 			fh.write("%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))		
@@ -211,7 +216,7 @@ Write quakeml file
 """
 
 
-with open("synth_cat.xml", "w") as fh:
+with open( catfile, "w") as fh:
 	fh.write("<?xml version=\'1.0\' encoding=\'utf-8\'?> \n")
 	fh.write("<q:quakeml xmlns:q=\"http://quakeml.org/xmlns/quakeml/1.2\" xmlns:ns0=\"http://service.iris.edu/fdsnws/event/1/\" xmlns=\"http://quakeml.org/xmlns/bed/1.2\"> \n")
 	fh.write("  <eventParameters publicID=\"smi:local/6b269cbf-6b00-4643-8c2c-cbe6274083ae\"> \n")
@@ -260,7 +265,7 @@ with open("synth_cat.xml", "w") as fh:
 Write station-files for synthetics
 """
 
-with open("synth_inv.xml", "w") as fh:
+with open( invfile, "w") as fh:
 	fh.write("<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n")
 	fh.write("<FDSNStationXML schemaVersion=\"1.0\" xmlns=\"http://www.fdsn.org/xml/station/1\">\n")
 	fh.write("  <Source>IRIS-DMC</Source>\n")
@@ -291,10 +296,11 @@ with open("synth_inv.xml", "w") as fh:
 	fh.write("  </Network>\n")
 	fh.write("</FDSNStationXML>")
 
-inv=read_inv("synth_inv.xml")
-cat=read_cat("synth_cat.xml")
+inv=read_inv(invfile)
+cat=read_cat(catfile)
+
 st = stream.select(component="Z")
-st.write("SRNEW.QHD", format="Q")
+st.write( streamfile, format="Q")
 
 ##########################################################################################
 #create Q station-file

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from obspy import UTCDateTime, Stream
 from obspy.core import AttribDict
-from obspy.core.util.geodetics import locations2degrees, gps2DistAzimuth, \
+from obspy.geodetics.base import locations2degrees, gps2dist_azimuth, \
     kilometer2degrees
 from obspy.taup import getTravelTimes
 import scipy.interpolate as spi
@@ -151,7 +151,7 @@ def vespagram(stream, ev, inv, method, scale, nthroot=4,
     center_elv /= float(i)
  
     # calculate the back azimuth
-    great_cricle_dist, baz, az2 = gps2DistAzimuth(center_lat,center_lon,ev_lat,ev_lon)
+    great_cricle_dist, baz, az2 = gps2dist_azimuth(center_lat,center_lon,ev_lat,ev_lon)
     great_circle_dist_deg = great_cricle_dist/ (1000*KM_PER_DEG)
     # print("baz")
     # print(baz)
