@@ -1,0 +1,191 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<FDSNStationXML schemaVersion="1.0" xmlns="http://www.fdsn.org/xml/station/1">
+  <Source>IRIS-DMC</Source>
+  <Sender>IRIS-DMC</Sender>
+  <Created>2015-11-05T18:22:28+00:00</Created>
+  <Network code="LA" endDate="2500-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2003-01-01T00:00:00+00:00">
+    <Description>Synthetic Array - Linear Array</Description>
+    <TotalNumberStations>20</TotalNumberStations>
+    <SelectedNumberStations>20</SelectedNumberStations>
+    <Station code="X0" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">100.000000</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X0 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X1" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">101.099267</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X1 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X2" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">101.731352</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X2 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X3" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">101.986311</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X3 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X4" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">102.029799</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X4 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X5" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">104.670675</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X5 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X6" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">105.408384</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X6 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X7" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">107.692655</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X7 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X8" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">107.770789</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X8 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X9" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">107.818914</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X9 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X10" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">107.971633</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X10 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X11" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">112.385123</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X11 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X12" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">112.386023</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X12 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X13" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">114.275524</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X13 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X14" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">116.169312</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X14 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X15" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">116.951146</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X15 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X16" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">116.962272</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X16 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X17" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">117.942886</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X17 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X18" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">118.672613</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X18 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+    <Station code="X19" endDate="2011-11-17T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.000000</Latitude>
+      <Longitude unit="DEGREES">119.000000</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name> X19 </Name>
+      </Site>
+    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>
+    </Station>
+  </Network>
+</FDSNStationXML>
