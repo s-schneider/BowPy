@@ -324,7 +324,7 @@ def epidist2nparray(epidist):
 	epidist_np.sort()	
 	return(epidist_np)
 
-def alignon(st, inv, event, phase, maxtimewindow=None):
+def alignon(st, inv, event, phase, maxtimewindow=None, taup_model='ak135'):
 	"""
 	Aligns traces on a given phase
 	
@@ -334,15 +334,19 @@ def alignon(st, inv, event, phase, maxtimewindow=None):
 
 	:param event: Eventdata
 
-	:phase: Phase to align the traces on
+	:param phase: Phase to align the traces on
 	:type phase: str
 
+	:param maxtimewindow: Timewindow around the theoretical arrivaltime
+	:type maxxtimewindow: int or float
+	
+	:param taup_model: model used by TauPyModel to calculate arrivals, default is ak135
+	:type taup_model: str
+
 	returns:
-	:param st_align:
+	:param st_align: Aligned stream on Phase
 	:type st_align:
 
-	:param shifttime:
-	:type shifttime:
 	"""
 	
 	# Calculate depth and distance of receiver and event.
@@ -357,7 +361,7 @@ def alignon(st, inv, event, phase, maxtimewindow=None):
 	for j in range(no_x):
 		y_dist = st[j].meta.distance
 		origin = event.origins[0]['time']
-		m = TauPyModel('ak135')
+		m = TauPyModel(taup_model)
 		time = m.get_travel_times(depth, y_dist)
 		for k in range(len(time)):
 			if time[k].name != phase:
@@ -423,6 +427,15 @@ def partial_stack(st, yinfo, no_of_bins, order=None):
 	returns: 
 	:param ps_st: partial stacked data of the array in no_of_bins uniform distributed stacks
 	:type ps_st:
+
+	:param y_resample_no: distribution  traces in bins
+	:type: numpy.ndarray
+
+	:param L: Location of bin borders
+	:type L: numpy.ndarray
+
+	:param y_resample: resampled yinfo of the stacked traces
+	:type y_resample: numpy.ndarray
 	"""
 	
 	# Checking for correct input.
