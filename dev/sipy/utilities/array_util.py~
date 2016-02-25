@@ -423,6 +423,15 @@ def partial_stack(st, yinfo, no_of_bins, order=None):
 	returns: 
 	:param ps_st: partial stacked data of the array in no_of_bins uniform distributed stacks
 	:type ps_st:
+
+	:param y_resample_no: distribution  traces in bins
+	:type: numpy.ndarray
+
+	:param L: Location of bin borders
+	:type L: numpy.ndarray
+
+	:param y_resample: resampled yinfo of the stacked traces
+	:type y_resample: numpy.ndarray
 	"""
 	
 	# Checking for correct input.
@@ -472,8 +481,6 @@ def partial_stack(st, yinfo, no_of_bins, order=None):
 				else:
 					ps_st[i-1,:] = ps_st[i-1,:] + st[j,:]
 					count += 1.
-
-				print("stream %i went into bin %i" % (j, i-1))
 
 		if count != 0.:	
 			if order:
