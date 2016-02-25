@@ -101,8 +101,11 @@ def stream2array(stream, normalize=False):
 		ArrayData = np.append(ArrayData, next_st, axis=0)
 	return(ArrayData)
 
-def array2stream(ArrayData):
-	
+def array2stream(ArrayData, st_original=None, network=None):
+	"""
+	param network: Network, of with all the station information
+	type network: obspy.core.inventory.network.Network
+	"""
 	traces = []
 	
 	for i in range(len(ArrayData)):
@@ -110,6 +113,23 @@ def array2stream(ArrayData):
 		traces.append(newtrace)
 		
 	stream = obspy.core.stream.Stream(traces)
+	
+	# Just writes the network information, if possible input original stream
+	if st_original:
+		i=0
+		for trace in stream:
+			trace.meta = st_original[i].meta
+			i += 1	
+		
+
+	elif network and st_original == None:
+		i=0
+		for trace in stream:
+			trace.meta.network = network.code
+			trace.meta.station = network[0].code
+			i += 1
+
+
 	return(stream)
 
 
@@ -313,6 +333,13 @@ def alignon(st, inv, event, phase, maxtimewindow=None):
 
 	:phase: Phase to align the traces on
 	:type phase: str
+
+	returns:
+	:param st_align:
+	:type st_align:
+
+	:param shifttime:
+	:type shifttime:
 	"""
 	
 	# Calculate depth and distance of receiver and event.
@@ -322,6 +349,8 @@ def alignon(st, inv, event, phase, maxtimewindow=None):
 	# Prepare Array of data.
 	stshift = stream2array(st)
 	no_x,no_t = stshift.shape
+	shifttimes=np.zeros(no_x)
+
 	for j in range(no_x):
 		y_dist = st[j].meta.distance
 		origin = event.origins[0]['time']
@@ -356,11 +385,19 @@ def alignon(st, inv, event, phase, maxtimewindow=None):
 				shift_index = tref - Phase_npt
 
 			stshift[j,:] = np.roll(stshift[j,:], shift_index)
-		
-	return(stshift)
+			shifttimes[j] = delta*shift_index			
+	
+	st_align = array2stream(stshift, st)
+	for i in range(len(st_align))[1:]:
+		new_start = st_align[i].meta.starttime - shifttimes[i]
+		st_align[i].meta.starttime = new_start
+		new_end = st_align[i].meta.endtime - shifttimes[i]
+		st_align[i].meta.endtime = new_end
+	
+	return st_align
 
 
-def part_stack(st, yinfo, no_of_bins, order=None):
+def partial_stack(st, yinfo, no_of_bins, order=None):
 	"""
 	Will sort the traces into equally distributed bins and stack the bins.
 	The stacking is just an addition of the traces, more advanced schemes might follow.
@@ -434,7 +471,7 @@ def part_stack(st, yinfo, no_of_bins, order=None):
 					count += 1.
 				
 				print("stream %i went into bin %i" % (j, i-1))
-		if count != 0.		
+		if count != 0.:	
 			if order:
 				sgn = np.sign(ps_st[i-1,:])
 				ps_st[i-1,:] = sgn * ( ( ps_st[i-1,:]/ count )**(order) )

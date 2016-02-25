@@ -1,4 +1,16 @@
 from __future__ import absolute_import
+
+import numpy
+import numpy as np
+from numpy import genfromtxt
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import scipy as sp
+import scipy.signal as signal
+
+import os
+import datetime
+
 import obspy
 from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy import read as read_st
@@ -6,24 +18,16 @@ from obspy import read_inventory as read_inv
 from obspy import read_events as read_cat
 from obspy.taup import TauPyModel
 
-import numpy
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import scipy as sp
-import scipy.signal as signal
-from numpy import genfromtxt
-
 import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
-from sipy.utilities.array_util import get_coords
-from sipy.utilities.array_util import attach_network_to_traces, attach_coordinates_to_traces
-from sipy.utilities.base import stream2array
-import os
-import datetime
-
 import sipy.filter.fk as fk
 import sipy.utilities.fkutil as fku
 from sipy.filter.fk import fk_filter
+from sipy.utilities.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
+stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces
+
+
+
+
 
 
 stream="../data/WORK_D.MSEED"
