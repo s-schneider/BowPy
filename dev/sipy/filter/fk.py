@@ -135,7 +135,7 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 
 # FFT FUNCTIONS ############################################################################
 
-def _fk_fft_filter_extract_phase(data, snes=False, y_dist=False, radius=None):
+def _fx_fft_filter_extract_phase(data, snes=False, y_dist=False, radius=None):
 	"""
 	Only use with the function fk_filter!
 	Function to extract a desired phase.
@@ -166,7 +166,7 @@ def _fk_fft_filter_extract_phase(data, snes=False, y_dist=False, radius=None):
 
 	return(data_fk.real)
 
-def _fk_fft_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None):
+def _fx_fft_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data

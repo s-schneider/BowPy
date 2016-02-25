@@ -8,9 +8,8 @@ import datetime
 import scipy as sp
 import scipy.signal as signal
 
-from sipy.utilities.base import  array2stream, stream2array, epidist2nparray
-from sipy.utilities.array_util import shift_array
-from sipy.utilities.fkutil import ls2ifft_prep, line_cut, line_set_zero
+from sipy.utilities.array_util import array2stream, stream2array, epidist2nparray
+from sipy.utilities.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array
 
 def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=False, SSA=False):
 	"""

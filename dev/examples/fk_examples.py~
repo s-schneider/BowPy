@@ -23,7 +23,8 @@ import sipy.filter.fk as fk
 import sipy.utilities.fkutil as fku
 from sipy.filter.fk import fk_filter
 from sipy.utilities.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
-stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, epidist_inv, epidist2nparray
+stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, epidist_inv, epidist2nparray, epidist2list \
+alignon, partial_stack
 
 
 
@@ -144,7 +145,7 @@ from sipy.filter.fk import fk_filter
 import sipy.utilities.fkutil as fku
 import instaseis as ins
 
-uniform=False
+uniform=True
 db = ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
 
 tofe = obspy.UTCDateTime(2016,2,9,18,41,1)
@@ -181,12 +182,15 @@ x = []
 with open( qstfile, "w") as fh:
 	station_range = np.linspace(0,aperture-1,no_of_stations) + 100.
 	if uniform:
+		k=0
 		for i in station_range:
 			slon = i
-			name="X"+str(int(i))
+			name="X"+str(int(k))
+			print(name)
 			x.append(ins.Receiver(latitude="0", longitude=str(slon), network="LA", station=name ))
 			latdiff = gps2dist_azimuth(0.1,0,0.1,slon)[0]/1000.
-			fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, lon, latdiff))	
+			fh.write("%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, lon, latdiff))
+			k+=1	
 	else:
 		i=0
 		r = np.random.randn(no_of_stations)
