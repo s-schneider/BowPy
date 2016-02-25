@@ -242,9 +242,3 @@ def maxrow(array):
 			rowsum = array[i].sum()
 			max_row_index = i
 	return(max_row_index)
-
-
-def transpose(array):
-	arrayt = np.reshape(array, array.size, order='F').reshape(len(array[0]),len(array))
-	arrayt = arrayt.astype('float')
-	return(arrayt)

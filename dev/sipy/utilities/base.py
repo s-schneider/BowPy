@@ -32,35 +32,6 @@ Basic collection of fundamental functions for the SiPy lib
 Author: S. Schneider 2016
 """
 
-def stream2array(stream, normalize=False):
-
-	st = stream
-
-	if normalize:
-		ArrayData = np.array([st[0].data])/float(max(np.array([st[0].data])[0]))
-	else:
-		ArrayData = np.array([st[0].data])
-	
-	for i in range(len(st))[1:]:
-		if normalize:
-			next_st = np.array([st[i].data]) / float(max(np.array([st[i].data])[0]))
-		else:
-			next_st = np.array([st[i].data])
-
-		ArrayData = np.append(ArrayData, next_st, axis=0)
-	return(ArrayData)
-
-def array2stream(ArrayData):
-	
-	traces = []
-	
-	for i in range(len(ArrayData)):
-		newtrace = obspy.core.trace.Trace(ArrayData[i])
-		traces.append(newtrace)
-		
-	stream = obspy.core.stream.Stream(traces)
-	return(stream)
-
 def read_file(stream, inventory, catalog, array=False):
 	"""
 	function to read data files, such as MSEED, station-xml and quakeml, in a way of obspy.read

@@ -1,7 +1,9 @@
 from __future__ import absolute_import
 from collections import defaultdict
 import tempfile
+import numpy
 import numpy as np
+import obspy
 import os
 import shutil
 import matplotlib.pyplot as plt
@@ -26,7 +28,6 @@ from obspy.signal.headers import clibsignal
 from obspy.signal.invsim import cosTaper
 from obspy.clients.fdsn import Client
 from obspy.taup import TauPyModel
-from sipy.utilities.base import stream2array
 
 
 """
@@ -35,6 +36,89 @@ Collection of useful functions for processing seismological array data
 Author: S. Schneider 2016
 """
 
+def __coordinate_values(inventory):
+    geo = get_coords(inventory, returntype="dict")
+    lats, lngs, hgt = [], [], []
+    for coordinates in list(geo.values()):
+        lats.append(coordinates["latitude"]),
+        lngs.append(coordinates["longitude"]),
+        hgt.append(coordinates["elevation"])
+    return lats, lngs, hgt
+
+def get_coords(inventory, returntype="dict"):
+    """
+    Get the coordinates of the stations in the inventory, independently of the channels,
+    better use for arrays, than the channel-dependent core.inventory.inventory.Inventory.get_coordinates() .
+    returns the variable coords with entries: elevation (in km), latitude and longitude.
+    :param inventory: Inventory to get the coordinates from
+    :type inventory: obspy.core.inventory.inventory.Inventory
+
+    :param coords: dictionary with stations of the inventory and its elevation (in km), latitude and longitude
+    :type coords: dict
+
+    :param return: type of desired return
+    :type return: dictionary or numpy.array
+
+    """
+    if returntype == "dict":
+        coords = {}
+        for network in inventory:
+            for station in network:
+                coords["%s.%s" % (network.code, station.code)] = \
+                    {"latitude": station.latitude,
+                     "longitude": station.longitude,
+                     "elevation": float(station.elevation) / 1000.0}
+
+    if returntype == "array":
+        nstats = len(inventory[0].stations)
+        coords = np.empty((nstats, 3))
+        if len(inventory.networks) == 1:
+            i=0
+            for network in inventory:
+                for station in network:
+                    coords[i,0] = station.latitude
+                    coords[i,1] = station.longitude
+                    coords[i,2] = float(station.elevation) / 1000.0
+                    i += 1
+
+    return coords
+
+def stream2array(stream, normalize=False):
+
+	st = stream
+
+	if normalize:
+		ArrayData = np.array([st[0].data])/float(max(np.array([st[0].data])[0]))
+	else:
+		ArrayData = np.array([st[0].data])
+	
+	for i in range(len(st))[1:]:
+		if normalize:
+			next_st = np.array([st[i].data]) / float(max(np.array([st[i].data])[0]))
+		else:
+			next_st = np.array([st[i].data])
+
+		ArrayData = np.append(ArrayData, next_st, axis=0)
+	return(ArrayData)
+
+def array2stream(ArrayData):
+	
+	traces = []
+	
+	for i in range(len(ArrayData)):
+		newtrace = obspy.core.trace.Trace(ArrayData[i])
+		traces.append(newtrace)
+		
+	stream = obspy.core.stream.Stream(traces)
+	return(stream)
+
+
+def attach_network_to_traces(stream, network):
+	"""
+	Attaches the network-code of the inventory to each trace of the stream
+	"""
+	for trace in stream:
+		trace.meta.network = network.code
 
 def attach_coordinates_to_traces(stream, inventory, event=None):
     """
@@ -80,84 +164,6 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
         if event:
             trace.stats.distance = value["distance"]
 
-def get_coords(inventory, returntype="dict"):
-    """
-    Get the coordinates of the stations in the inventory, independently of the channels,
-    better use for arrays, than the channel-dependent core.inventory.inventory.Inventory.get_coordinates() .
-    returns the variable coords with entries: elevation (in km), latitude and longitude.
-    :param inventory: Inventory to get the coordinates from
-    :type inventory: obspy.core.inventory.inventory.Inventory
-
-    :param coords: dictionary with stations of the inventory and its elevation (in km), latitude and longitude
-    :type coords: dict
-
-    :param return: type of desired return
-    :type return: dictionary or numpy.array
-
-    """
-    if returntype == "dict":
-        coords = {}
-        for network in inventory:
-            for station in network:
-                coords["%s.%s" % (network.code, station.code)] = \
-                    {"latitude": station.latitude,
-                     "longitude": station.longitude,
-                     "elevation": float(station.elevation) / 1000.0}
-
-    if returntype == "array":
-        nstats = len(inventory[0].stations)
-        coords = np.empty((nstats, 3))
-        if len(inventory.networks) == 1:
-            i=0
-            for network in inventory:
-                for station in network:
-                    coords[i,0] = station.latitude
-                    coords[i,1] = station.longitude
-                    coords[i,2] = float(station.elevation) / 1000.0
-                    i += 1
-
-    return coords
-
-
-def __coordinate_values(inventory):
-    geo = get_coords(inventory, returntype="dict")
-    lats, lngs, hgt = [], [], []
-    for coordinates in list(geo.values()):
-        lats.append(coordinates["latitude"]),
-        lngs.append(coordinates["longitude"]),
-        hgt.append(coordinates["elevation"])
-    return lats, lngs, hgt
-
-def plot(inventory, projection="local"):
-    """
-    Function to plot the geometry of the array, 
-    including its center of gravity and geometrical center
-
-    :type inventory: obspy.core.inventory.inventory.Inventory
-    :param inventory: Inventory to be plotted
-
-    :type projection: strg, optional
-    :param projection: The map projection. Currently supported are:
-
-    * ``"global"`` (Will plot the whole world.)
-    * ``"ortho"`` (Will center around the mean lat/long.)
-    * ``"local"`` (Will plot around local events)   
-    """
-    if inventory:
-        inventory.plot(projection, show=False)
-        bmap = plt.gca().basemap
-
-        grav = center_of_gravity(inventory)
-        x, y = bmap(grav["longitude"], grav["latitude"])
-        bmap.scatter(x, y, marker="x", c="red", s=40, zorder=20)
-        plt.text(x, y, "Center of Gravity", color="red")
-
-        geo = geometrical_center(inventory)
-        x, y = bmap(geo["longitude"], geo["latitude"])
-        bmap.scatter(x, y, marker="x", c="green", s=40, zorder=20)
-        plt.text(x, y, "Geometrical Center", color="green")
-
-        plt.show()
 
 def center_of_gravity(inventory):
     lats, lngs, hgts = __coordinate_values(inventory)
@@ -220,6 +226,260 @@ def find_closest_station(inventory, latitude, longitude,
             min_distance = distance
             min_distance_station = inventory[0][i].code
     return min_distance_station
+
+
+def epidist_inv(inventory, event):
+	"""
+	Calculates the epicentral distance between event and stations of the inventory in degrees.
+
+	param inventory: 
+	type inventory:
+
+	param event: event of catalog
+	type event:
+
+	Returns
+
+	param Array_Coords:
+	type Array_Coords: dict
+	"""
+	#calc min and max epidist between source and receivers
+	inv = inventory
+	Array_Coords = get_coords(inv)
+	eventlat = event.origins[0].latitude
+	eventlon = event.origins[0].longitude
+
+	for network in inv:
+		for station in network:
+			scode = network.code + "." + station.code
+			lat1 = Array_Coords[scode]["latitude"]
+			lat2 = Array_Coords[scode]["longitude"]
+			# calculate epidist in km
+			# adds an epidist entry to the Array_coords dictionary 
+			Array_Coords[scode]["epidist"] = locations2degrees( lat1, lat2, eventlat, eventlon )
+
+	return(Array_Coords)
+
+def epidist_stream(stream, inventory, catalog):
+	"""
+	Receives the epicentral distance of the station-source couple given in the stream. It uses just the
+	coordinates of the used stations in stream.
+
+	param stream:
+	type stream:
+
+	param inventory: 
+	type inventory:
+
+	param catalog:
+	type catalog:
+
+	"""
+	Array_Coords = epidist_inv(inventory, catalog)
+
+	epidist = {}
+	for trace in stream:
+		scode = trace.meta.network + "." + trace.meta.station
+		epidist["%s" % (scode)] =  {"epidist" : Array_Coords[scode]["epidist"]}
+
+	return(epidist)
+
+def epidist2list(epidist):
+	"""
+	converts dictionary entries of epidist into a list
+	"""
+	epidist_list = []
+	for scode in epidist:
+		epidist_list.append(epidist[scode]["epidist"])
+
+	return(epidist_list)
+
+def epidist2nparray(epidist):
+	epidist_np = []
+	for scode in epidist:
+		epidist_np = np.append(epidist_np, [epidist[scode]["epidist"]])
+		
+	return(epidist_np)
+
+def alignon(st, inv, event, phase, maxtimewindow=None):
+	"""
+	Aligns traces on a given phase
+	
+	:param st: stream
+	
+	:param inv: inventory
+
+	:param event: Eventdata
+
+	:phase: Phase to align the traces on
+	:type phase: str
+	"""
+	
+	# Calculate depth and distance of receiver and event.
+	attach_coordinates_to_traces(st, inv, event)
+	depth = event.origins[0]['depth']/1000.
+	
+	# Prepare Array of data.
+	stshift = stream2array(st)
+	no_x,no_t = stshift.shape
+	for j in range(no_x):
+		y_dist = st[j].meta.distance
+		origin = event.origins[0]['time']
+		m = TauPyModel('ak135')
+		time = m.get_travel_times(depth, y_dist)
+		for k in range(len(time)):
+			if time[k].name != phase:
+				continue
+			t = time[k].time
+		
+		phase_time = origin + t - st[j].stats.starttime
+		Phase_npt = int(phase_time/st[j].stats.delta)
+		if j == 0:
+			tref = Phase_npt
+			
+		else:
+			# Check for maximum Value in a timewindow of length 
+			# maxtimewindow around theoretical arrival
+			if maxtimewindow:
+				delta = st[j].meta.delta
+				tmin = Phase_npt - int( (maxtimewindow/2.)/delta )
+				tmax = Phase_npt + int( (maxtimewindow/2.)/delta )
+				stmax = stshift[j][Phase_npt]
+				mtw_index = Phase_npt
+				for k in range(tmin,tmax+1):
+					if stshift[j][k] > stmax:
+							stmax=stshift[j][k]
+							mtw_index = k
+				print("Phase delta is %i, best fit is %i" % (Phase_npt,mtw_index))
+				shift_index = tref - mtw_index
+			else:
+				shift_index = tref - Phase_npt
+
+			stshift[j,:] = np.roll(stshift[j,:], shift_index)
+		
+	return(stshift)
+
+
+def part_stack(st, yinfo, no_of_bins, order=None):
+	"""
+	Will sort the traces into equally distributed bins and stack the bins.
+	The stacking is just an addition of the traces, more advanced schemes might follow.
+	The uniform distribution is useful for FK-filtering, SSA and every method that requires
+	a uniform distribution.
+	
+	Works so far with array data, not with obspy-data
+	
+	input:
+	:param st: data stream of the array
+	:type st: numpy.ndarray
+
+	:param yinfo: list of distances of the traces, sorted to match st
+	:type yinfo: list
+
+	:param no_of_bins: number of bins, that should be used 
+	:type no_of_bins: int
+
+	:param order: Order of Nth-root stacking, default None
+	:type order: float
+
+	returns: 
+	:param ps_st: partial stacked data of the array in no_of_bins uniform distributed stacks
+	:type ps_st:
+	"""
+	
+	# Checking for correct input.
+	if type(st) != numpy.ndarray or type(yinfo) != list or type(order) == int: 
+		msg="wrong input type of variables!"
+		raise TypeError(msg)
+
+	# Calculate the border of each bin.
+	L = np.linspace(min(yinfo), max(yinfo), no_of_bins)
+	delta = abs(L[0] - L[1])
+
+	# Resample the y-axis information to new, equally distributed ones.
+	y_resample = np.linspace( L[0] + delta, L[len(L)-1]-delta, no_of_bins-1 )
+	y_resample_no = np.zeros(len(y_resample))
+	y_len, t_len = st.shape
+
+	# Preallocate some space in memory.
+	ps_st = np.zeros((len(y_resample),t_len))
+
+	for i in range(len(L))[1:]:
+		count=0.
+		for j in range(y_len):
+			if j==0 and i==1:
+				if order:
+					for k in range(t_len):
+						sgnps = np.sign(ps_st[i-1,k])
+						sgnst = np.sign(st[j,k])
+						ps_st[i-1,k] = sgnps * (abs(ps_st[i-1,k])**(1./order)) + \
+										sgnst *(abs(st[j,k])**(1./order))
+					count += 1.
+				else:
+					ps_st[i-1,:] = ps_st[i-1,:] + st[j,:]
+					count += 1.
+				print("stream %i went into bin %i" % (j, i-1))
+				continue
+
+			if yinfo[j] > L[i-1] and yinfo[j] <= L[i]:
+				if order:
+					for k in range(t_len):
+						sgnps = np.sign(ps_st[i-1,k])
+						sgnst = np.sign(st[j,k])
+						ps_st[i-1,k] = sgnps * (abs(ps_st[i-1,k])**(1./order)) + \
+										sgnst *(abs(st[j,k])**(1./order))
+					count += 1.
+				else:
+					ps_st[i-1,:] = ps_st[i-1,:] + st[j,:]
+					count += 1.
+				
+				print("stream %i went into bin %i" % (j, i-1))
+		if count != 0.		
+			if order:
+				sgn = np.sign(ps_st[i-1,:])
+				ps_st[i-1,:] = sgn * ( ( ps_st[i-1,:]/ count )**(order) )
+				y_resample_no[i-1] += count
+			else:
+				ps_st[i-1,:] = ps_st[i-1,:] / count
+				y_resample_no[i-1] += count
+		
+	return ps_st, y_resample_no, L
+
+
+def plot(inventory, projection="local"):
+    """
+    Function to plot the geometry of the array, 
+    including its center of gravity and geometrical center
+
+    :type inventory: obspy.core.inventory.inventory.Inventory
+    :param inventory: Inventory to be plotted
+
+    :type projection: strg, optional
+    :param projection: The map projection. Currently supported are:
+
+    * ``"global"`` (Will plot the whole world.)
+    * ``"ortho"`` (Will center around the mean lat/long.)
+    * ``"local"`` (Will plot around local events)   
+    """
+    if inventory:
+        inventory.plot(projection, show=False)
+        bmap = plt.gca().basemap
+
+        grav = center_of_gravity(inventory)
+        x, y = bmap(grav["longitude"], grav["latitude"])
+        bmap.scatter(x, y, marker="x", c="red", s=40, zorder=20)
+        plt.text(x, y, "Center of Gravity", color="red")
+
+        geo = geometrical_center(inventory)
+        x, y = bmap(geo["longitude"], geo["latitude"])
+        bmap.scatter(x, y, marker="x", c="green", s=40, zorder=20)
+        plt.text(x, y, "Geometrical Center", color="green")
+
+        plt.show()
+
+
+
+
 
 def plot_transfer_function(stream, inventory, sx=(-10, 10), sy=(-10, 10), sls=0.5, freqmin=0.1, freqmax=4.0,
                            numfreqs=10):
@@ -311,87 +571,3 @@ def plot_gcp(slat, slon, qlat, qlon, plat, plon, savefigure=None):
         plt.savefig('plot_gcp.png', format="png", dpi=900)
     else:
         plt.show()
-
-def attach_network_to_traces(stream, network):
-	"""
-	Attaches the network-code of the inventory to each trace of the stream
-	"""
-	for trace in stream:
-		trace.meta.network = network.code
-
-def alignon(st, inv, event, phase, maxtimewindow=None):
-	"""
-	Aligns traces on a given phase
-	
-	:param st: stream
-	
-	:param inv: inventory
-
-	:param event: Eventdata
-
-	:phase: Phase to align the traces on
-	:type phase: str
-	"""
-	
-	# Calculate depth and distance of receiver and event.
-	attach_coordinates_to_traces(st, inv, event)
-	depth = event.origins[0]['depth']/1000.
-	
-	# Prepare Array of data.
-	stshift = stream2array(st)
-	no_x,no_t = stshift.shape
-	for j in range(no_x):
-		y_dist = st[j].meta.distance
-		origin = event.origins[0]['time']
-		m = TauPyModel('ak135')
-		time = m.get_travel_times(depth, y_dist)
-		for k in range(len(time)):
-			if time[k].name != phase:
-				continue
-			t = time[k].time
-		
-		phase_time = origin + t - st[j].stats.starttime
-		Phase_npt = int(phase_time/st[j].stats.delta)
-		if j == 0:
-			tref = Phase_npt
-			
-		else:
-			# Check for maximum Value in a timewindow of length 
-			# maxtimewindow around theoretical arrival
-			if maxtimewindow:
-				delta = st[j].meta.delta
-				tmin = Phase_npt - int( (maxtimewindow/2.)/delta )
-				tmax = Phase_npt + int( (maxtimewindow/2.)/delta )
-				stmax = stshift[j][Phase_npt]
-				mtw_index = Phase_npt
-				for k in range(tmin,tmax+1):
-					if stshift[j][k] > stmax:
-							stmax=stshift[j][k]
-							mtw_index = k
-				print("Phase delta is %i, best fit is %i" % (Phase_npt,mtw_index))
-				shift_index = tref - mtw_index
-			else:
-				shift_index = tref - Phase_npt
-
-			stshift[j,:] = np.roll(stshift[j,:], shift_index)
-		
-	return(stshift)
-
-	
-def shift_array(array, shift_value=0, y_dist=False):
-	array_shift = array
-	try:
-		for i in range(len(array)):
-			array_shift[i] = np.roll(array[i], -shift_value*y_dist[i])
-	except (AttributeError, TypeError):
-		for i in range(len(array)):
-			array_shift[i] = np.roll(array[i], -shift_value*i)
-	return(array_shift)
-	
-
-def part_stack(st, yinfo):
-	ps_st=st
-	return ps_st
-
-	
-	

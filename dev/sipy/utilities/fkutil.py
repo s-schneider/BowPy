@@ -8,8 +8,7 @@ from obspy.geodetics import gps2dist_azimuth, kilometer2degrees, locations2degre
 from obspy.taup import TauPyModel
 
 
-from sipy.utilities.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces
-from sipy.utilities.base import stream2array
+from sipy.utilities.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces,stream2array
 import datetime
 import scipy as sp
 import scipy.signal as signal
@@ -340,3 +339,14 @@ def nextpow2(i):
 		n *= 2
 		count+=1
 	return count
+
+	
+def shift_array(array, shift_value=0, y_dist=False):
+	array_shift = array
+	try:
+		for i in range(len(array)):
+			array_shift[i] = np.roll(array[i], -shift_value*y_dist[i])
+	except (AttributeError, TypeError):
+		for i in range(len(array)):
+			array_shift[i] = np.roll(array[i], -shift_value*i)
+	return(array_shift)
