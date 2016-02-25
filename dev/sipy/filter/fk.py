@@ -110,10 +110,15 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 
 
 		# Apply filter.
-		if fktype == "eliminate":
-			array_filtered = _fk_fft_filter_eliminate_phase(ArrayData, radius=None)
-		elif fktype == "extract":
-			array_filtered = _fk_fft_filter_extract_phase(ArrayData, radius=None)
+		if fktype == "fx-eliminate":
+			array_filtered = _fx_fft_filter_eliminate_phase(ArrayData, radius=None)
+
+		elif fktype == "fx-extract":
+			array_filtered = _fx_fft_filter_extract_phase(ArrayData, radius=None)
+
+		elif fktype == "fk":
+			array_filtered = _fk_filter(ArrayData, indicies)
+
 		else:
 			print("No type of fk-filter specified")
 			raise TypeError
@@ -194,6 +199,10 @@ def _fx_fft_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None):
 		data_fk = ds
 
 	return(data_fk.real)
+
+def _fk_fft_filter(data, indicies):
+
+	return(data)
 
 # LS FUNCTIONS ############################################################################
 def _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=False, radius=None, maxk=False):
