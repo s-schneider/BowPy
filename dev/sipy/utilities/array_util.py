@@ -473,8 +473,6 @@ def partial_stack(st, yinfo, no_of_bins, order=None):
 					ps_st[i-1,:] = ps_st[i-1,:] + st[j,:]
 					count += 1.
 
-				print("stream %i went into bin %i" % (j, i-1))
-
 		if count != 0.:	
 			if order:
 				sgn = np.sign(ps_st[i-1,:])
