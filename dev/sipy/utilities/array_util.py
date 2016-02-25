@@ -311,6 +311,8 @@ def epidist2list(epidist):
 	epidist_list = []
 	for scode in epidist:
 		epidist_list.append(epidist[scode]["epidist"])
+	
+	epidist_list.sort()
 
 	return(epidist_list)
 
@@ -318,7 +320,8 @@ def epidist2nparray(epidist):
 	epidist_np = []
 	for scode in epidist:
 		epidist_np = np.append(epidist_np, [epidist[scode]["epidist"]])
-		
+	
+	epidist_np.sort()	
 	return(epidist_np)
 
 def alignon(st, inv, event, phase, maxtimewindow=None):
@@ -427,12 +430,14 @@ def partial_stack(st, yinfo, no_of_bins, order=None):
 		msg="wrong input type of variables!"
 		raise TypeError(msg)
 
-	# Calculate the border of each bin.
+	# Calculate the border of each bin 
+	# and the new yinfo values.
 	L = np.linspace(min(yinfo), max(yinfo), no_of_bins)
 	delta = abs(L[0] - L[1])
+	
 
 	# Resample the y-axis information to new, equally distributed ones.
-	y_resample = np.linspace( L[0] + delta, L[len(L)-1]-delta, no_of_bins-1 )
+	y_resample = np.linspace( L[0] + delta/2., L[len(L)-1]-delta/2., no_of_bins-1)
 	y_resample_no = np.zeros(len(y_resample))
 	y_len, t_len = st.shape
 
@@ -467,8 +472,9 @@ def partial_stack(st, yinfo, no_of_bins, order=None):
 				else:
 					ps_st[i-1,:] = ps_st[i-1,:] + st[j,:]
 					count += 1.
-				
+
 				print("stream %i went into bin %i" % (j, i-1))
+
 		if count != 0.:	
 			if order:
 				sgn = np.sign(ps_st[i-1,:])
@@ -478,7 +484,7 @@ def partial_stack(st, yinfo, no_of_bins, order=None):
 				ps_st[i-1,:] = ps_st[i-1,:] / count
 				y_resample_no[i-1] += count
 		
-	return ps_st, y_resample_no, L
+	return ps_st, y_resample_no, L, y_resample
 
 
 def plot(inventory, projection="local"):

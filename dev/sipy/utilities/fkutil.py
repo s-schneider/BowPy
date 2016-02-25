@@ -116,7 +116,7 @@ def plot(st, inv=None, event=None, zoom=1, y_dist=1, yinfo=False, markphase=None
 
 	plt.show()
 
-def plot_data(data, zoom=1, y_dist=1, yinfo=False):
+def plot_data(data, zoom=1, y_dist=1, bins=None):
 	"""
 	Alpha Version!
 	Time axis has no time-ticks --> Working on right now
@@ -136,6 +136,11 @@ def plot_data(data, zoom=1, y_dist=1, yinfo=False):
 			plt.plot(zoom*data[i]+ y_dist*i, color='black')
 		if type(y_dist) == list or type(y_dist) == numpy.ndarray:
 			plt.plot(zoom*data[i]+ y_dist[i], color='black')
+	if type(bins) == numpy.ndarray:
+		print('plotting bins')
+		for j in range(bins.size):
+			plt.plot( (0, data[0].size), (bins[j],bins[j]), color='red' )
+
 	plt.show()
 
 

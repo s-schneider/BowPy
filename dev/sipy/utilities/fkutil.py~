@@ -116,7 +116,7 @@ def plot(st, inv=None, event=None, zoom=1, y_dist=1, yinfo=False, markphase=None
 
 	plt.show()
 
-def plot_data(data, zoom=1, y_dist=1, yinfo=False):
+def plot_data(data, zoom=1, y_dist=1, bins=None):
 	"""
 	Alpha Version!
 	Time axis has no time-ticks --> Working on right now
@@ -127,7 +127,7 @@ def plot_data(data, zoom=1, y_dist=1, yinfo=False):
 	param zoom: zoom factor of the traces
 	type zoom:	float
 	param y_dist:	separating distance between traces, for example equidistant with "1" 
-					or import epidist-list via epidist
+					or import epidist-list via epidiststresdasd
 	type y_dist:	int or list
 	"""
 
@@ -136,6 +136,11 @@ def plot_data(data, zoom=1, y_dist=1, yinfo=False):
 			plt.plot(zoom*data[i]+ y_dist*i, color='black')
 		if type(y_dist) == list or type(y_dist) == numpy.ndarray:
 			plt.plot(zoom*data[i]+ y_dist[i], color='black')
+	if type(bins) == numpy.ndarray:
+		print('plotting bins')
+		for j in range(bins.size):
+			plt.plot( (0, data[0].size), (bins[j],bins[j]), color='red' )
+
 	plt.show()
 
 
@@ -339,3 +344,14 @@ def nextpow2(i):
 		n *= 2
 		count+=1
 	return count
+
+	
+def shift_array(array, shift_value=0, y_dist=False):
+	array_shift = array
+	try:
+		for i in range(len(array)):
+			array_shift[i] = np.roll(array[i], -shift_value*y_dist[i])
+	except (AttributeError, TypeError):
+		for i in range(len(array)):
+			array_shift[i] = np.roll(array[i], -shift_value*i)
+	return(array_shift)
