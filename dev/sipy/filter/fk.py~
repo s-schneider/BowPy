@@ -167,11 +167,8 @@ def _fx_fft_filter_extract_phase(data, snes=False, y_dist=False, radius=None):
 	dsfft = line_cut(dsfft, 0,radius)
 	
 	ds = np.fft.ifftn(dsfft)
-	#Shift back
-	if snes:
-		data_fk = shift_array(ds, -snes, y_dist)
-	else:
-		data_fk = ds
+
+	data_fk = ds
 
 	return(data_fk.real)
 
@@ -196,11 +193,8 @@ def _fx_fft_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None):
 	dsfft = line_set_zero(dsfft, 0, radius)
 	
 	ds = np.fft.ifftn(dsfft)
-	# Shift back
-	if snes:
-		data_fk = shift_array(ds, -snes, y_dist)
-	else:
-		data_fk = ds
+
+	data_fk = ds
 
 	return(data_fk.real)
 
@@ -221,21 +215,20 @@ def _fk_fft_filter(data, indicies):
 	# Apply second FFT f-x --> f-k.
 	dsfk_tmp = np.fft.fftn(dsfx.conj().transpose()).conj().transpose()
 
-	# Create new array.
+	# Create new array, only contains extractet energy, pointed to with indicies
 	dsfk = np.zeros(dsfk.shape)
-	dsfk.conj().transpose().flat[ indicies.astype('int').tolist() ]=1
-	dsfk = dsfk_tmp * dsfk	
+	dsfk.conj().transpose().flat[ indicies ]=1
+	dsfk = dsfk_tmp * dsfk
+
+	# Apply inverse FFT from f-k --> t-x 	
 	
-	ds = np.fft.ifftn(dsfft)
-	# Shift back
-	if snes:
-		data_fk = shift_array(ds, -snes, y_dist)
-	else:
-		data_fk = ds
+	dsfx = np.fft.ifftn(dsfk.conj().transpose()).conj().transpose()
+	ds = np.fft.ifftn(dsfx)
+
+	data_fk = ds
 
 	return(data_fk.real)
 
-	return(data)
 
 
 

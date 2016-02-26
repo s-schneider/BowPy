@@ -10,6 +10,7 @@ from scipy import sparse
 import matplotlib.pyplot as plt
 
 import sipy.filter.radon as radon
+import sipy.utilities.fkutil as fku
 
 
 data = sio.loadmat("../data/mtz_radon/data.mat")
@@ -24,7 +25,7 @@ data = sio.loadmat("../data/mtz_radon/data.mat")
 t = data['t']
 IDelta = data['Delta']
 M = data['M']
-indicies = data['indicies']
+indicies_matlab = data['indicies']
 
 mu=[5e-2]
 P_axis=np.arange(-1,1.01,0.01)
@@ -38,6 +39,12 @@ R=radon.radon_inverse(t, IDelta, M, P_axis, np.ones(IDelta.size), meandelta, "Li
 toc = datetime.datetime.now()
 time = toc-tic
 print( "Elapsed time is %s seconds." % str(time))
+
+
+# Pick Phase here!
+indicies = fku.get_polygon(R)
+
+
 
 # Mute all phases except the S670S arrival.
 R670=np.zeros(R.shape)

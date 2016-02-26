@@ -436,6 +436,6 @@ def convert_polygon_to_flat_index(data, vertices):
 			i+=1	
 
 	arr = arr.transpose().astype('int').tolist()
-	flat_index= np.ravel_multi_index(arr, data.conj().transpose().shape)
+	flat_index= np.ravel_multi_index(arr, data.conj().transpose().shape).astype('int').tolist()
 
 	return(flat_index)		

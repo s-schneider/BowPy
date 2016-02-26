@@ -217,7 +217,7 @@ def _fk_fft_filter(data, indicies):
 
 	# Create new array, only contains extractet energy, pointed to with indicies
 	dsfk = np.zeros(dsfk.shape)
-	dsfk.conj().transpose().flat[ indicies.astype('int').tolist() ]=1
+	dsfk.conj().transpose().flat[ indicies ]=1
 	dsfk = dsfk_tmp * dsfk
 
 	# Apply inverse FFT from f-k --> t-x 	
