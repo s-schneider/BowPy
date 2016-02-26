@@ -106,7 +106,8 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 		if not epi_dist == None:
 			epidist = epi_dist
 
-		#Calc mean diff of each epidist entry
+		# Calc mean diff of each epidist entry if it is reasonable
+		# do a partial stack and apply filter.
 
 
 		# Apply filter.
@@ -122,6 +123,7 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 		else:
 			print("No type of fk-filter specified")
 			raise TypeError
+
 		#Convert to Stream object
 		stream_filtered = array2stream(array_filtered)
 
@@ -138,12 +140,14 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	return stream with filtered data ####################################
 	"""
 
+
+
 # FFT FUNCTIONS ############################################################################
 
 def _fx_fft_filter_extract_phase(data, snes=False, y_dist=False, radius=None):
 	"""
 	Only use with the function fk_filter!
-	Function to extract a desired phase.
+	Function to extract a desired phase in the f-x-domain.
 	param data:	data of the array
 	type data:	numpy.ndarray
 
@@ -174,7 +178,7 @@ def _fx_fft_filter_extract_phase(data, snes=False, y_dist=False, radius=None):
 def _fx_fft_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None):
 	"""
 	Only use with the function fk_filter!
-	Function to test the fk workflow with synthetic data
+	Function to eliminate a given phase in the f-x-domain.
 	param data:	data of the array
 	type data:	numpy.ndarray
 
@@ -200,9 +204,41 @@ def _fx_fft_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None):
 
 	return(data_fk.real)
 
-def _fk_fft_filter(data):
+def _fk_fft_filter(data, indicies):
+	"""
+	Only use with the function fk_filter!
+	Function to test the fk workflow with synthetic data
+	param data:	data of the array
+	type data:	numpy.ndarray
+
+	param snes:	slownessvalue of the desired extracted phase
+	type snes:	int
+	"""
+	ds = data
+	
+	# Apply FFT t-x  --> f-x.
+	dsfx = np.fft.fftn(ds)
+	# Apply second FFT f-x --> f-k.
+	dsfk_tmp = np.fft.fftn(dsfx.conj().transpose()).conj().transpose()
+
+	# Create new array.
+	dsfk = np.zeros(dsfk.shape)
+	dsfk.conj().transpose().flat[ indicies.astype('int').tolist() ]=1
+	dsfk = dsfk_tmp * dsfk	
+	
+	ds = np.fft.ifftn(dsfft)
+	# Shift back
+	if snes:
+		data_fk = shift_array(ds, -snes, y_dist)
+	else:
+		data_fk = ds
+
+	return(data_fk.real)
 
 	return(data)
+
+
+
 
 # LS FUNCTIONS ############################################################################
 def _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=False, radius=None, maxk=False):
@@ -273,3 +309,5 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=
 		dsfft = line_set_zero(fkspectra, 0, radius)
 	
 	return(fkspectra.conj().transpose(), period_range)
+
+

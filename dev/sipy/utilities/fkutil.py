@@ -144,7 +144,7 @@ def plot_data(data, zoom=1, y_dist=1, bins=None):
 	plt.show()
 
 
-def plot_fft(x, logscale=False, fftshift=False, scaling=1):
+def plot_fft(x, logscale=False, fftshift=False):
 	"""
 	Doing an fk-trafo and plotting it.
 
@@ -165,7 +165,8 @@ def plot_fft(x, logscale=False, fftshift=False, scaling=1):
 #		fftx = stream2array(x)	
 #	else:
 	fftx = x
-
+	y,x = fftx.shape
+	
 	if fftshift:
 		plt.imshow((np.abs(x)), origin='lower',cmap=None, aspect=scaling)
 		if logscale:
@@ -202,7 +203,8 @@ def plot_fft_subplot(x, logscale=False, fftshift=False, scaling=1):
 #		fftx = stream2array(x)	
 #	else:
 	fftx = x
-
+	y,x = fftx.shape
+	scaling = float(x) / (float(y) * 2.)
 	if fftshift:
 		plt.imshow((np.abs(x)), origin='lower',cmap=None, aspect=scaling)
 		if logscale:
@@ -218,13 +220,18 @@ def plot_fft_subplot(x, logscale=False, fftshift=False, scaling=1):
 	plt.colorbar()
 
 
-def plot_data_im(x, color='Greys', scaling=30):
+def plot_data_im(x, color='Greys'):
+	y,x = x.shape
+	scaling = float(x) / (float(y) * 2.)	
 	plt.imshow(x, origin='lower', cmap=color, interpolation='nearest', aspect=scaling)
 	plt.show()
 
 	
-def multplot(data1, data2, Log, scale1, scale2):
-	
+def multplot(data1, data2, Log):
+	y,x = data1.shape
+	scale1 = float(x) / (float(y) * 2.)
+	y,x = data2.shape
+	scale2 = float(x) / (float(y) * 2.)
 	plt.subplot(2,1,1)
 	plot_fft_subplot(data1, logscale=Log, scaling=scale1)
 	plt.subplot(2,1,2)
@@ -355,3 +362,80 @@ def shift_array(array, shift_value=0, y_dist=False):
 		for i in range(len(array)):
 			array_shift[i] = np.roll(array[i], -shift_value*i)
 	return(array_shift)
+
+def get_polygon(data, no_of_vert=4):
+	"""
+	Interactive function to pick a polygon out of a figure and receive the vertices of it.
+	:param data:
+	:type:
+	
+	:param no_of_vert: number of vertices, default 4, 
+	:type no_of_vert: int
+	"""
+	from sipy.utilities.polygon_interactor import PolygonInteractor
+	from matplotlib.patches import Polygon
+	
+	# Define shape of polygon.
+	y,x = data.shape
+	aspectratio = float(x) / (float(y) * 2.)
+	xmin= x/3.
+	xmax= x*2./3.
+	ymin= y/3.
+	ymax= y*2./3.
+
+	xs = []
+	for i in range(no_of_vert):
+		if i >= no_of_vert/2:
+			xs.append(xmax)
+		else:
+			xs.append(xmin)
+
+	ys = np.linspace(ymin, ymax, no_of_vert/2)
+	ys = np.append(ys,ys[::-1]).tolist()
+
+	poly = Polygon(list(zip(xs, ys)), animated=True, closed=False, fill=False)
+	
+	# Add polygon to figure.
+	fig, ax = plt.subplots()
+	ax.add_patch(poly)
+	p = PolygonInteractor(ax, poly)
+	plt.title("Pick polygon, close figure to save vertices")
+	plt.imshow(abs(data), aspect=aspectratio)
+	plt.show()		
+	
+	vertices = (poly.get_path().vertices).astype('int')
+	
+	if no_of_vert == 4:
+		indicies = convert_polygon_to_flat_index(data, vertices)
+
+	return(indicies)
+
+def convert_polygon_to_flat_index(data, vertices):
+	"""
+	Converts vertices of a polygon taken of an imshow plot of data to 
+	flat-indicies.
+	
+	:param data: speaks for itself
+	:type data: numpy.ndarray
+
+	:param vertices: also...
+	:type vertices: numpy.ndarray
+	
+	"""
+
+	xlen = vertices[:,0].max() - vertices[:,0].min()
+	ylen = data.shape[0]
+	#ylen = vertices[:,1].max() - vertices[:,1].min()
+	indicies=np.zeros(xlen*ylen)		
+	
+	arr=np.zeros((xlen*ylen,2))
+	i=0		
+	for x in np.arange(vertices[:,0].min(), vertices[:,0].max()).astype('int'):
+		for y in range(ylen):
+			arr[i]=[x,y]
+			i+=1	
+
+	arr = arr.transpose().astype('int').tolist()
+	flat_index= np.ravel_multi_index(arr, data.conj().transpose().shape)
+
+	return(flat_index)		
