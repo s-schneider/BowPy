@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import obspy
 import numpy
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 from sipy.utilities.array_util import get_coords
 import datetime
@@ -9,9 +10,9 @@ import scipy as sp
 import scipy.signal as signal
 
 from sipy.utilities.array_util import array2stream, stream2array, epidist2nparray
-from sipy.utilities.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array
+from sipy.utilities.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon, nextpow2
 
-def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fktype=None, normalize=False, SSA=False):
+def fk_filter(st, inv=None, cat=None,trafo=None, ftype=None, phase=None, epi_dist=None, normalize=True, SSA=False):
 	"""
 	At this point prework with programs like seismic handler or SAC is needed to perform correctly
 
@@ -23,9 +24,6 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 
 	param st: Stream
 	type st: obspy.core.stream.Stream
-	
-	param ftype: Type of filter, FFT or LS (Lombard-Scargle)
-	type ftype: string
 
 	param inv: inventory
 	type inv: obspy.station.inventory.Inventory
@@ -33,14 +31,30 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	param cat: catalog
 	type cat: obspy.core.event.Catalog
 
+	param trafo: Type of transformation, possible inputs are:
+				 FK: for f-k transformation via numpy.fft.fft2
+				 FX: for f-x transformation via numpy.fft.fft
+				 LS: for a combination of 1D FFT in time-domain and and Lomb-Scargle
+				     in the space-domain, via numpy.fft.fft and scipy.signal.lombscargle
+	type trafo: string
+
+	param ftype: type of method, possible inputs are:
+				 eliminate
+				 extract
+				
+				 if trafo is set to FK, also:
+				 eliminate-polygon
+				 extract-polygon
+
+	type ftype: string
+
 	param phase: name of the phase to be investigated
 	type phase: string
 	
 	param epidist: list of epidistances, corresponding to st
 	type epidist: list
 
-	param fktype: type of fk-filter, extraction or elimination
-	type fktype: string
+
 	
 	param normalize: normalize data to 1
 	type normalize: bool
@@ -64,176 +78,138 @@ def fk_filter(st, ftype=None, inv=None, cat=None, phase=None, epi_dist=None, fkt
 	 GNU General Public License for more details: http://www.gnu.org/licenses/
 	"""
 
+	# Convert format.
+	ArrayData = stream2array(st, normalize)
 
 
+	if st and inv and cat:
+		epidist = epidist2nparray(epidist_stream(st, inv, cat))
+	
+	if not epi_dist == None:
+		epidist = epi_dist
+
+	# Calc mean diff of each epidist entry if it is reasonable
+	# do a partial stack and apply filter.
+	it = ArrayData.shape[1]
+	ix = ArrayData.shape[0]
+	iF = int(math.pow(2,nextpow2(it)+1))
+	iK = int(math.pow(2,nextpow2(ix)+1))
 	"""
-	2D Wavenumber-Frequency Filter #########################################################
+	2D Frequency-Space / Wavenumber-Frequency Filter #########################################################
 	"""
-	# 2D FFT-LS #####################################################################
-	# UNDER CONSTRUCTION
-	if ftype == "LS":
-		#Convert format.
-		ArrayData = stream2array(st)
-		if st and inv and cat:
-			epidist = epidist2nparray(epidist_stream(st, inv, cat))
+
+	# 2D f-k Transformation 
+	# Decide when to use SSA to fill the gaps, calc mean distance of each epidist entry
+	# if it differs too much --> SSA
+	if trafo == "FK":
 		
-		if not epi_dist == None:
-			epidist = epi_dist
+		array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+
+		if ftype == "eliminate":
+			array_filtered_fk = line_set_zero(array_fk)
+		elif ftype == "extract":
+			array_filtered_fk = line_cut(array_fk)				
+
+		elif ftype == "eliminate-polygon":
+			array_filtered_fk = _fk_eliminate_polygon(array_fk)
+
+		elif ftype == "extract-polygon":
+			array_filtered_fk = _fk_extract_polygon(array_fk)
+
+		else:
+			print("No type of filter specified")
+			raise TypeError
+
+		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF))
+
+	# 2D f-x Transformation 
+	elif trafo == "FX":
+		array_fx = np.fft.fft(ArrayData, iF)
+		if ftype == "eliminate":
+			array_filtered = line_set_zero(array_fx)
+
+		elif ftype == "extract":
+			array_filtered = line_cut(array_fx)
+		array_filtered = np.fft.ifft(ArrayData, iF)
+
+	# 2D FFT-LS 
+	# UNDER CONSTRUCTION
+	elif trafo == "LS":
 
 		# Apply filter.
-		if fktype == "eliminate":
+		if ftype == "eliminate":
 			array_filtered, periods = _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=epidist)
-		elif fktype == "extract":
+		elif ftype == "extract":
 			array_filtered, periods = _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=epidist)
 		else:
 			print("No type of fk-filter specified")
 			raise TypeError		
-			
-		fkspectra=array_filtered
 
-		return(fkspectra, periods)
-
-	#2D FFT #########################################################################
-	# Decide when to use SSA to fill the gaps, calc mean distance of each epidist entry
-	# if it differs too much --> SSA
-	elif ftype == "FFT":
-		#Convert format.
-		ArrayData = stream2array(st, normalize)
-
-		if st and inv and cat:
-			epidist = epidist2nparray(epidist_stream(st, inv, cat))
-		
-		if not epi_dist == None:
-			epidist = epi_dist
-
-		# Calc mean diff of each epidist entry if it is reasonable
-		# do a partial stack and apply filter.
-
-
-		# Apply filter.
-		if fktype == "fx-eliminate":
-			array_filtered = _fx_fft_filter_eliminate_phase(ArrayData, radius=None)
-
-		elif fktype == "fx-extract":
-			array_filtered = _fx_fft_filter_extract_phase(ArrayData, radius=None)
-
-		elif fktype == "fk":
-			array_filtered = _fk_filter(ArrayData, indicies)
-
-		else:
-			print("No type of fk-filter specified")
-			raise TypeError
-
-		#Convert to Stream object
-		stream_filtered = array2stream(array_filtered)
-
-		for i in range(len(stream_filtered)):
-			stream_filtered[i].meta = st[i].meta
-
-		return(stream_filtered)
 
 	else:
-		print("No valid input for type of filter")
+		print("No valid input for type of Transformationtype")
 		raise TypeError
 
-	"""
-	return stream with filtered data ####################################
-	"""
+	# Convert to Stream object.
+	array_filtered = array_filtered[0:ix, 0:it]
+	stream_filtered = array2stream(array_filtered, st_original=st)
+
+	return(stream_filtered)
 
 
 
-# FFT FUNCTIONS ############################################################################
+"""
+FFT FUNCTIONS 
+"""
 
-def _fx_fft_filter_extract_phase(data, snes=False, y_dist=False, radius=None):
-	"""
-	Only use with the function fk_filter!
-	Function to extract a desired phase in the f-x-domain.
-	param data:	data of the array
-	type data:	numpy.ndarray
-
-	param snes:	slownessvalue of the desired extracted phase
-				default is False, function expects corrected data
-	type snes:	int
-	"""
-	# Shift array to desired phase.
-	if snes:
-		ds = shift_array(data, snes, y_dist)
-	else:
-		ds = data
-	
-	# Apply FFT.
-	dsfft = np.fft.fftn(ds)
-	# Extract zero-wavenumber
-	dsfft = line_cut(dsfft, 0,radius)
-	
-	ds = np.fft.ifftn(dsfft)
-
-	data_fk = ds
-
-	return(data_fk.real)
-
-def _fx_fft_filter_eliminate_phase(data, snes=False, y_dist=False, radius=None):
-	"""
-	Only use with the function fk_filter!
-	Function to eliminate a given phase in the f-x-domain.
-	param data:	data of the array
-	type data:	numpy.ndarray
-
-	param snes:	slownessvalue of the desired extracted phase
-	type snes:	int
-	"""
-	if snes:
-		ds = shift_array(data, snes, y_dist)
-	else:
-		ds = data
-	
-	# Apply FFT.
-	dsfft = np.fft.fftn(ds)
-	# Cut zero-wavenumber
-	dsfft = line_set_zero(dsfft, 0, radius)
-	
-	ds = np.fft.ifftn(dsfft)
-
-	data_fk = ds
-
-	return(data_fk.real)
-
-def _fk_fft_filter(data, indicies):
+def _fk_extract_polygon(data):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
 	param data:	data of the array
 	type data:	numpy.ndarray
-
-	param snes:	slownessvalue of the desired extracted phase
-	type snes:	int
 	"""
-	ds = data
-	
-	# Apply FFT t-x  --> f-x.
-	dsfx = np.fft.fftn(ds)
-	# Apply second FFT f-x --> f-k.
-	dsfk_tmp = np.fft.fftn(dsfx.conj().transpose()).conj().transpose()
+	# Shift 0|0 f-k to center, for easier handling
+	dsfk = np.fft.fftshift(data)
+
+	# Define polygon by user-input.
+	indicies = get_polygon(np.log(abs(dsfk)))
 
 	# Create new array, only contains extractet energy, pointed to with indicies
-	dsfk = np.zeros(dsfk.shape)
-	dsfk.conj().transpose().flat[ indicies ]=1
-	dsfk = dsfk_tmp * dsfk
-
-	# Apply inverse FFT from f-k --> t-x 	
+	dsfk_extract = np.zeros(dsfk.shape)
+	dsfk_extract.conj().transpose().flat[ indicies ]=1.
+	data_fk = dsfk * dsfk_extract
 	
-	dsfx = np.fft.ifftn(dsfk.conj().transpose()).conj().transpose()
-	ds = np.fft.ifftn(dsfx)
+	data_fk = np.fft.ifftshift(data_fk)
 
-	data_fk = ds
-
-	return(data_fk.real)
+	return(data_fk)
 
 
+def _fk_eliminate_polygon(data):
+	"""
+	Only use with the function fk_filter!
+	Function to test the fk workflow with synthetic data
+	param data:	data of the array
+	type data:	numpy.ndarray
+	"""
+	# Shift 0|0 f-k to center, for easier handling
+	dsfk = np.fft.fftshift(data)
+	
+	# Define polygon by user-input.
+	indicies = get_polygon(np.log(abs(dsfk)))
 
+	# Create new array, contains all the energy, except the eliminated, pointed to with indicies
+	dsfk_elim = dsfk.conj().transpose()
+	dsfk_elim.flat[ indicies ]=0.
+	data_fk = dsfk_elim.conj().transpose()
 
+	data_fk = np.fft.ifftshift(data_fk)
 
-# LS FUNCTIONS ############################################################################
+	return(data_fk)
+
+"""
+LS FUNCTIONS
+"""
 def _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=False, radius=None, maxk=False):
 	"""
 	Only use with the function fk_filter!

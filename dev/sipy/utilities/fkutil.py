@@ -252,70 +252,22 @@ def kill(data, stat):
 	data = np.delete(data, stat, 0)
 	return(data)
 
-def line_cut_old(array, stat, radius=None):
-	"""
-	Old Version, if the new works fine --> delete
-	Sets the array to zero, except for the stat line and the radius values around it.
-	"Cuts" one line out. 
-	"""
-	x = len(array[0])
-	y = len(array)
-	
-	new_array = np.array([ np.array(np.zeros(x), dtype=np.complex) ])
-	new_line = new_array
-	for i in range(y)[1:]:
-		new_array = np.append(new_array, new_line, axis=0)
-	
-	if radius:
-		for i in range(stat, stat + radius  + 1):
-			new_array[i] = array[i]
-			if i == 0:
-				new_array[y] = array[y]
-			else:
-				new_array[y-i] = array[y-i]
-	
-	else:
-		new_array[stat] = array[stat]
-
-	
-	return(new_array)
-
-def line_cut(array, stat, radius=None):
+def line_cut(array, stat=0):
 	"""
 	Sets the array to zero, except for the stat line and the radius values around it.
 	"Cuts" one line out. 
 	"""
 	new_array = np.zeros( (len(array[0]),len(array)) )
+	new_array[stat] = array[stat]
 
-	if radius:
-		for i in range(stat, stat + radius  + 1):
-			new_array[i] = array[i]
-			if i == 0:
-				new_array[y] = array[y]
-			else:
-				new_array[y-i] = array[y-i]
-	else:
-		new_array[stat] = array[stat]
-
-	
 	return(new_array)
 
-def line_set_zero(array, stat, radius=None):
+def line_set_zero(array, stat=0):
 	"""
 	Sets lines zero in array
 	"""
 	new_array = array
-	end = len(array)-1
-	if radius:
-		for i in range(stat, stat + radius + 1):
-			new_array[i] = 0
-			if i == 0:
-				new_array[end] = 0
-			else:
-				new_array[end-i] = 0
-
-	else:
-		new_array[stat] = 0
+	new_array[stat] = 0
 	
 	return(new_array)
 
@@ -400,6 +352,8 @@ def get_polygon(data, no_of_vert=4):
 	ax.add_patch(poly)
 	p = PolygonInteractor(ax, poly)
 	plt.title("Pick polygon, close figure to save vertices")
+	plt.xlabel("frequency-domain f")
+	plt.ylabel("wavenumber-domain k")
 	plt.imshow(abs(data), aspect=aspectratio)
 	plt.show()		
 	
@@ -424,14 +378,13 @@ def convert_polygon_to_flat_index(data, vertices):
 	"""
 
 	xlen = vertices[:,0].max() - vertices[:,0].min()
-	ylen = data.shape[0]
-	#ylen = vertices[:,1].max() - vertices[:,1].min()
+	ylen = vertices[:,1].max() - vertices[:,1].min()
 	indicies=np.zeros(xlen*ylen)		
 	
 	arr=np.zeros((xlen*ylen,2))
 	i=0		
 	for x in np.arange(vertices[:,0].min(), vertices[:,0].max()).astype('int'):
-		for y in range(ylen):
+		for y in np.arange(vertices[:,1].min(), vertices[:,1].max()).astype('int'):
 			arr[i]=[x,y]
 			i+=1	
 

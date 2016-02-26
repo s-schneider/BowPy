@@ -48,7 +48,8 @@ indicies = fku.get_polygon(R)
 
 # Mute all phases except the S670S arrival.
 R670=np.zeros(R.shape)
-R670.conj().transpose().flat[ indicies.astype('int').tolist() ]=1
+#R670.conj().transpose().flat[ indicies_matlab.astype('int').tolist() ]=1
+R670.conj().transpose().flat[ indicies ]=1
 R670=R*R670
 
 
