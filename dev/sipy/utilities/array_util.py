@@ -167,11 +167,13 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 
     # Calculate the event-station distances.
     if event:
-        event_lat = event.origins[0].latitude
-        event_lng = event.origins[0].longitude
-        for value in coords.values():
-            value["distance"] = locations2degrees(
-                value["latitude"], value["longitude"], event_lat, event_lng)
+		event_lat = event.origins[0].latitude
+		event_lng = event.origins[0].longitude
+		event_dpt = event.origins[0].depth/1000.
+		for value in coords.values():
+			value["distance"] = locations2degrees(
+				value["latitude"], value["longitude"], event_lat, event_lng)
+			value["depth"] = event_dpt
 
     # Attach the information to the traces.
     for trace in stream:
@@ -182,7 +184,8 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
         trace.stats.coordinates.longitude = value["longitude"]
         trace.stats.coordinates.elevation = value["elevation"]
         if event:
-            trace.stats.distance = value["distance"]
+			trace.stats.distance = value["distance"]
+			trace.stats.depth = value["depth"]
 
 
 def center_of_gravity(inventory):
@@ -362,12 +365,8 @@ def alignon(st, inv, event, phase, maxtimewindow=None, taup_model='ak135'):
 		y_dist = st[j].meta.distance
 		origin = event.origins[0]['time']
 		m = TauPyModel(taup_model)
-		time = m.get_travel_times(depth, y_dist)
-		for k in range(len(time)):
-			if time[k].name != phase:
-				continue
-			t = time[k].time
-		
+		t = m.get_travel_times(depth, y_dist, phase_list=[phase])[0].time
+
 		phase_time = origin + t - st[j].stats.starttime
 		Phase_npt = int(phase_time/st[j].stats.delta)
 		if j == 0:
@@ -402,18 +401,18 @@ def alignon(st, inv, event, phase, maxtimewindow=None, taup_model='ak135'):
 	return st_align
 
 
-def partial_stack(st, yinfo, no_of_bins, order=None):
+def partial_stack(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, taup_model='ak135'):
 	"""
 	Will sort the traces into equally distributed bins and stack the bins.
 	The stacking is just an addition of the traces, more advanced schemes might follow.
 	The uniform distribution is useful for FK-filtering, SSA and every method that requires
 	a uniform distribution.
 	
-	Works so far with array data, not with obspy-data
+	Needs depth information attached to the stream, array_util.see attach_coordinates_to_stream()
 	
 	input:
-	:param st: data stream of the array
-	:type st: numpy.ndarray
+	:param st: obspy stream object
+	:type st:
 
 	:param yinfo: list of distances of the traces, sorted to match st
 	:type yinfo: list
@@ -428,7 +427,7 @@ def partial_stack(st, yinfo, no_of_bins, order=None):
 	:param ps_st: partial stacked data of the array in no_of_bins uniform distributed stacks
 	:type ps_st:
 
-	:param y_resample_no: distribution  traces in bins
+	:param bin_distribution: distribution  traces in bins
 	:type: numpy.ndarray
 
 	:param L: Location of bin borders
@@ -439,63 +438,126 @@ def partial_stack(st, yinfo, no_of_bins, order=None):
 	"""
 	
 	# Checking for correct input.
-	if type(st) != numpy.ndarray or type(yinfo) != list or type(order) == int: 
+	if type(yinfo) != list or type(order) == int: 
 		msg="wrong input type of variables!"
 		raise TypeError(msg)
+
+	data = stream2array(st, normalize=True)
 
 	# Calculate the border of each bin 
 	# and the new yinfo values.
 	L = np.linspace(min(yinfo), max(yinfo), no_of_bins)
-	delta = abs(L[0] - L[1])
+	delta_L = abs(L[0] - L[1])
+
 	
 
 	# Resample the y-axis information to new, equally distributed ones.
-	y_resample = np.linspace( L[0] + delta/2., L[len(L)-1]-delta/2., no_of_bins-1)
-	y_resample_no = np.zeros(len(y_resample))
-	y_len, t_len = st.shape
+	y_resample = np.linspace( L[0] + delta_L/2., L[len(L)-1]-delta_L/2., no_of_bins-1)
+	bin_distribution = np.zeros(len(y_resample))
+	y_len, t_len = data.shape
 
 	# Preallocate some space in memory.
 	ps_st = np.zeros((len(y_resample),t_len))
+	yr_sampletimes = np.zeros(len(y_resample)).astype('int')
+	yi_sampletimes = np.zeros(len(yinfo)).astype('int')
+	
+	m = TauPyModel(taup_model)
+	depth = st[0].meta.depth
+	delta = st[0].meta.delta
 
+	# Calculate theretical arrivals
+	for i, e in enumerate(yr_sampletimes):
+		yr_sampletimes[i] = int(m.get_travel_times(depth, y_resample[i], phase_list=[phase])[0].time / delta)
+	
+	for i, e in enumerate(yi_sampletimes):
+		yi_sampletimes[i] = int(m.get_travel_times(depth, yinfo[i], phase_list=[phase])[0].time / delta)
+
+
+
+
+	# Loop through all traces.
 	for i in range(len(L))[1:]:
 		count=0.
 		for j in range(y_len):
 			if j==0 and i==1:
+
+				tref = yr_sampletimes[i-1]
+				Phase_npt = yi_sampletimes[j]
+
+				if maxtimewindow:
+					tmin = Phase_npt - int( (maxtimewindow/2.)/delta )
+					tmax = Phase_npt + int( (maxtimewindow/2.)/delta )
+					stmax = data[j][Phase_npt]
+					mtw_index = Phase_npt
+					for k in range(tmin,tmax+1):
+						if data[j][k] > stmax:
+								stmax=data[j][k]
+								mtw_index = k
+					shift = tref - mtw_index
+					print( "Bin %i,   Trace %i, Arrivaltime %i, t-Resample %i, Shiftingtime %i, EpiDist %f, y_resampled %f " % (i, j, Phase_npt,tref,shift, yinfo[j], y_resample[i-1]))
+					data[j,:] =  np.roll(data[j,:], shift)
+
+				else:
+
+					shift = tref - Phase_npt
+					data[j,:] =  np.roll(data[j,:], shift)					
+					
 				if order:
 					for k in range(t_len):
 						sgnps = np.sign(ps_st[i-1,k])
-						sgnst = np.sign(st[j,k])
+						sgnst = np.sign(data[j,k])
 						ps_st[i-1,k] = sgnps * (abs(ps_st[i-1,k])**(1./order)) + \
-										sgnst *(abs(st[j,k])**(1./order))
+										sgnst *(abs(data[j,k])**(1./order))
 					count += 1.
 				else:
-					ps_st[i-1,:] = ps_st[i-1,:] + st[j,:]
+					ps_st[i-1,:] = ps_st[i-1,:] + data[j,:]
 					count += 1.
-				print("stream %i went into bin %i" % (j, i-1))
+				
 				continue
 
 			if yinfo[j] > L[i-1] and yinfo[j] <= L[i]:
+
+				tref = yr_sampletimes[i-1]
+				Phase_npt = yi_sampletimes[j]
+
+				if maxtimewindow:
+					tmin = Phase_npt - int( (maxtimewindow/2.)/delta )
+					tmax = Phase_npt + int( (maxtimewindow/2.)/delta )
+					stmax = data[j][Phase_npt]
+					mtw_index = Phase_npt
+					for k in range(tmin,tmax+1):
+						if data[j][k] > stmax:
+								stmax=data[j][k]
+								mtw_index = k
+					shift = tref - mtw_index
+					print( "Bin %i,   Trace %i, Arrivaltime %i, t-Resample %i, Shiftingtime %i, EpiDist %f, y_resampled %f " % (i, j, Phase_npt,tref,shift, yinfo[j], y_resample[i-1]))
+					data[j,:] =  np.roll(data[j,:], shift)
+
+				else:
+					shift = tref - Phase_npt
+					data[j,:] =  np.roll(data[j,:], shift)
+
 				if order:
 					for k in range(t_len):
 						sgnps = np.sign(ps_st[i-1,k])
-						sgnst = np.sign(st[j,k])
+						sgnst = np.sign(data[j,k])
 						ps_st[i-1,k] = sgnps * (abs(ps_st[i-1,k])**(1./order)) + \
-										sgnst *(abs(st[j,k])**(1./order))
+										sgnst *(abs(data[j,k])**(1./order))
 					count += 1.
 				else:
-					ps_st[i-1,:] = ps_st[i-1,:] + st[j,:]
+					ps_st[i-1,:] = ps_st[i-1,:] + data[j,:]
 					count += 1.
 
 		if count != 0.:	
 			if order:
 				sgn = np.sign(ps_st[i-1,:])
 				ps_st[i-1,:] = sgn * ( ( ps_st[i-1,:]/ count )**(order) )
-				y_resample_no[i-1] += count
+				bin_distribution[i-1] += count
 			else:
 				ps_st[i-1,:] = ps_st[i-1,:] / count
-				y_resample_no[i-1] += count
+				bin_distribution[i-1] += count
 		
-	return ps_st, y_resample_no, L, y_resample
+	return ps_st,bin_distribution, L, y_resample
 
 
 def plot(inventory, projection="local"):
@@ -623,3 +685,4 @@ def plot_gcp(slat, slon, qlat, qlon, plat, plon, savefigure=None):
         plt.savefig('plot_gcp.png', format="png", dpi=900)
     else:
         plt.show()
+

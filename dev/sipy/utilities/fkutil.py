@@ -88,11 +88,7 @@ def plot(st, inv=None, event=None, zoom=1, y_dist=1, yinfo=False, markphase=None
 			if markphase:
 				origin = event.origins[0]['time']
 				m = TauPyModel('ak135')
-				time = m.get_travel_times(depth, y_dist)
-				for k in range(len(time)):
-					if time[k].name != markphase:
-						continue
-					t = time[k].time
+				t = m.get_travel_times(depth, y_dist, phase_list=[markphase])[0].time
 				phase_time = origin + t - st[j].stats.starttime
 				Phase_npt = int(phase_time/st[j].stats.delta)
 				Phase = Phase_npt * st[j].stats.delta
