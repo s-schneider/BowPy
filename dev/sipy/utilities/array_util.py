@@ -83,22 +83,24 @@ def get_coords(inventory, returntype="dict"):
 
     return coords
 
+def trace2array(trace):
+	x = np.zeros(trace.size)
+	for index, data in trace.data:
+		x[index] = data
+
+	return x 
+
+
 def stream2array(stream, normalize=False):
 
-	st = stream
+	x = np.zeros((len(stream), len(stream[0].data)))
+	for i, traces in stream:
+		for j, data in enumerate(traces):
+			x[i,j]=data
 
 	if normalize:
-		ArrayData = np.array([st[0].data])/float(max(np.array([st[0].data])[0]))
-	else:
-		ArrayData = np.array([st[0].data])
-	
-	for i in range(len(st))[1:]:
-		if normalize:
-			next_st = np.array([st[i].data]) / float(max(np.array([st[i].data])[0]))
-		else:
-			next_st = np.array([st[i].data])
+		x = x / x.max()
 
-		ArrayData = np.append(ArrayData, next_st, axis=0)
 	return(ArrayData)
 
 def array2stream(ArrayData, st_original=None, network=None):
@@ -327,7 +329,7 @@ def epidist2nparray(epidist):
 	epidist_np.sort()	
 	return(epidist_np)
 
-def alignon(st, inv, event, phase, maxtimewindow=None, taup_model='ak135'):
+def alignon_org(st, inv, event, phase, ref=None , maxtimewindow=None, taup_model='ak135'):
 	"""
 	Aligns traces on a given phase
 	
@@ -339,6 +341,9 @@ def alignon(st, inv, event, phase, maxtimewindow=None, taup_model='ak135'):
 
 	:param phase: Phase to align the traces on
 	:type phase: str
+
+	:param ref: reference station, to which the others are aligned
+	:type ref: int or str
 
 	:param maxtimewindow: Timewindow around the theoretical arrivaltime
 	:type maxxtimewindow: int or float
@@ -361,6 +366,24 @@ def alignon(st, inv, event, phase, maxtimewindow=None, taup_model='ak135'):
 	no_x,no_t = stshift.shape
 	shifttimes=np.zeros(no_x)
 
+	if type(ref) == int:
+		y_dist = st[ref].stats.distance
+		start = st[ref].stats.starttime
+		delta = st[ref].stats.delta
+
+	elif type(ref) == str:
+		for trace in st:
+			if trace.stats['station'] != 'ref':
+				continue
+			y_dist = trace.stats.distance
+		start = trace.stats.starttime
+		delta = trace.stats.delta
+
+	m = TauPyModel(taup_model)
+	t = m.get_travel_times(depth, y_dist, phase_list=[phase])[0].time
+	phase_time = origin + t - start
+	tref = int(phase_time/delta)
+
 	for j in range(no_x):
 		y_dist = st[j].meta.distance
 		origin = event.origins[0]['time']
@@ -369,10 +392,8 @@ def alignon(st, inv, event, phase, maxtimewindow=None, taup_model='ak135'):
 
 		phase_time = origin + t - st[j].stats.starttime
 		Phase_npt = int(phase_time/st[j].stats.delta)
-		if j == 0:
-			tref = Phase_npt
+		
 			
-		else:
 			# Check for maximum Value in a timewindow of length 
 			# maxtimewindow around theoretical arrival
 			if maxtimewindow:
@@ -399,6 +420,26 @@ def alignon(st, inv, event, phase, maxtimewindow=None, taup_model='ak135'):
 		st_align[i].meta.starttime = new_start
 	
 	return st_align
+
+def shift2ref(data, tref, tshift, mtw=None):
+	
+	if mtw:
+		tmin = tref - int(mmtw/2.)
+		tmax = tref + int(mtw/2.)
+		stmax = data[tref]
+		mtw_index = tref
+		for k in range(tmin,tmax+1):
+			if data[k] > stmax:
+					stmax=data[k]
+					mtw_index = k
+		shift_value = tref - mtw_index
+		shift_data = np.roll(data, shift_value)
+
+	else:
+			shift_value = tref - tshift
+			shift_data = np.roll(data, shift_value)
+
+	return shift_data
 
 
 def partial_stack(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, taup_model='ak135'):
