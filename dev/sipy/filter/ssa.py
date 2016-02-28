@@ -4,7 +4,7 @@ import numpy as np
 from numpy import dot
 import math
 import scipy as sp
-from sipy.utilities.fkutil import nextpow2
+from sipy.util.fkutil import nextpow2
 
 
 def ssa(d,nw,p,ssa_flag):

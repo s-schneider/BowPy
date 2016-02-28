@@ -94,14 +94,14 @@ def trace2array(trace):
 def stream2array(stream, normalize=False):
 
 	x = np.zeros((len(stream), len(stream[0].data)))
-	for i, traces in stream:
+	for i, traces in enumerate(stream):
 		for j, data in enumerate(traces):
 			x[i,j]=data
 
 	if normalize:
 		x = x / x.max()
 
-	return(ArrayData)
+	return(x)
 
 def array2stream(ArrayData, st_original=None, network=None):
 	"""
@@ -329,7 +329,7 @@ def epidist2nparray(epidist):
 	epidist_np.sort()	
 	return(epidist_np)
 
-def alignon_org(st, inv, event, phase, ref=None , maxtimewindow=None, taup_model='ak135'):
+def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135'):
 	"""
 	Aligns traces on a given phase
 	
@@ -342,11 +342,11 @@ def alignon_org(st, inv, event, phase, ref=None , maxtimewindow=None, taup_model
 	:param phase: Phase to align the traces on
 	:type phase: str
 
-	:param ref: reference station, to which the others are aligned
+	:param ref: name or index of reference station, to which the others are aligned
 	:type ref: int or str
 
 	:param maxtimewindow: Timewindow around the theoretical arrivaltime
-	:type maxxtimewindow: int or float
+	:type maxtimewindow: int or float
 	
 	:param taup_model: model used by TauPyModel to calculate arrivals, default is ak135
 	:type taup_model: str
@@ -358,67 +358,58 @@ def alignon_org(st, inv, event, phase, ref=None , maxtimewindow=None, taup_model
 	"""
 	
 	# Calculate depth and distance of receiver and event.
+	# Set some variables.
+
 	attach_coordinates_to_traces(st, inv, event)
 	depth = event.origins[0]['depth']/1000.
-	
+	origin = event.origins[0]['time']
+	m = TauPyModel(taup_model)
+
 	# Prepare Array of data.
-	stshift = stream2array(st)
-	no_x,no_t = stshift.shape
-	shifttimes=np.zeros(no_x)
+	st_tmp = st.copy()
+	data = stream2array(st_tmp)
+	shifttimes=np.zeros(data.shape[0])
 
 	if type(ref) == int:
-		y_dist = st[ref].stats.distance
-		start = st[ref].stats.starttime
+		ref_dist = st[ref].stats.distance
+		ref_start = st[ref].stats.starttime
 		delta = st[ref].stats.delta
+		iref = ref
 
 	elif type(ref) == str:
-		for trace in st:
+		for i, trace in enumerate(st):
 			if trace.stats['station'] != 'ref':
 				continue
-			y_dist = trace.stats.distance
-		start = trace.stats.starttime
+			ref_dist = trace.stats.distance
+			iref = i
+		ref_start = trace.stats.starttime
 		delta = trace.stats.delta
 
-	m = TauPyModel(taup_model)
-	t = m.get_travel_times(depth, y_dist, phase_list=[phase])[0].time
-	phase_time = origin + t - start
-	tref = int(phase_time/delta)
-
-	for j in range(no_x):
-		y_dist = st[j].meta.distance
-		origin = event.origins[0]['time']
-		m = TauPyModel(taup_model)
-		t = m.get_travel_times(depth, y_dist, phase_list=[phase])[0].time
-
-		phase_time = origin + t - st[j].stats.starttime
-		Phase_npt = int(phase_time/st[j].stats.delta)
-		
-			
-			# Check for maximum Value in a timewindow of length 
-			# maxtimewindow around theoretical arrival
-			if maxtimewindow:
-				delta = st[j].meta.delta
-				tmin = Phase_npt - int( (maxtimewindow/2.)/delta )
-				tmax = Phase_npt + int( (maxtimewindow/2.)/delta )
-				stmax = stshift[j][Phase_npt]
-				mtw_index = Phase_npt
-				for k in range(tmin,tmax+1):
-					if stshift[j][k] > stmax:
-							stmax=stshift[j][k]
-							mtw_index = k
-				print("Phase delta is %i, best fit is %i" % (Phase_npt,mtw_index))
-				shift_index = tref - mtw_index
-			else:
-				shift_index = tref - Phase_npt
-
-			stshift[j,:] = np.roll(stshift[j,:], shift_index)
-			shifttimes[j] = delta*shift_index			
+	# Calculating reference arriving time/index of phase.
+	ref_t = origin + m.get_travel_times(depth, ref_dist, phase_list=[phase])[0].time - ref_start
+	ref_n = int(ref_t/delta)
 	
-	st_align = array2stream(stshift, st)
-	for i in range(len(st_align))[1:]:
-		new_start = st_align[i].meta.starttime - shifttimes[i]
-		st_align[i].meta.starttime = new_start
+	for no_x, data_x in enumerate(data):
+		if no_x == iref:
+			continue
 	
+		dist = st[no_x].stats.distance
+		t = m.get_travel_times(depth, dist, phase_list=[phase])[0].time
+
+		# Calculate arrivals, and shift times/indicies.
+		phase_time = origin + t - st[no_x].stats.starttime
+		phase_n = int(phase_time/delta)
+		datashift, shift_index = shift2ref(data[no_x,:], ref_n, phase_n, mtw=maxtimewindow)
+		shifttimes[no_x]=delta*shift_index
+		data[no_x,:] = datashift
+
+	st_align = array2stream(data, st)
+
+	for i, trace in enumerate(st_align):
+		if i == iref:
+			continue
+		trace.stats.starttime = trace.stats.starttime - shifttimes[i]	
+
 	return st_align
 
 def shift2ref(data, tref, tshift, mtw=None):
@@ -436,10 +427,10 @@ def shift2ref(data, tref, tshift, mtw=None):
 		shift_data = np.roll(data, shift_value)
 
 	else:
-			shift_value = tref - tshift
-			shift_data = np.roll(data, shift_value)
+		shift_value = tref - tshift
+		shift_data = np.roll(data, shift_value)
 
-	return shift_data
+	return shift_data, shift_value
 
 
 def partial_stack(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, taup_model='ak135'):
@@ -506,7 +497,7 @@ def partial_stack(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, 
 	depth = st[0].meta.depth
 	delta = st[0].meta.delta
 
-	# Calculate theretical arrivals
+	# Calculate theoretical arrivals
 	for i, e in enumerate(yr_sampletimes):
 		yr_sampletimes[i] = int(m.get_travel_times(depth, y_resample[i], phase_list=[phase])[0].time / delta)
 	

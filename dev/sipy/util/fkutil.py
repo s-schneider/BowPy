@@ -8,7 +8,7 @@ from obspy.geodetics import gps2dist_azimuth, kilometer2degrees, locations2degre
 from obspy.taup import TauPyModel
 
 
-from sipy.utilities.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces,stream2array
+from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces,stream2array
 import datetime
 import scipy as sp
 import scipy.signal as signal
@@ -29,7 +29,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, y_dist=1, yinfo=False, markphase=None):
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 	"""
 	Alpha Version!
 	
@@ -46,10 +46,6 @@ def plot(st, inv=None, event=None, zoom=1, y_dist=1, yinfo=False, markphase=None
 
 	param zoom: zoom factor of the traces
 	type zoom:	float
-
-	param y_dist:	separating distance between traces, for example equidistant with "1" 
-					or import epidist-list via epidist
-	type y_dist:	int or list
 
 	param yinfo:	Plotting with y info as distance of traces
 	type yinfo:		bool
@@ -320,7 +316,7 @@ def get_polygon(data, no_of_vert=4):
 	:param no_of_vert: number of vertices, default 4, 
 	:type no_of_vert: int
 	"""
-	from sipy.utilities.polygon_interactor import PolygonInteractor
+	from sipy.util.polygon_interactor import PolygonInteractor
 	from matplotlib.patches import Polygon
 	
 	# Define shape of polygon.

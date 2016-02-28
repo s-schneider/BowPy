@@ -21,24 +21,28 @@ from obspy.taup import TauPyModel
 
 import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
 import sipy.filter.fk as fk
-import sipy.utilities.fkutil as fku
+import sipy.util.fkutil as fku
 from sipy.filter.fk import fk_filter
-from sipy.utilities.fkutil import get_polygon, nextpow2
-from sipy.utilities.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
+from sipy.util.fkutil import get_polygon, nextpow2
+from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
 stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, epidist_inv, epidist2nparray, epidist2list, \
-alignon, partial_stack
+alignon, partial_stack, shift2ref
+
+st = read_st("../data/synthetics_uniform/SUNEW.QHD")
+inv = read_inv("../data/synthetics_uniform/SUNEW_inv.xml")
+cat = read_cat("../data/synthetics_uniform/SUNEW_cat.xml")
+st. normalize()
+attach_network_to_traces(st, inv[0])
+attach_coordinates_to_traces(st, inv, cat[0])
+ref=0
+maxtimewindow=None
+taup_model='ak135'
+event = cat[0]
+phase='PP'
 
 
 
 
-
-
-stream="../data/WORK_D.MSEED"
-inventory="../data/2011-03-11T05:46:23.MSEED_inv.xml"
-catalog="../data/2011-03-11T05:46:23.MSEED_cat.xml"
-st, inv, cat = fku.read_file(stream, inventory, catalog)
-ad = fku.stream2array(st)
-adt = fku.transpose(ad)
 epid = fku.epidist2nparray(fku.epidist_stream(st, inv, cat))
 fkspectra, periods = fk_filter(st, ftype='LS', inv=inv, cat=cat, fktype="eliminate")
 fkfft = abs(np.fft.fftn(ad))
@@ -137,14 +141,14 @@ import scipy as sp
 import scipy.signal as signal
 from numpy import genfromtxt
 
-from sipy.utilities.array_util import get_coords
+from sipy.util.array_util import get_coords
 
 import os
 import datetime
 
 import sipy.filter.fk as fk
 from sipy.filter.fk import fk_filter
-import sipy.utilities.fkutil as fku
+import sipy.util.fkutil as fku
 import instaseis as ins
 
 uniform=True

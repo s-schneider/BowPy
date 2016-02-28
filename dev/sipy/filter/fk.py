@@ -4,13 +4,13 @@ import numpy
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from sipy.utilities.array_util import get_coords
+from sipy.util.array_util import get_coords
 import datetime
 import scipy as sp
 import scipy.signal as signal
 
-from sipy.utilities.array_util import array2stream, stream2array, epidist2nparray
-from sipy.utilities.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon, nextpow2
+from sipy.util.array_util import array2stream, stream2array, epidist2nparray
+from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon, nextpow2
 
 def fk_filter(st, inv=None, cat=None,trafo=None, ftype=None, phase=None, epi_dist=None, normalize=True, SSA=False):
 	"""
