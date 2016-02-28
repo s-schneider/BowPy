@@ -360,7 +360,6 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135
 	
 	# Calculate depth and distance of receiver and event.
 	# Set some variables.
-
 	attach_coordinates_to_traces(st, inv, event)
 	depth = event.origins[0]['depth']/1000.
 	origin = event.origins[0]['time']
@@ -413,8 +412,8 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135
 
 	return st_align
 
-def shift2ref(data, tref, tshift, mtw=None):
-	
+def shift2ref(array, tref, tshift, mtw=None):
+	data=array.copy()
 	if mtw:
 		tmin = tref - int(mmtw/2.)
 		tmax = tref + int(mtw/2.)
@@ -426,10 +425,22 @@ def shift2ref(data, tref, tshift, mtw=None):
 					mtw_index = k
 		shift_value = tref - mtw_index
 		shift_data = np.roll(data, shift_value)
+		if shift_value > 0:
+			shift_data[0:shift_value] = 0
+		elif shift_value < 0:
+			end2 = len(shift_data)
+			end1 =  end2 + shift_value
+			shift_data[end1:end2] = 0
 
 	else:
 		shift_value = tref - tshift
 		shift_data = np.roll(data, shift_value)
+		if shift_value > 0:
+			shift_data[0:shift_value] = 0
+		elif shift_value < 0:
+			end2 = len(shift_data)
+			end1 =  end2 + shift_value
+			shift_data[end1:end2] = 0
 
 	return shift_data, shift_value
 
@@ -439,16 +450,17 @@ def stack(data, order=None):
 				   Stacking is performed over axis = 1
 	:type data: array_like
 
-	:param order: Order if the stack
+	:param order: Order of the stack
 	:type order: int
 
 	Author: S. Schneider, 2016
-	Reference: Rost & Thomas
+	Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
 	"""
 
 	i, j = data.shape
 	x = np.zeros(j)
- 	order = float(order)
+	if order:
+ 		order = float(order)
 
 	if order:
 		for trace in data:
@@ -468,7 +480,7 @@ def stack(data, order=None):
 	return x
 
 
-def partial_stack(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, taup_model='ak135'):
+def partial_stack(st, no_of_bins, phase, overlap=False, order=None, maxtimewindow=None, taup_model='ak135'):
 	"""
 	Will sort the traces into equally distributed bins and stack the bins.
 	The stacking is just an addition of the traces, more advanced schemes might follow.
@@ -476,19 +488,24 @@ def partial_stack(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, 
 	a uniform distribution.
 	
 	Needs depth information attached to the stream, array_util.see attach_coordinates_to_stream()
+	and attach_network_to_traces()
 	
 	input:
 	:param st: obspy stream object
-	:type st:
-
-	:param yinfo: list of distances of the traces, sorted to match st
-	:type yinfo: list
+	:type st: obspy.core.stream.Stream
 
 	:param no_of_bins: number of bins, that should be used 
 	:type no_of_bins: int
 
+	:param phase:
+	:type phase: str
+
+	:param overlap: degree of overlap of each bin, e.g 0.5 corresponds to 50 percent
+					overlap ov each bin
+	:type: float
+
 	:param order: Order of Nth-root stacking, default None
-	:type order: float
+	:type order: float or int
 
 	returns: 
 	:param ps_st: partial stacked data of the array in no_of_bins uniform distributed stacks
@@ -500,41 +517,72 @@ def partial_stack(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, 
 	:param L: Location of bin borders
 	:type L: numpy.ndarray
 
-	:param y_resample: resampled yinfo of the stacked traces
+	:param y_resample: resampled epidist of the stacked traces
 	:type y_resample: numpy.ndarray
 	"""
 
-	# Checking for correct input.
-	if type(yinfo) != list or type(order) == int: 
-		msg="wrong input type of variables!"
-		raise TypeError(msg)
-
 	st_tmp = st.copy()
+
 	data = stream2array(st_tmp, normalize=True)
+	
+	# Create list of distances from stations to array
+	epidist = np.zeros(len(st_tmp))
+	for i, trace in enumerate(st_tmp):
+		epidist[i] = trace.stats.distance
+
+	# Calculate the border of each bin 
+	# and the new yinfo values.
+
+	if overlap:
+		print("boo")
+	else:
+		L = np.linspace(min(epidist), max(epidist), no_of_bins)
+		L = zip(L, np.roll(L, -1))
+		L = L[0:len(L)-1]
+		delta_L = abs(L[0][0] - L[0][1])
+
 
 	# Resample the y-axis information to new, equally distributed ones.
-	y_resample = np.linspace( L[0] + delta_L/2., L[len(L)-1]-delta_L/2., no_of_bins-1)
+	y_resample = np.linspace( min(min(L)) + delta_L/2., max(max(L))-delta_L/2., no_of_bins-1)
 	bin_distribution = np.zeros(len(y_resample))
-	y_len, t_len = data.shape
-
+	
 	# Preallocate some space in memory.
-	ps_st = np.zeros((len(y_resample),t_len))
-	yr_sampletimes = np.zeros(len(y_resample)).astype('int')
-	yi_sampletimes = np.zeros(len(yinfo)).astype('int')
+	bin_data = np.zeros((len(y_resample),data.shape[1]))
+	yr_sampleindex = np.zeros(len(y_resample)).astype('int')
+	yi_sampleindex = np.zeros(len(epidist)).astype('int')
 	
 	m = TauPyModel(taup_model)
-	depth = st[0].meta.depth
-	delta = st[0].meta.delta
+	depth = st_tmp[0].meta.depth
+	delta = st_tmp[0].meta.delta
 
 	# Calculate theoretical arrivals
-	for i, e in enumerate(yr_sampletimes):
-		yr_sampletimes[i] = int(m.get_travel_times(depth, y_resample[i], phase_list=[phase])[0].time / delta)
+	for i, res_distance in enumerate(y_resample):
+		yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[phase])[0].time / delta)
 	
-	for i, e in enumerate(yi_sampletimes):
-		yi_sampletimes[i] = int(m.get_travel_times(depth, yinfo[i], phase_list=[phase])[0].time / delta)
+	for i, epi_distance in enumerate(epidist):
+		yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[phase])[0].time / delta)
 
+	# Loop through all bins.
+	for i, bins in enumerate(L):
 
-	return ps_data
+		# Loop through all traces.
+		for j, trace in enumerate(data):
+
+			# First bin.
+			if i==1 :
+				if epidist[j] <= bins[1]:
+					trace_shift, si = shift2ref(trace, yr_sampleindex[i-1], yi_sampleindex[j], maxtimewindow)
+					stack_arr = np.vstack([bin_data[i-1],trace_shift])
+					bin_data[i-1] = stack(stack_arr, order)
+
+			# Check if current trace is inside bin-boundaries.
+			if epidist[j] > bins[0] and epidist[j] <= bins[1]:
+
+				trace_shift, si = shift2ref(trace, yr_sampleindex[i-1], yi_sampleindex[j], maxtimewindow)
+				stack_arr = np.vstack([bin_data[i-1],trace_shift])
+				bin_data[i-1] = stack(stack_arr, order)
+
+	return bin_data
 
 
 def partial_stack_org(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, taup_model='ak135'):
