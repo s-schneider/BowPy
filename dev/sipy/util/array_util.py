@@ -84,17 +84,18 @@ def get_coords(inventory, returntype="dict"):
     return coords
 
 def trace2array(trace):
-	x = np.zeros(trace.size)
-	for index, data in trace.data:
+	tx = trace.copy()
+	x = np.zeros(tx.size)
+	for index, data in tx.data:
 		x[index] = data
 
 	return x 
 
 
 def stream2array(stream, normalize=False):
-
-	x = np.zeros((len(stream), len(stream[0].data)))
-	for i, traces in enumerate(stream):
+	sx = stream.copy()
+	x = np.zeros((len(sx), len(sx[0].data)))
+	for i, traces in enumerate(sx):
 		for j, data in enumerate(traces):
 			x[i,j]=data
 
@@ -432,8 +433,111 @@ def shift2ref(data, tref, tshift, mtw=None):
 
 	return shift_data, shift_value
 
+def stack(data, order=None):
+	"""
+	:param data: Array of data, that should be stacked.
+				   Stacking is performed over axis = 1
+	:type data: array_like
+
+	:param order: Order if the stack
+	:type order: int
+
+	Author: S. Schneider, 2016
+	Reference: Rost & Thomas
+	"""
+
+	i, j = data.shape
+	x = np.zeros(j)
+ 	order = float(order)
+
+	if order:
+		for trace in data:
+			sgnps = np.sign(x)
+			sgnst = np.sign(trace)
+			x = sgnps * (abs(x)**(1./order)) + \
+				sgnst *(abs(trace)**(1./order))
+
+		sgn = np.sign(x)
+		x = sgn * ( ( abs(x) / data.shape[0] ) ** order)
+	else:
+
+		for trace in data:
+			x = x + trace
+		x = x / data.shape[0]
+
+	return x
+
 
 def partial_stack(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, taup_model='ak135'):
+	"""
+	Will sort the traces into equally distributed bins and stack the bins.
+	The stacking is just an addition of the traces, more advanced schemes might follow.
+	The uniform distribution is useful for FK-filtering, SSA and every method that requires
+	a uniform distribution.
+	
+	Needs depth information attached to the stream, array_util.see attach_coordinates_to_stream()
+	
+	input:
+	:param st: obspy stream object
+	:type st:
+
+	:param yinfo: list of distances of the traces, sorted to match st
+	:type yinfo: list
+
+	:param no_of_bins: number of bins, that should be used 
+	:type no_of_bins: int
+
+	:param order: Order of Nth-root stacking, default None
+	:type order: float
+
+	returns: 
+	:param ps_st: partial stacked data of the array in no_of_bins uniform distributed stacks
+	:type ps_st:
+
+	:param bin_distribution: distribution  traces in bins
+	:type: numpy.ndarray
+
+	:param L: Location of bin borders
+	:type L: numpy.ndarray
+
+	:param y_resample: resampled yinfo of the stacked traces
+	:type y_resample: numpy.ndarray
+	"""
+
+	# Checking for correct input.
+	if type(yinfo) != list or type(order) == int: 
+		msg="wrong input type of variables!"
+		raise TypeError(msg)
+
+	st_tmp = st.copy()
+	data = stream2array(st_tmp, normalize=True)
+
+	# Resample the y-axis information to new, equally distributed ones.
+	y_resample = np.linspace( L[0] + delta_L/2., L[len(L)-1]-delta_L/2., no_of_bins-1)
+	bin_distribution = np.zeros(len(y_resample))
+	y_len, t_len = data.shape
+
+	# Preallocate some space in memory.
+	ps_st = np.zeros((len(y_resample),t_len))
+	yr_sampletimes = np.zeros(len(y_resample)).astype('int')
+	yi_sampletimes = np.zeros(len(yinfo)).astype('int')
+	
+	m = TauPyModel(taup_model)
+	depth = st[0].meta.depth
+	delta = st[0].meta.delta
+
+	# Calculate theoretical arrivals
+	for i, e in enumerate(yr_sampletimes):
+		yr_sampletimes[i] = int(m.get_travel_times(depth, y_resample[i], phase_list=[phase])[0].time / delta)
+	
+	for i, e in enumerate(yi_sampletimes):
+		yi_sampletimes[i] = int(m.get_travel_times(depth, yinfo[i], phase_list=[phase])[0].time / delta)
+
+
+	return ps_data
+
+
+def partial_stack_org(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, taup_model='ak135'):
 	"""
 	Will sort the traces into equally distributed bins and stack the bins.
 	The stacking is just an addition of the traces, more advanced schemes might follow.
@@ -474,7 +578,7 @@ def partial_stack(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, 
 		msg="wrong input type of variables!"
 		raise TypeError(msg)
 
-	data = stream2array(st, normalize=True)
+	data = stream2array(st.copy(), normalize=True)
 
 	# Calculate the border of each bin 
 	# and the new yinfo values.
