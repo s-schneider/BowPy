@@ -387,4 +387,39 @@ def convert_polygon_to_flat_index(data, vertices):
 
 	flat_index= np.ravel_multi_index(arr, data.conj().transpose().shape).astype('int').tolist()
 
-	return(flat_index)		
+	return(flat_index)	
+
+def find_equi_combi(list, N):
+	"""
+	Function to find all possible equidistant combinations in a list.
+
+	Returns list of indicies, that fullfil this requirement.
+
+	:param list: list of values
+
+	:param N: Minimum number of values, that should be combined.
+	"""
+	import itertools as itt
+ 	
+	low_conf=0.4
+	top_conf=1.5
+	max_time
+
+	equicombi = []
+	for n in range(N, len(list)+1):
+		x = itt.permutations(list, n)
+		start =  datetime.datetime.now()
+		while True:
+			now = datetime.datetime.now()
+			diff = now - start
+			if diff.seconds > max_time:
+				print("Loop exited after %i seconds" % diff.seconds)
+			else:
+				combi = []
+				combi.extend(x.next())
+				combi = np.array(combi)
+				print(abs(np.diff(combi).mean()))
+				if abs(np.diff(combi).mean()) > low_conf and abs(np.diff(combi).mean()) < top_conf:
+					equicombi.append(combi.tolist())
+
+
