@@ -480,7 +480,7 @@ def stack(data, order=None):
 	return x
 
 
-def partial_stack(st, no_of_bins, phase, overlap=False, order=None, maxtimewindow=None, taup_model='ak135'):
+def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, maxtimewindow=None, taup_model='ak135'):
 	"""
 	Will sort the traces into equally distributed bins and stack the bins.
 	The stacking is just an addition of the traces, more advanced schemes might follow.
@@ -498,7 +498,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, maxtimewindo
 					   the size of each bin.
 	:type no_of_bins: int
 
-	:param phase:
+	:param phase: Phase 
 	:type phase: str
 
 	:param overlap: degree of overlap of each bin, e.g 0.5 corresponds to 50 percent
@@ -508,18 +508,17 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, maxtimewindo
 	:param order: Order of Nth-root stacking, default None
 	:type order: float or int
 
+	:param align: If True, traces will be shifted to reference time of the bin.
+				  If Traces already aligned on a phase switch to False.
+	:type align: bool
+
+	:param maxtimewindow:
+
+	:param taup_model:
+
 	returns: 
-	:param ps_st: partial stacked data of the array in no_of_bins uniform distributed stacks
-	:type ps_st:
-
-	:param bin_distribution: distribution  traces in bins
-	:type: numpy.ndarray
-
-	:param L: Location of bin borders
-	:type L: numpy.ndarray
-
-	:param y_resample: resampled epidist of the stacked traces
-	:type y_resample: numpy.ndarray
+	:param bin_data: partial stacked data of the array in no_of_bins uniform distributed stacks
+	:type bin_data: array
 	"""
 
 	st_tmp = st.copy()
@@ -559,19 +558,21 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, maxtimewindo
 
 	# Preallocate some space in memory.
 	bin_data = np.zeros((len(y_resample),data.shape[1]))
-	yr_sampleindex = np.zeros(len(y_resample)).astype('int')
-	yi_sampleindex = np.zeros(len(epidist)).astype('int')
+
 	
 	m = TauPyModel(taup_model)
 	depth = st_tmp[0].meta.depth
 	delta = st_tmp[0].meta.delta
 
-	# Calculate theoretical arrivals
-	for i, res_distance in enumerate(y_resample):
-		yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[phase])[0].time / delta)
-	
-	for i, epi_distance in enumerate(epidist):
-		yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[phase])[0].time / delta)
+	# Calculate theoretical arrivals if align is enabled.
+	if align:
+		yr_sampleindex = np.zeros(len(y_resample)).astype('int')
+		yi_sampleindex = np.zeros(len(epidist)).astype('int')
+		for i, res_distance in enumerate(y_resample):
+			yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[phase])[0].time / delta)
+		
+		for i, epi_distance in enumerate(epidist):
+			yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[phase])[0].time / delta)
 
 	# Loop through all bins.
 	for i, bins in enumerate(L):
@@ -582,21 +583,28 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, maxtimewindo
 			# First bin.
 			if i==0 :
 				if epidist[j] <= bins[1]:
-					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+					if align:
+						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+					else:
+						trace_shift = trace
 					stack_arr = np.vstack([bin_data[i],trace_shift])
 					bin_data[i] = stack(stack_arr, order)
 
 			# Check if current trace is inside bin-boundaries.
 			if epidist[j] > bins[0] and epidist[j] <= bins[1]:
-
-				trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+				if align:
+					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+				else:
+					trace_shift = trace
 				stack_arr = np.vstack([bin_data[i],trace_shift])
 				bin_data[i] = stack(stack_arr, order)
-				print("current bin %i trace %i, shifttime %f" % (i, j, si))
 
 			if overlap:
 				if i == len(L):
-					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+					if align:
+						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+					else:
+						trace_shift = trace
 					stack_arr = np.vstack([bin_data[i],trace_shift])
 					bin_data[i] = stack(stack_arr, order)
 
