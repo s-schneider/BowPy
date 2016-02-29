@@ -82,9 +82,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 
 		attach_coordinates_to_traces(st, inv, event)
 		depth = event.origins[0]['depth']/1000.
-		#no_x,no_t = data.shape
 
-		#for j in range(no_x):
 		for j, trace in enumerate(data):
 			y_dist = st[j].stats.distance
 
@@ -400,37 +398,32 @@ def convert_polygon_to_flat_index(data, vertices):
 
 	return(flat_index)	
 
-def find_equi_combi(list, N):
+def find_equi_combi(x, N):
 	"""
 	Function to find all possible equidistant combinations in a list.
 
 	Returns list of indicies, that fullfil this requirement.
 
-	:param list: list of values
+	:param x: list of values
 
 	:param N: Minimum number of values, that should be combined.
 	"""
-	import itertools as itt
+	import itertools
  	
-	low_conf=0.4
-	top_conf=1.5
-	max_time
+	low_conf=0.8
+	top_conf=1.2
 
-	equicombi = []
-	for n in range(N, len(list)+1):
-		x = itt.permutations(list, n)
-		start =  datetime.datetime.now()
-		while True:
-			now = datetime.datetime.now()
-			diff = now - start
-			if diff.seconds > max_time:
-				print("Loop exited after %i seconds" % diff.seconds)
-			else:
-				combi = []
-				combi.extend(x.next())
-				combi = np.array(combi)
-				print(abs(np.diff(combi).mean()))
-				if abs(np.diff(combi).mean()) > low_conf and abs(np.diff(combi).mean()) < top_conf:
-					equicombi.append(combi.tolist())
+	equi = []
+
+	for n in range(N, len(x)+1):
+		c = list(itertools.combinations(x, n))
+		tmp = np.array(c)
+		for item in tmp:
+			mean_element_diff = np.diff(item).mean()
+			if mean_element_diff > low_conf and mean_element_diff < top_conf:
+				equi.append(item.tolist())		
+
+	return equi
+		
 
 

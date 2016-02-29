@@ -398,37 +398,29 @@ def convert_polygon_to_flat_index(data, vertices):
 
 	return(flat_index)	
 
-def find_equi_combi(list, N):
+def find_equi_combi(x, N, bottom_mean, top_mean):
 	"""
 	Function to find all possible equidistant combinations in a list.
 
 	Returns list of indicies, that fullfil this requirement.
 
-	:param list: list of values
+	:param x: list of values
 
 	:param N: Minimum number of values, that should be combined.
 	"""
-	import itertools as itt
+	import itertools
  	
-	low_conf=0.4
-	top_conf=1.5
-	max_time
+	equi = []
 
-	equicombi = []
-	for n in range(N, len(list)+1):
-		x = itt.permutations(list, n)
-		start =  datetime.datetime.now()
-		while True:
-			now = datetime.datetime.now()
-			diff = now - start
-			if diff.seconds > max_time:
-				print("Loop exited after %i seconds" % diff.seconds)
-			else:
-				combi = []
-				combi.extend(x.next())
-				combi = np.array(combi)
-				print(abs(np.diff(combi).mean()))
-				if abs(np.diff(combi).mean()) > low_conf and abs(np.diff(combi).mean()) < top_conf:
-					equicombi.append(combi.tolist())
+	for n in range(N, len(x)+1):
+		c = list(itertools.combinations(x, n))
+		tmp = np.array(c)
+		for item in tmp:
+			mean_element_diff = np.diff(item).mean()
+			if mean_element_diff > bottom_mean and mean_element_diff < top_mean:
+				equi.append(item.tolist())		
+
+	return equi
+		
 
 
