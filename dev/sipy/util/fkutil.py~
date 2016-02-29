@@ -398,7 +398,7 @@ def convert_polygon_to_flat_index(data, vertices):
 
 	return(flat_index)	
 
-def find_equi_combi(x, N):
+def find_equi_combi(x, N, bottom_mean, top_mean):
 	"""
 	Function to find all possible equidistant combinations in a list.
 
@@ -410,9 +410,6 @@ def find_equi_combi(x, N):
 	"""
 	import itertools
  	
-	low_conf=0.8
-	top_conf=1.2
-
 	equi = []
 
 	for n in range(N, len(x)+1):
@@ -420,7 +417,7 @@ def find_equi_combi(x, N):
 		tmp = np.array(c)
 		for item in tmp:
 			mean_element_diff = np.diff(item).mean()
-			if mean_element_diff > low_conf and mean_element_diff < top_conf:
+			if mean_element_diff > bottom_mean and mean_element_diff < top_mean:
 				equi.append(item.tolist())		
 
 	return equi

@@ -411,13 +411,18 @@ def find_equi_combi(x, N, bottom_mean, top_mean):
 	import itertools
  	
 	equi = []
-
+	
+	# Loop through the list x, with number of combinations n
 	for n in range(N, len(x)+1):
+
 		c = list(itertools.combinations(x, n))
 		tmp = np.array(c)
+
 		for item in tmp:
+
 			mean_element_diff = np.diff(item).mean()
 			if mean_element_diff > bottom_mean and mean_element_diff < top_mean:
+
 				equi.append(item.tolist())		
 
 	return equi
