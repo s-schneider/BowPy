@@ -98,25 +98,25 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 			
 				if yinfo:
 					plt.ylabel("Distance in deg")
-					plt.annotate('%s' % st[j].stats.station, xy=(0,y_dist+0.1))
+					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
 					plt.plot(t_axis,zoom*trace+ y_dist, color='black')
 					plt.plot( (Phase,Phase),(-1+y_dist,1+y_dist), color='red' )			
 				else:
 					plt.ylabel("No. of trace")
 					plt.gca().yaxis.set_major_locator(plt.NullLocator())
-					plt.annotate('%s' % st[j].stats.station, xy=(0,spacing*j+0.1))
+					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
 					plt.plot(t_axis,zoom*trace+ spacing*j, color='black')
 					plt.plot( (Phase,Phase),(-1+spacing*j,1+spacing*j), color='red' )
 
 			else:
 				if yinfo:
 					plt.ylabel("Distance in deg")
-					plt.annotate('%s' % st[j].stats.station, xy=(0,y_dist+0.1))
+					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
 					plt.plot(t_axis,zoom*trace+ y_dist, color='black')
 				else:
 					plt.ylabel("No. of trace")
 					plt.gca().yaxis.set_major_locator(plt.NullLocator())
-					plt.annotate('%s' % st[j].stats.station, xy=(0,spacing*j+0.1))
+					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
 					plt.plot(t_axis,zoom*trace+ spacing*j, color='black')			
 
 	else:

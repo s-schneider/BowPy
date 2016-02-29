@@ -82,9 +82,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 
 		attach_coordinates_to_traces(st, inv, event)
 		depth = event.origins[0]['depth']/1000.
-		#no_x,no_t = data.shape
 
-		#for j in range(no_x):
 		for j, trace in enumerate(data):
 			y_dist = st[j].stats.distance
 
