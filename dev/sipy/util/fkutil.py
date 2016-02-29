@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib
 
 # If using a Mac Machine, otherwitse comment the next line out:
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 
 import matplotlib.pyplot as plt
 import matplotlib.path as mplPath
@@ -71,8 +71,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 	spacing=2.
 
 	# Set axis information.
-	plt.ylabel("Distance in deg")
 	plt.xlabel("Time in s")
+
 	if inv and event:
 		# Calculates y-axis info using epidistance information of the stream.
 		# Check if there is a network entry
@@ -82,10 +82,11 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 
 		attach_coordinates_to_traces(st, inv, event)
 		depth = event.origins[0]['depth']/1000.
-		no_x,no_t = data.shape
+		#no_x,no_t = data.shape
 
-		for j in range(no_x):
-			y_dist = st[j].meta.distance
+		#for j in range(no_x):
+		for j, trace in enumerate(data):
+			y_dist = st[j].stats.distance
 
 			if markphase:
 				origin = event.origins[0]['time']
@@ -96,17 +97,27 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 				Phase = Phase_npt * st[j].stats.delta
 			
 				if yinfo:
-					plt.plot(t_axis,zoom*data[j]+ y_dist, color='black')
+					plt.ylabel("Distance in deg")
+					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
+					plt.plot(t_axis,zoom*trace+ y_dist, color='black')
 					plt.plot( (Phase,Phase),(-1+y_dist,1+y_dist), color='red' )			
 				else:
-					plt.plot(t_axis,zoom*data[j]+ spacing*j, color='black')
+					plt.ylabel("No. of trace")
+					plt.gca().yaxis.set_major_locator(plt.NullLocator())
+					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
+					plt.plot(t_axis,zoom*trace+ spacing*j, color='black')
 					plt.plot( (Phase,Phase),(-1+spacing*j,1+spacing*j), color='red' )
 
 			else:
 				if yinfo:
-					plt.plot(t_axis,zoom*data[j]+ y_dist, color='black')
+					plt.ylabel("Distance in deg")
+					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
+					plt.plot(t_axis,zoom*trace+ y_dist, color='black')
 				else:
-					plt.plot(t_axis,zoom*data[j]+ spacing*j, color='black')			
+					plt.ylabel("No. of trace")
+					plt.gca().yaxis.set_major_locator(plt.NullLocator())
+					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
+					plt.plot(t_axis,zoom*trace+ spacing*j, color='black')			
 
 	else:
 		print("no inventory and event given")
@@ -313,7 +324,7 @@ def shift_array(array, shift_value=0, y_dist=False):
 			array_shift[i] = np.roll(array[i], -shift_value*i)
 	return(array_shift)
 
-def get_polygon(data, no_of_vert=4):
+def get_polygon(data, no_of_vert=4, xlabel=None, ylabel=None):
 	"""
 	Interactive function to pick a polygon out of a figure and receive the vertices of it.
 	:param data:
@@ -351,8 +362,8 @@ def get_polygon(data, no_of_vert=4):
 	ax.add_patch(poly)
 	p = PolygonInteractor(ax, poly)
 	plt.title("Pick polygon, close figure to save vertices")
-	plt.xlabel("frequency-domain f")
-	plt.ylabel("wavenumber-domain k")
+	plt.xlabel(xlabel)
+	plt.ylabel(ylabel)
 	plt.imshow(abs(data), aspect=aspectratio)
 	plt.show()		
 	

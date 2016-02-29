@@ -83,23 +83,26 @@ def get_coords(inventory, returntype="dict"):
 
     return coords
 
-def stream2array(stream, normalize=False):
+def trace2array(trace):
+	tx = trace.copy()
+	x = np.zeros(tx.size)
+	for index, data in tx.data:
+		x[index] = data
 
-	st = stream
+	return x 
+
+
+def stream2array(stream, normalize=False):
+	sx = stream.copy()
+	x = np.zeros((len(sx), len(sx[0].data)))
+	for i, traces in enumerate(sx):
+		for j, data in enumerate(traces):
+			x[i,j]=data
 
 	if normalize:
-		ArrayData = np.array([st[0].data])/float(max(np.array([st[0].data])[0]))
-	else:
-		ArrayData = np.array([st[0].data])
-	
-	for i in range(len(st))[1:]:
-		if normalize:
-			next_st = np.array([st[i].data]) / float(max(np.array([st[i].data])[0]))
-		else:
-			next_st = np.array([st[i].data])
+		x = x / x.max()
 
-		ArrayData = np.append(ArrayData, next_st, axis=0)
-	return(ArrayData)
+	return(x)
 
 def array2stream(ArrayData, st_original=None, network=None):
 	"""
@@ -327,7 +330,7 @@ def epidist2nparray(epidist):
 	epidist_np.sort()	
 	return(epidist_np)
 
-def alignon(st, inv, event, phase, maxtimewindow=None, taup_model='ak135'):
+def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135'):
 	"""
 	Aligns traces on a given phase
 	
@@ -340,8 +343,11 @@ def alignon(st, inv, event, phase, maxtimewindow=None, taup_model='ak135'):
 	:param phase: Phase to align the traces on
 	:type phase: str
 
+	:param ref: name or index of reference station, to which the others are aligned
+	:type ref: int or str
+
 	:param maxtimewindow: Timewindow around the theoretical arrivaltime
-	:type maxxtimewindow: int or float
+	:type maxtimewindow: int or float
 	
 	:param taup_model: model used by TauPyModel to calculate arrivals, default is ak135
 	:type taup_model: str
@@ -353,55 +359,128 @@ def alignon(st, inv, event, phase, maxtimewindow=None, taup_model='ak135'):
 	"""
 	
 	# Calculate depth and distance of receiver and event.
+	# Set some variables.
 	attach_coordinates_to_traces(st, inv, event)
 	depth = event.origins[0]['depth']/1000.
-	
+	origin = event.origins[0]['time']
+	m = TauPyModel(taup_model)
+
 	# Prepare Array of data.
-	stshift = stream2array(st)
-	no_x,no_t = stshift.shape
-	shifttimes=np.zeros(no_x)
+	st_tmp = st.copy()
+	data = stream2array(st_tmp)
+	shifttimes=np.zeros(data.shape[0])
 
-	for j in range(no_x):
-		y_dist = st[j].meta.distance
-		origin = event.origins[0]['time']
-		m = TauPyModel(taup_model)
-		t = m.get_travel_times(depth, y_dist, phase_list=[phase])[0].time
+	if type(ref) == int:
+		ref_dist = st[ref].stats.distance
+		ref_start = st[ref].stats.starttime
+		delta = st[ref].stats.delta
+		iref = ref
 
-		phase_time = origin + t - st[j].stats.starttime
-		Phase_npt = int(phase_time/st[j].stats.delta)
-		if j == 0:
-			tref = Phase_npt
-			
-		else:
-			# Check for maximum Value in a timewindow of length 
-			# maxtimewindow around theoretical arrival
-			if maxtimewindow:
-				delta = st[j].meta.delta
-				tmin = Phase_npt - int( (maxtimewindow/2.)/delta )
-				tmax = Phase_npt + int( (maxtimewindow/2.)/delta )
-				stmax = stshift[j][Phase_npt]
-				mtw_index = Phase_npt
-				for k in range(tmin,tmax+1):
-					if stshift[j][k] > stmax:
-							stmax=stshift[j][k]
-							mtw_index = k
-				print("Phase delta is %i, best fit is %i" % (Phase_npt,mtw_index))
-				shift_index = tref - mtw_index
-			else:
-				shift_index = tref - Phase_npt
+	elif type(ref) == str:
+		for i, trace in enumerate(st):
+			if trace.stats['station'] != 'ref':
+				continue
+			ref_dist = trace.stats.distance
+			iref = i
+		ref_start = trace.stats.starttime
+		delta = trace.stats.delta
 
-			stshift[j,:] = np.roll(stshift[j,:], shift_index)
-			shifttimes[j] = delta*shift_index			
+	# Calculating reference arriving time/index of phase.
+	ref_t = origin + m.get_travel_times(depth, ref_dist, phase_list=[phase])[0].time - ref_start
+	ref_n = int(ref_t/delta)
 	
-	st_align = array2stream(stshift, st)
-	for i in range(len(st_align))[1:]:
-		new_start = st_align[i].meta.starttime - shifttimes[i]
-		st_align[i].meta.starttime = new_start
+	for no_x, data_x in enumerate(data):
+		if no_x == iref:
+			continue
 	
+		dist = st[no_x].stats.distance
+		t = m.get_travel_times(depth, dist, phase_list=[phase])[0].time
+
+		# Calculate arrivals, and shift times/indicies.
+		phase_time = origin + t - st[no_x].stats.starttime
+		phase_n = int(phase_time/delta)
+		datashift, shift_index = shift2ref(data[no_x,:], ref_n, phase_n, mtw=maxtimewindow)
+		shifttimes[no_x]=delta*shift_index
+		data[no_x,:] = datashift
+
+	st_align = array2stream(data, st)
+
+	for i, trace in enumerate(st_align):
+		if i == iref:
+			continue
+		trace.stats.starttime = trace.stats.starttime - shifttimes[i]	
+
 	return st_align
 
+def shift2ref(array, tref, tshift, mtw=None):
+	data=array.copy()
+	if mtw:
+		tmin = tref - int(mtw/2.)
+		tmax = tref + int(mtw/2.)
+		stmax = data[tref]
+		mtw_index = tref
+		for k in range(tmin,tmax+1):
+			if data[k] > stmax:
+					stmax=data[k]
+					mtw_index = k
+		shift_value = tref - mtw_index
+		shift_data = np.roll(data, shift_value)
+		if shift_value > 0:
+			shift_data[0:shift_value] = 0
+		elif shift_value < 0:
+			end2 = len(shift_data)
+			end1 =  end2 + shift_value
+			shift_data[end1:end2] = 0
 
-def partial_stack(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, taup_model='ak135'):
+	else:
+		shift_value = tref - tshift
+		shift_data = np.roll(data, shift_value)
+		if shift_value > 0:
+			shift_data[0:shift_value] = 0
+		elif shift_value < 0:
+			end2 = len(shift_data)
+			end1 =  end2 + shift_value
+			shift_data[end1:end2] = 0
+
+	return shift_data, shift_value
+
+def stack(data, order=None):
+	"""
+	:param data: Array of data, that should be stacked.
+				   Stacking is performed over axis = 1
+	:type data: array_like
+
+	:param order: Order of the stack
+	:type order: int
+
+	Author: S. Schneider, 2016
+	Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
+	"""
+
+	i, j = data.shape
+	x = np.zeros(j)
+	if order:
+ 		order = float(order)
+
+	if order:
+		for trace in data:
+			sgnps = np.sign(x)
+			sgnst = np.sign(trace)
+			x = sgnps * (abs(x)**(1./order)) + \
+				sgnst *(abs(trace)**(1./order))
+
+		sgn = np.sign(x)
+		x = sgn * ( ( abs(x) / data.shape[0] ) ** order)
+	else:
+
+		for trace in data:
+			x = x + trace
+		x = x / data.shape[0]
+
+	return x
+
+
+def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, maxtimewindow=None, taup_model='ak135'):
 	"""
 	Will sort the traces into equally distributed bins and stack the bins.
 	The stacking is just an addition of the traces, more advanced schemes might follow.
@@ -409,155 +488,130 @@ def partial_stack(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, 
 	a uniform distribution.
 	
 	Needs depth information attached to the stream, array_util.see attach_coordinates_to_stream()
+	and attach_network_to_traces()
 	
 	input:
 	:param st: obspy stream object
-	:type st:
+	:type st: obspy.core.stream.Stream
 
-	:param yinfo: list of distances of the traces, sorted to match st
-	:type yinfo: list
-
-	:param no_of_bins: number of bins, that should be used 
+	:param no_of_bins: number of bins, that should be used, if overlap is set, it is used to calculate
+					   the size of each bin.
 	:type no_of_bins: int
 
+	:param phase: Phase 
+	:type phase: str
+
+	:param overlap: degree of overlap of each bin, e.g 0.5 corresponds to 50 percent
+					overlap ov each bin
+	:type: float
+
 	:param order: Order of Nth-root stacking, default None
-	:type order: float
+	:type order: float or int
+
+	:param align: If True, traces will be shifted to reference time of the bin.
+				  If Traces already aligned on a phase switch to False.
+	:type align: bool
+
+	:param maxtimewindow:
+
+	:param taup_model:
 
 	returns: 
-	:param ps_st: partial stacked data of the array in no_of_bins uniform distributed stacks
-	:type ps_st:
-
-	:param bin_distribution: distribution  traces in bins
-	:type: numpy.ndarray
-
-	:param L: Location of bin borders
-	:type L: numpy.ndarray
-
-	:param y_resample: resampled yinfo of the stacked traces
-	:type y_resample: numpy.ndarray
+	:param bin_data: partial stacked data of the array in no_of_bins uniform distributed stacks
+	:type bin_data: array
 	"""
-	
-	# Checking for correct input.
-	if type(yinfo) != list or type(order) == int: 
-		msg="wrong input type of variables!"
-		raise TypeError(msg)
 
-	data = stream2array(st, normalize=True)
+	st_tmp = st.copy()
+
+	data = stream2array(st_tmp, normalize=True)
+	
+	# Create list of distances from stations to array
+	epidist = np.zeros(len(st_tmp))
+	for i, trace in enumerate(st_tmp):
+		epidist[i] = trace.stats.distance
 
 	# Calculate the border of each bin 
 	# and the new yinfo values.
-	L = np.linspace(min(yinfo), max(yinfo), no_of_bins)
-	delta_L = abs(L[0] - L[1])
 
-	
+	# Resample the borders of the bin, to overlap, if activated
+	if overlap:
+		bin_size = (epidist.max() - epidist.min()) / no_of_bins
+		L = [ (epidist.min(), epidist.min() + bin_size) ]
+		y_resample = [ epidist.min() + bin_size/2. ]
+		i=0
+		print(epidist.max())
+		while ( L[i][0] + (1-overlap) * bin_size ) < epidist.max():
+			lower = L[i][0] + (1-overlap) * bin_size
+			upper = lower + bin_size
+			L.append( (lower, upper) ) 
+			y_resample.append( lower + bin_size/2. )
+			print("%f, %f" % (L[i][0],L[i][1]))
+			i += 1
 
-	# Resample the y-axis information to new, equally distributed ones.
-	y_resample = np.linspace( L[0] + delta_L/2., L[len(L)-1]-delta_L/2., no_of_bins-1)
-	bin_distribution = np.zeros(len(y_resample))
-	y_len, t_len = data.shape
+	else:
+		L = np.linspace(min(epidist), max(epidist), no_of_bins+1)
+		L = zip(L, np.roll(L, -1))
+		L = L[0:len(L)-1]
+		bin_size = abs(L[0][0] - L[0][1])
+
+		# Resample the y-axis information to new, equally distributed ones.
+		y_resample = np.linspace( min(min(L)) + bin_size/2., max(max(L))-bin_size/2., no_of_bins+1)
+		bin_distribution = np.zeros(len(y_resample))
 
 	# Preallocate some space in memory.
-	ps_st = np.zeros((len(y_resample),t_len))
-	yr_sampletimes = np.zeros(len(y_resample)).astype('int')
-	yi_sampletimes = np.zeros(len(yinfo)).astype('int')
+	bin_data = np.zeros((len(y_resample),data.shape[1]))
+
 	
 	m = TauPyModel(taup_model)
-	depth = st[0].meta.depth
-	delta = st[0].meta.delta
+	depth = st_tmp[0].meta.depth
+	delta = st_tmp[0].meta.delta
 
-	# Calculate theretical arrivals
-	for i, e in enumerate(yr_sampletimes):
-		yr_sampletimes[i] = int(m.get_travel_times(depth, y_resample[i], phase_list=[phase])[0].time / delta)
-	
-	for i, e in enumerate(yi_sampletimes):
-		yi_sampletimes[i] = int(m.get_travel_times(depth, yinfo[i], phase_list=[phase])[0].time / delta)
-
-
-
-
-	# Loop through all traces.
-	for i in range(len(L))[1:]:
-		count=0.
-		for j in range(y_len):
-			if j==0 and i==1:
-
-				tref = yr_sampletimes[i-1]
-				Phase_npt = yi_sampletimes[j]
-
-				if maxtimewindow:
-					tmin = Phase_npt - int( (maxtimewindow/2.)/delta )
-					tmax = Phase_npt + int( (maxtimewindow/2.)/delta )
-					stmax = data[j][Phase_npt]
-					mtw_index = Phase_npt
-					for k in range(tmin,tmax+1):
-						if data[j][k] > stmax:
-								stmax=data[j][k]
-								mtw_index = k
-					shift = tref - mtw_index
-					print( "Bin %i,   Trace %i, Arrivaltime %i, Shiftingtime %i, EpiDist %f, y_resampled %f " % (i, j, Phase_npt,shift, yinfo[j], y_resample[i-1]))
-					data[j,:] =  np.roll(data[j,:], shift)
-
-				else:
-
-					shift = tref - Phase_npt
-					data[j,:] =  np.roll(data[j,:], shift)					
-					
-				if order:
-					for k in range(t_len):
-						sgnps = np.sign(ps_st[i-1,k])
-						sgnst = np.sign(data[j,k])
-						ps_st[i-1,k] = sgnps * (abs(ps_st[i-1,k])**(1./order)) + \
-										sgnst *(abs(data[j,k])**(1./order))
-					count += 1.
-				else:
-					ps_st[i-1,:] = ps_st[i-1,:] + data[j,:]
-					count += 1.
-				
-				continue
-
-			if yinfo[j] > L[i-1] and yinfo[j] <= L[i]:
-
-				tref = yr_sampletimes[i-1]
-				Phase_npt = yi_sampletimes[j]
-
-				if maxtimewindow:
-					tmin = Phase_npt - int( (maxtimewindow/2.)/delta )
-					tmax = Phase_npt + int( (maxtimewindow/2.)/delta )
-					stmax = data[j][Phase_npt]
-					mtw_index = Phase_npt
-					for k in range(tmin,tmax+1):
-						if data[j][k] > stmax:
-								stmax=data[j][k]
-								mtw_index = k
-					shift = tref - mtw_index
-					print( "Bin %i,   Trace %i, Arrivaltime %i, Shiftingtime %i, EpiDist %f, y_resampled %f " % (i, j, Phase_npt,shift, yinfo[j], y_resample[i-1]))
-					data[j,:] =  np.roll(data[j,:], shift)
-
-				else:
-					shift = tref - Phase_npt
-					data[j,:] =  np.roll(data[j,:], shift)
-
-				if order:
-					for k in range(t_len):
-						sgnps = np.sign(ps_st[i-1,k])
-						sgnst = np.sign(data[j,k])
-						ps_st[i-1,k] = sgnps * (abs(ps_st[i-1,k])**(1./order)) + \
-										sgnst *(abs(data[j,k])**(1./order))
-					count += 1.
-				else:
-					ps_st[i-1,:] = ps_st[i-1,:] + data[j,:]
-					count += 1.
-
-		if count != 0.:	
-			if order:
-				sgn = np.sign(ps_st[i-1,:])
-				ps_st[i-1,:] = sgn * ( ( ps_st[i-1,:]/ count )**(order) )
-				bin_distribution[i-1] += count
-			else:
-				ps_st[i-1,:] = ps_st[i-1,:] / count
-				bin_distribution[i-1] += count
+	# Calculate theoretical arrivals if align is enabled.
+	if align:
+		yr_sampleindex = np.zeros(len(y_resample)).astype('int')
+		yi_sampleindex = np.zeros(len(epidist)).astype('int')
+		for i, res_distance in enumerate(y_resample):
+			yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[phase])[0].time / delta)
 		
-	return ps_st,bin_distribution, L, y_resample
+		for i, epi_distance in enumerate(epidist):
+			yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[phase])[0].time / delta)
+
+	# Loop through all bins.
+	for i, bins in enumerate(L):
+
+		# Loop through all traces.
+		for j, trace in enumerate(data):
+
+			# First bin.
+			if i==0 :
+				if epidist[j] <= bins[1]:
+					if align:
+						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+					else:
+						trace_shift = trace
+					stack_arr = np.vstack([bin_data[i],trace_shift])
+					bin_data[i] = stack(stack_arr, order)
+
+			# Check if current trace is inside bin-boundaries.
+			if epidist[j] > bins[0] and epidist[j] <= bins[1]:
+				if align:
+					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+				else:
+					trace_shift = trace
+				stack_arr = np.vstack([bin_data[i],trace_shift])
+				bin_data[i] = stack(stack_arr, order)
+
+			if overlap:
+				if i == len(L):
+					if align:
+						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+					else:
+						trace_shift = trace
+					stack_arr = np.vstack([bin_data[i],trace_shift])
+					bin_data[i] = stack(stack_arr, order)
+
+	return bin_data
+
 
 
 def plot(inventory, projection="local"):

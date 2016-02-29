@@ -35,17 +35,21 @@ stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_trac
 alignon, partial_stack, shift2ref
 
 st = read_st("../data/synthetics_uniform/SUNEW.QHD")
-inv = read_inv("../data/synthetics_uniform/SUNEW_inv.xml")
-cat = read_cat("../data/synthetics_uniform/SUNEW_cat.xml")
-st. normalize()
-attach_network_to_traces(st, inv[0])
-attach_coordinates_to_traces(st, inv, cat[0])
-ref=0
-maxtimewindow=None
-taup_model='ak135'
-event = cat[0]
-phase='PP'
-no_of_bins=10
+stuni = st.copy()
+invuni = read_inv("../data/synthetics_uniform/sunew_inv.xml")
+cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
+attach_coordinates_to_traces(stuni, invuni, cat[0])
+attach_network_to_traces(stuni, invuni[0])
+attach_coordinates_to_traces(stuni, invuni, cat[0])
+
+st = read_st("../data/synthetics_random/SRNEW.QHD")
+stran = st.copy()
+inv = read_inv("../data/synthetics_random/SRNEW_inv.xml")
+invran= inv
+attach_network_to_traces(stran, invran[0])
+attach_coordinates_to_traces(stran, invran, cat[0])
+
+
 
 
 

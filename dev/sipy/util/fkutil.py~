@@ -1,14 +1,20 @@
 from __future__ import absolute_import
 import numpy
 import numpy as np
+import matplotlib
+
+# If using a Mac Machine, otherwitse comment the next line out:
+#matplotlib.use('TkAgg')
+
 import matplotlib.pyplot as plt
+import matplotlib.path as mplPath
 
 import obspy
 from obspy.geodetics import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy.taup import TauPyModel
 
 
-from sipy.utilities.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces,stream2array
+from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces,stream2array
 import datetime
 import scipy as sp
 import scipy.signal as signal
@@ -29,7 +35,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, y_dist=1, yinfo=False, markphase=None):
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 	"""
 	Alpha Version!
 	
@@ -46,10 +52,6 @@ def plot(st, inv=None, event=None, zoom=1, y_dist=1, yinfo=False, markphase=None
 
 	param zoom: zoom factor of the traces
 	type zoom:	float
-
-	param y_dist:	separating distance between traces, for example equidistant with "1" 
-					or import epidist-list via epidist
-	type y_dist:	int or list
 
 	param yinfo:	Plotting with y info as distance of traces
 	type yinfo:		bool
@@ -69,8 +71,8 @@ def plot(st, inv=None, event=None, zoom=1, y_dist=1, yinfo=False, markphase=None
 	spacing=2.
 
 	# Set axis information.
-	plt.ylabel("Distance in deg")
 	plt.xlabel("Time in s")
+
 	if inv and event:
 		# Calculates y-axis info using epidistance information of the stream.
 		# Check if there is a network entry
@@ -80,35 +82,42 @@ def plot(st, inv=None, event=None, zoom=1, y_dist=1, yinfo=False, markphase=None
 
 		attach_coordinates_to_traces(st, inv, event)
 		depth = event.origins[0]['depth']/1000.
-		no_x,no_t = data.shape
+		#no_x,no_t = data.shape
 
-		for j in range(no_x):
-			y_dist = st[j].meta.distance
+		#for j in range(no_x):
+		for j, trace in enumerate(data):
+			y_dist = st[j].stats.distance
 
 			if markphase:
 				origin = event.origins[0]['time']
 				m = TauPyModel('ak135')
-				time = m.get_travel_times(depth, y_dist)
-				for k in range(len(time)):
-					if time[k].name != markphase:
-						continue
-					t = time[k].time
+				t = m.get_travel_times(depth, y_dist, phase_list=[markphase])[0].time
 				phase_time = origin + t - st[j].stats.starttime
 				Phase_npt = int(phase_time/st[j].stats.delta)
 				Phase = Phase_npt * st[j].stats.delta
 			
 				if yinfo:
-					plt.plot(t_axis,zoom*data[j]+ y_dist, color='black')
+					plt.ylabel("Distance in deg")
+					plt.annotate('%s' % st[j].stats.station, xy=(0,y_dist+0.1))
+					plt.plot(t_axis,zoom*trace+ y_dist, color='black')
 					plt.plot( (Phase,Phase),(-1+y_dist,1+y_dist), color='red' )			
 				else:
-					plt.plot(t_axis,zoom*data[j]+ spacing*j, color='black')
+					plt.ylabel("No. of trace")
+					plt.gca().yaxis.set_major_locator(plt.NullLocator())
+					plt.annotate('%s' % st[j].stats.station, xy=(0,spacing*j+0.1))
+					plt.plot(t_axis,zoom*trace+ spacing*j, color='black')
 					plt.plot( (Phase,Phase),(-1+spacing*j,1+spacing*j), color='red' )
 
 			else:
 				if yinfo:
-					plt.plot(t_axis,zoom*data[j]+ y_dist, color='black')
+					plt.ylabel("Distance in deg")
+					plt.annotate('%s' % st[j].stats.station, xy=(0,y_dist+0.1))
+					plt.plot(t_axis,zoom*trace+ y_dist, color='black')
 				else:
-					plt.plot(t_axis,zoom*data[j]+ spacing*j, color='black')			
+					plt.ylabel("No. of trace")
+					plt.gca().yaxis.set_major_locator(plt.NullLocator())
+					plt.annotate('%s' % st[j].stats.station, xy=(0,spacing*j+0.1))
+					plt.plot(t_axis,zoom*trace+ spacing*j, color='black')			
 
 	else:
 		print("no inventory and event given")
@@ -315,7 +324,7 @@ def shift_array(array, shift_value=0, y_dist=False):
 			array_shift[i] = np.roll(array[i], -shift_value*i)
 	return(array_shift)
 
-def get_polygon(data, no_of_vert=4):
+def get_polygon(data, no_of_vert=4, xlabel=None, ylabel=None):
 	"""
 	Interactive function to pick a polygon out of a figure and receive the vertices of it.
 	:param data:
@@ -324,9 +333,10 @@ def get_polygon(data, no_of_vert=4):
 	:param no_of_vert: number of vertices, default 4, 
 	:type no_of_vert: int
 	"""
-	from sipy.utilities.polygon_interactor import PolygonInteractor
+	from sipy.util.polygon_interactor import PolygonInteractor
 	from matplotlib.patches import Polygon
 	
+	no_of_vert = int(no_of_vert)
 	# Define shape of polygon.
 	y,x = data.shape
 	aspectratio = float(x) / (float(y) * 2.)
@@ -352,22 +362,21 @@ def get_polygon(data, no_of_vert=4):
 	ax.add_patch(poly)
 	p = PolygonInteractor(ax, poly)
 	plt.title("Pick polygon, close figure to save vertices")
-	plt.xlabel("frequency-domain f")
-	plt.ylabel("wavenumber-domain k")
+	plt.xlabel(xlabel)
+	plt.ylabel(ylabel)
 	plt.imshow(abs(data), aspect=aspectratio)
 	plt.show()		
 	
 	vertices = (poly.get_path().vertices).astype('int')
 	
-	if no_of_vert == 4:
-		indicies = convert_polygon_to_flat_index(data, vertices)
+	indicies = convert_polygon_to_flat_index(data, vertices)
 
 	return(indicies)
 
 def convert_polygon_to_flat_index(data, vertices):
 	"""
-	Converts vertices of a polygon taken of an imshow plot of data to 
-	flat-indicies.
+	Converts points insde of a polygon defined by its vertices, taken of an imshow plot of data,to 
+	flat-indicies. Does NOT include the border of the polygon.
 	
 	:param data: speaks for itself
 	:type data: numpy.ndarray
@@ -377,18 +386,51 @@ def convert_polygon_to_flat_index(data, vertices):
 	
 	"""
 
-	xlen = vertices[:,0].max() - vertices[:,0].min()
-	ylen = vertices[:,1].max() - vertices[:,1].min()
-	indicies=np.zeros(xlen*ylen)		
-	
-	arr=np.zeros((xlen*ylen,2))
-	i=0		
-	for x in np.arange(vertices[:,0].min(), vertices[:,0].max()).astype('int'):
-		for y in np.arange(vertices[:,1].min(), vertices[:,1].max()).astype('int'):
-			arr[i]=[x,y]
-			i+=1	
+	# check if points are inside polygon. Be careful with the indicies, np and mpl
+	# handle them exactly opposed.
+	polygon = mplPath.Path(vertices)
+	arr = []
+	for i in range(data.shape[0]):
+		for j in range(data.shape[1]):
+			if polygon.contains_point([j,i]):
+				arr.append([j,i])
+	arr = map(list, zip(*arr))
 
-	arr = arr.transpose().astype('int').tolist()
 	flat_index= np.ravel_multi_index(arr, data.conj().transpose().shape).astype('int').tolist()
 
-	return(flat_index)		
+	return(flat_index)	
+
+def find_equi_combi(list, N):
+	"""
+	Function to find all possible equidistant combinations in a list.
+
+	Returns list of indicies, that fullfil this requirement.
+
+	:param list: list of values
+
+	:param N: Minimum number of values, that should be combined.
+	"""
+	import itertools as itt
+ 	
+	low_conf=0.4
+	top_conf=1.5
+	max_time
+
+	equicombi = []
+	for n in range(N, len(list)+1):
+		x = itt.permutations(list, n)
+		start =  datetime.datetime.now()
+		while True:
+			now = datetime.datetime.now()
+			diff = now - start
+			if diff.seconds > max_time:
+				print("Loop exited after %i seconds" % diff.seconds)
+			else:
+				combi = []
+				combi.extend(x.next())
+				combi = np.array(combi)
+				print(abs(np.diff(combi).mean()))
+				if abs(np.diff(combi).mean()) > low_conf and abs(np.diff(combi).mean()) < top_conf:
+					equicombi.append(combi.tolist())
+
+
