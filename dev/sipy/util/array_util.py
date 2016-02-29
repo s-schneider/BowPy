@@ -415,7 +415,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135
 def shift2ref(array, tref, tshift, mtw=None):
 	data=array.copy()
 	if mtw:
-		tmin = tref - int(mmtw/2.)
+		tmin = tref - int(mtw/2.)
 		tmax = tref + int(mtw/2.)
 		stmax = data[tref]
 		mtw_index = tref
@@ -494,7 +494,8 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, maxtimewindo
 	:param st: obspy stream object
 	:type st: obspy.core.stream.Stream
 
-	:param no_of_bins: number of bins, that should be used 
+	:param no_of_bins: number of bins, that should be used, if overlap is set, it is used to calculate
+					   the size of each bin.
 	:type no_of_bins: int
 
 	:param phase:
@@ -533,19 +534,29 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, maxtimewindo
 	# Calculate the border of each bin 
 	# and the new yinfo values.
 
+	# Resample the borders of the bin, to overlap, if activated
 	if overlap:
-		print("boo")
+		bin_size = (epidist.max() - epidist.min()) / no_of_bins
+		L = [ (epidist.min(), epidist.min() + bin_size) ]
+		y_resample = [ epidist.min() + bin_size/2. ]
+		i=0
+		while ( L[i][0] + (1-overlap) * bin_size ) < epidist.max():
+			lower = L[i][0] + (1-overlap) * bin_size
+			upper = lower + bin_size
+			L.append( (lower, upper) ) 
+			y_resample.append( lower + bin_size/2. )
+			i += 1
+
 	else:
-		L = np.linspace(min(epidist), max(epidist), no_of_bins)
+		L = np.linspace(min(epidist), max(epidist), no_of_bins+1)
 		L = zip(L, np.roll(L, -1))
 		L = L[0:len(L)-1]
-		delta_L = abs(L[0][0] - L[0][1])
+		bin_size = abs(L[0][0] - L[0][1])
 
+		# Resample the y-axis information to new, equally distributed ones.
+		y_resample = np.linspace( min(min(L)) + bin_size/2., max(max(L))-bin_size/2., no_of_bins+1)
+		bin_distribution = np.zeros(len(y_resample))
 
-	# Resample the y-axis information to new, equally distributed ones.
-	y_resample = np.linspace( min(min(L)) + delta_L/2., max(max(L))-delta_L/2., no_of_bins-1)
-	bin_distribution = np.zeros(len(y_resample))
-	
 	# Preallocate some space in memory.
 	bin_data = np.zeros((len(y_resample),data.shape[1]))
 	yr_sampleindex = np.zeros(len(y_resample)).astype('int')
@@ -569,179 +580,28 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, maxtimewindo
 		for j, trace in enumerate(data):
 
 			# First bin.
-			if i==1 :
+			if i==0 :
 				if epidist[j] <= bins[1]:
-					trace_shift, si = shift2ref(trace, yr_sampleindex[i-1], yi_sampleindex[j], maxtimewindow)
-					stack_arr = np.vstack([bin_data[i-1],trace_shift])
-					bin_data[i-1] = stack(stack_arr, order)
+					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+					stack_arr = np.vstack([bin_data[i],trace_shift])
+					bin_data[i] = stack(stack_arr, order)
 
 			# Check if current trace is inside bin-boundaries.
 			if epidist[j] > bins[0] and epidist[j] <= bins[1]:
 
-				trace_shift, si = shift2ref(trace, yr_sampleindex[i-1], yi_sampleindex[j], maxtimewindow)
-				stack_arr = np.vstack([bin_data[i-1],trace_shift])
-				bin_data[i-1] = stack(stack_arr, order)
+				trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+				stack_arr = np.vstack([bin_data[i],trace_shift])
+				bin_data[i] = stack(stack_arr, order)
+				print("current bin %i trace %i, shifttime %f" % (i, j, si))
+
+			if overlap:
+				if i == len(L):
+					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+					stack_arr = np.vstack([bin_data[i],trace_shift])
+					bin_data[i] = stack(stack_arr, order)
 
 	return bin_data
 
-
-def partial_stack_org(st, yinfo, no_of_bins, phase, order=None, maxtimewindow=None, taup_model='ak135'):
-	"""
-	Will sort the traces into equally distributed bins and stack the bins.
-	The stacking is just an addition of the traces, more advanced schemes might follow.
-	The uniform distribution is useful for FK-filtering, SSA and every method that requires
-	a uniform distribution.
-	
-	Needs depth information attached to the stream, array_util.see attach_coordinates_to_stream()
-	
-	input:
-	:param st: obspy stream object
-	:type st:
-
-	:param yinfo: list of distances of the traces, sorted to match st
-	:type yinfo: list
-
-	:param no_of_bins: number of bins, that should be used 
-	:type no_of_bins: int
-
-	:param order: Order of Nth-root stacking, default None
-	:type order: float
-
-	returns: 
-	:param ps_st: partial stacked data of the array in no_of_bins uniform distributed stacks
-	:type ps_st:
-
-	:param bin_distribution: distribution  traces in bins
-	:type: numpy.ndarray
-
-	:param L: Location of bin borders
-	:type L: numpy.ndarray
-
-	:param y_resample: resampled yinfo of the stacked traces
-	:type y_resample: numpy.ndarray
-	"""
-	
-	# Checking for correct input.
-	if type(yinfo) != list or type(order) == int: 
-		msg="wrong input type of variables!"
-		raise TypeError(msg)
-
-	data = stream2array(st.copy(), normalize=True)
-
-	# Calculate the border of each bin 
-	# and the new yinfo values.
-	L = np.linspace(min(yinfo), max(yinfo), no_of_bins)
-	delta_L = abs(L[0] - L[1])
-
-	
-
-	# Resample the y-axis information to new, equally distributed ones.
-	y_resample = np.linspace( L[0] + delta_L/2., L[len(L)-1]-delta_L/2., no_of_bins-1)
-	bin_distribution = np.zeros(len(y_resample))
-	y_len, t_len = data.shape
-
-	# Preallocate some space in memory.
-	ps_st = np.zeros((len(y_resample),t_len))
-	yr_sampletimes = np.zeros(len(y_resample)).astype('int')
-	yi_sampletimes = np.zeros(len(yinfo)).astype('int')
-	
-	m = TauPyModel(taup_model)
-	depth = st[0].meta.depth
-	delta = st[0].meta.delta
-
-	# Calculate theoretical arrivals
-	for i, e in enumerate(yr_sampletimes):
-		yr_sampletimes[i] = int(m.get_travel_times(depth, y_resample[i], phase_list=[phase])[0].time / delta)
-	
-	for i, e in enumerate(yi_sampletimes):
-		yi_sampletimes[i] = int(m.get_travel_times(depth, yinfo[i], phase_list=[phase])[0].time / delta)
-
-
-
-
-	# Loop through all traces.
-	for i in range(len(L))[1:]:
-		count=0.
-		for j in range(y_len):
-			if j==0 and i==1:
-
-				tref = yr_sampletimes[i-1]
-				Phase_npt = yi_sampletimes[j]
-
-				if maxtimewindow:
-					tmin = Phase_npt - int( (maxtimewindow/2.)/delta )
-					tmax = Phase_npt + int( (maxtimewindow/2.)/delta )
-					stmax = data[j][Phase_npt]
-					mtw_index = Phase_npt
-					for k in range(tmin,tmax+1):
-						if data[j][k] > stmax:
-								stmax=data[j][k]
-								mtw_index = k
-					shift = tref - mtw_index
-					print( "Bin %i,   Trace %i, Arrivaltime %i, t-Resample %i, Shiftingtime %i, EpiDist %f, y_resampled %f " % (i, j, Phase_npt,tref,shift, yinfo[j], y_resample[i-1]))
-					data[j,:] =  np.roll(data[j,:], shift)
-
-				else:
-
-					shift = tref - Phase_npt
-					data[j,:] =  np.roll(data[j,:], shift)					
-					
-				if order:
-					for k in range(t_len):
-						sgnps = np.sign(ps_st[i-1,k])
-						sgnst = np.sign(data[j,k])
-						ps_st[i-1,k] = sgnps * (abs(ps_st[i-1,k])**(1./order)) + \
-										sgnst *(abs(data[j,k])**(1./order))
-					count += 1.
-				else:
-					ps_st[i-1,:] = ps_st[i-1,:] + data[j,:]
-					count += 1.
-				
-				continue
-
-			if yinfo[j] > L[i-1] and yinfo[j] <= L[i]:
-
-				tref = yr_sampletimes[i-1]
-				Phase_npt = yi_sampletimes[j]
-
-				if maxtimewindow:
-					tmin = Phase_npt - int( (maxtimewindow/2.)/delta )
-					tmax = Phase_npt + int( (maxtimewindow/2.)/delta )
-					stmax = data[j][Phase_npt]
-					mtw_index = Phase_npt
-					for k in range(tmin,tmax+1):
-						if data[j][k] > stmax:
-								stmax=data[j][k]
-								mtw_index = k
-					shift = tref - mtw_index
-					print( "Bin %i,   Trace %i, Arrivaltime %i, t-Resample %i, Shiftingtime %i, EpiDist %f, y_resampled %f " % (i, j, Phase_npt,tref,shift, yinfo[j], y_resample[i-1]))
-					data[j,:] =  np.roll(data[j,:], shift)
-
-				else:
-					shift = tref - Phase_npt
-					data[j,:] =  np.roll(data[j,:], shift)
-
-				if order:
-					for k in range(t_len):
-						sgnps = np.sign(ps_st[i-1,k])
-						sgnst = np.sign(data[j,k])
-						ps_st[i-1,k] = sgnps * (abs(ps_st[i-1,k])**(1./order)) + \
-										sgnst *(abs(data[j,k])**(1./order))
-					count += 1.
-				else:
-					ps_st[i-1,:] = ps_st[i-1,:] + data[j,:]
-					count += 1.
-
-		if count != 0.:	
-			if order:
-				sgn = np.sign(ps_st[i-1,:])
-				ps_st[i-1,:] = sgn * ( ( ps_st[i-1,:]/ count )**(order) )
-				bin_distribution[i-1] += count
-			else:
-				ps_st[i-1,:] = ps_st[i-1,:] / count
-				bin_distribution[i-1] += count
-		
-	return ps_st,bin_distribution, L, y_resample
 
 
 def plot(inventory, projection="local"):
