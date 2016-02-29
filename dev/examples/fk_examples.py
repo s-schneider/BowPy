@@ -4,6 +4,12 @@ import numpy
 import numpy as np
 from numpy import genfromtxt
 import math
+
+import matplotlib
+
+# If using a Mac Machine, otherwitse comment the next line out:
+matplotlib.use('TkAgg')
+
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import scipy as sp
@@ -39,7 +45,7 @@ maxtimewindow=None
 taup_model='ak135'
 event = cat[0]
 phase='PP'
-
+no_of_bins=10
 
 
 

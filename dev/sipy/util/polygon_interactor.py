@@ -151,19 +151,23 @@ class PolygonInteractor(object):
 
 
 if __name__ == '__main__':
+    import matplotlib
+    # If Mac machine is used:
+    matplotlib.use('TkAgg')
     import matplotlib.pyplot as plt
     from matplotlib.patches import Polygon
+    
 
-    #theta = np.arange(0, 2*np.pi, 0.1)
-    #r = 30
+    theta = np.arange(0, 2*np.pi, 0.5)
+    r = 30
 
-    #xs = r*np.cos(theta)
-    #ys = r*np.sin(theta)
+    xs = r*np.cos(theta)
+    ys = r*np.sin(theta)
 	
     
-    xs = [100,100,200,200]
-    ys = [10,15,10,15]
-    poly = Polygon(list(zip(xs, ys)), animated=True, fill=False, closed=False)
+    #xs = [100,100,200,200]
+    #ys = [10,15,10,15]
+    poly = Polygon(list(zip(xs, ys)), animated=True, fill=True, closed=False)
 
     fig, ax = plt.subplots()
     ax.add_patch(poly)
@@ -171,9 +175,10 @@ if __name__ == '__main__':
 
     #ax.add_line(p.line)
     ax.set_title('Click and drag a point to move it')
-    ax.set_xlim((0, 250))
-    ax.set_ylim((0, 300))
+    ax.set_xlim((-50, 50))
+    ax.set_ylim((-50, 50))
     plt.show()
+
     mask =p.get_points(poly)
     plt.plot(mask[:,0], mask[:,1])
     plt.show()

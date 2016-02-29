@@ -1,7 +1,13 @@
 from __future__ import absolute_import
 import numpy
 import numpy as np
+import matplotlib
+
+# If using a Mac Machine, otherwitse comment the next line out:
+matplotlib.use('TkAgg')
+
 import matplotlib.pyplot as plt
+import matplotlib.path as mplPath
 
 import obspy
 from obspy.geodetics import gps2dist_azimuth, kilometer2degrees, locations2degrees
@@ -319,6 +325,7 @@ def get_polygon(data, no_of_vert=4):
 	from sipy.util.polygon_interactor import PolygonInteractor
 	from matplotlib.patches import Polygon
 	
+	no_of_vert = int(no_of_vert)
 	# Define shape of polygon.
 	y,x = data.shape
 	aspectratio = float(x) / (float(y) * 2.)
@@ -351,15 +358,14 @@ def get_polygon(data, no_of_vert=4):
 	
 	vertices = (poly.get_path().vertices).astype('int')
 	
-	if no_of_vert == 4:
-		indicies = convert_polygon_to_flat_index(data, vertices)
+	indicies = convert_polygon_to_flat_index(data, vertices)
 
 	return(indicies)
 
 def convert_polygon_to_flat_index(data, vertices):
 	"""
-	Converts vertices of a polygon taken of an imshow plot of data to 
-	flat-indicies.
+	Converts points insde of a polygon defined by its vertices, taken of an imshow plot of data,to 
+	flat-indicies. Does NOT include the border of the polygon.
 	
 	:param data: speaks for itself
 	:type data: numpy.ndarray
@@ -369,18 +375,16 @@ def convert_polygon_to_flat_index(data, vertices):
 	
 	"""
 
-	xlen = vertices[:,0].max() - vertices[:,0].min()
-	ylen = vertices[:,1].max() - vertices[:,1].min()
-	indicies=np.zeros(xlen*ylen)		
-	
-	arr=np.zeros((xlen*ylen,2))
-	i=0		
-	for x in np.arange(vertices[:,0].min(), vertices[:,0].max()).astype('int'):
-		for y in np.arange(vertices[:,1].min(), vertices[:,1].max()).astype('int'):
-			arr[i]=[x,y]
-			i+=1	
+	# check if points are inside polygon. Be careful with the indicies, np and mpl
+	# handle them exactly opposed.
+	polygon = mplPath.Path(vertices)
+	arr = []
+	for i in range(data.shape[0]):
+		for j in range(data.shape[1]):
+			if polygon.contains_point([j,i]):
+				arr.append([j,i])
+	arr = map(list, zip(*arr))
 
-	arr = arr.transpose().astype('int').tolist()
 	flat_index= np.ravel_multi_index(arr, data.conj().transpose().shape).astype('int').tolist()
 
 	return(flat_index)		

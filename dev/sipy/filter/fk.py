@@ -12,7 +12,7 @@ import scipy.signal as signal
 from sipy.util.array_util import array2stream, stream2array, epidist2nparray
 from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon, nextpow2
 
-def fk_filter(st, inv=None, cat=None,trafo=None, ftype=None, phase=None, epi_dist=None, normalize=True, SSA=False):
+def fk_filter(st, inv=None, cat=None, trafo=None, ftype=None, phase=None, epi_dist=None, polygon=4, normalize=True, SSA=False):
 	"""
 	At this point prework with programs like seismic handler or SAC is needed to perform correctly
 
@@ -54,7 +54,10 @@ def fk_filter(st, inv=None, cat=None,trafo=None, ftype=None, phase=None, epi_dis
 	param epidist: list of epidistances, corresponding to st
 	type epidist: list
 
-
+	param polygon: number of vertices of polygon for fk filter, only needed 
+				   if ftype is set to eliminate-polygon or extract-polygon.
+				   Default is 4.
+	type polygon: int
 	
 	param normalize: normalize data to 1
 	type normalize: bool
@@ -111,10 +114,10 @@ def fk_filter(st, inv=None, cat=None,trafo=None, ftype=None, phase=None, epi_dis
 			array_filtered_fk = line_cut(array_fk)				
 
 		elif ftype == "eliminate-polygon":
-			array_filtered_fk = _fk_eliminate_polygon(array_fk)
+			array_filtered_fk = _fk_eliminate_polygon(array_fk,polygon)
 
 		elif ftype == "extract-polygon":
-			array_filtered_fk = _fk_extract_polygon(array_fk)
+			array_filtered_fk = _fk_extract_polygon(array_fk,polygon)
 
 		else:
 			print("No type of filter specified")
@@ -162,7 +165,7 @@ def fk_filter(st, inv=None, cat=None,trafo=None, ftype=None, phase=None, epi_dis
 FFT FUNCTIONS 
 """
 
-def _fk_extract_polygon(data):
+def _fk_extract_polygon(data, polygon):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
@@ -173,7 +176,7 @@ def _fk_extract_polygon(data):
 	dsfk = np.fft.fftshift(data)
 
 	# Define polygon by user-input.
-	indicies = get_polygon(np.log(abs(dsfk)))
+	indicies = get_polygon(np.log(abs(dsfk)), no_of_vert=polygon)
 
 	# Create new array, only contains extractet energy, pointed to with indicies
 	dsfk_extract = np.zeros(dsfk.shape)
@@ -185,7 +188,7 @@ def _fk_extract_polygon(data):
 	return(data_fk)
 
 
-def _fk_eliminate_polygon(data):
+def _fk_eliminate_polygon(data,polygon):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
@@ -196,7 +199,7 @@ def _fk_eliminate_polygon(data):
 	dsfk = np.fft.fftshift(data)
 	
 	# Define polygon by user-input.
-	indicies = get_polygon(np.log(abs(dsfk)))
+	indicies = get_polygon(np.log(abs(dsfk)), no_of_vert=polygon)
 
 	# Create new array, contains all the energy, except the eliminated, pointed to with indicies
 	dsfk_elim = dsfk.conj().transpose()
