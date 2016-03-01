@@ -215,7 +215,7 @@ def geometrical_center(inventory):
 def aperture(inventory):
     """
     The aperture of the array in kilometers.
-    Method:find the maximum of the calculation of  distance of every possible combination of stations
+    Method:find the maximum of the calculation of distance of every possible combination of stations
     """
     lats, lngs, hgt = __coordinate_values(inventory)
     distances = []
@@ -315,16 +315,30 @@ def epidist2nparray(Array_Coords):
 	Returns a numpy.ndarray of all epidistances in Array_Coords.
 	"""
 	epidist_np = []
-	for scode in epidist:
+	for scode in Array_Coords:
 		if Array_Coords[scode]["epidist"]:
 			epidist_np = np.append(epidist_np, [Array_Coords[scode]["epidist"]])
 	
 	epidist_np.sort()	
 	return(epidist_np)
 
-def isuniform(inv, stream=None, cat=None):
+def isuniform(inv, event, stream=None, tolerance=0.5):
 	
-	return	
+	distances = epidist2nparray( epidist(inv,event,stream) )
+	delta_distances = np.diff(distances)	
+	L = distances.max() - distances.min()
+	ideal_delta = L / (distances.size - 1)
+	
+	ubound = ideal_delta * (1. + tolerance)
+	lbound = ideal_delta * (1. - tolerance)
+
+		print i
+		if lbound < i < ubound:
+			continue
+		else:
+			return False
+	return True
+
 
 def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135'):
 	"""
