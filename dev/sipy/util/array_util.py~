@@ -67,7 +67,8 @@ def get_coords(inventory, returntype="dict"):
                 coords["%s.%s" % (network.code, station.code)] = \
                     {"latitude": station.latitude,
                      "longitude": station.longitude,
-                     "elevation": float(station.elevation) / 1000.0}
+                     "elevation": float(station.elevation) / 1000.0,
+					 "epidist" : None}
 
     if returntype == "array":
         nstats = len(inventory[0].stations)
@@ -254,81 +255,76 @@ def find_closest_station(inventory, latitude, longitude,
     return min_distance_station
 
 
-def epidist_inv(inventory, event):
+def epidist(inventory, event, stream=None):
 	"""
-	Calculates the epicentral distance between event and stations of the inventory in degrees.
+	Receives the epicentral distance of the station-source couple given in inventory - event and adds them to Array_Coords. 
+	If called with stream, it uses just the coordinates of the used stations in stream.
 
 	param inventory: 
 	type inventory:
 
-	param event: event of catalog
+	param event:
 	type event:
 
-	Returns
-
-	param Array_Coords:
-	type Array_Coords: dict
-	"""
-	#calc min and max epidist between source and receivers
-	inv = inventory
-	Array_Coords = get_coords(inv)
-	eventlat = event.origins[0].latitude
-	eventlon = event.origins[0].longitude
-
-	for network in inv:
-		for station in network:
-			scode = network.code + "." + station.code
-			lat1 = Array_Coords[scode]["latitude"]
-			lat2 = Array_Coords[scode]["longitude"]
-			# calculate epidist in km
-			# adds an epidist entry to the Array_coords dictionary 
-			Array_Coords[scode]["epidist"] = locations2degrees( lat1, lat2, eventlat, eventlon )
-
-	return(Array_Coords)
-
-def epidist_stream(stream, inventory, catalog):
-	"""
-	Receives the epicentral distance of the station-source couple given in the stream. It uses just the
-	coordinates of the used stations in stream.
 
 	param stream:
 	type stream:
-
-	param inventory: 
-	type inventory:
-
-	param catalog:
-	type catalog:
-
 	"""
-	Array_Coords = epidist_inv(inventory, catalog)
+	inv = inventory
+	Array_Coords = get_coords(inv)
 
-	epidist = {}
-	for trace in stream:
-		scode = trace.meta.network + "." + trace.meta.station
-		epidist["%s" % (scode)] =  {"epidist" : Array_Coords[scode]["epidist"]}
+	eventlat = event.origins[0].latitude
+	eventlon = event.origins[0].longitude
 
-	return(epidist)
+	if stream:
+		
+		attach_network_to_traces(stream, inv[0])
+		attach_coordinates_to_traces(stream, inv, event)
+		for trace in stream:
+			scode = trace.meta.network + "." + trace.meta.station
+			Array_Coords[scode]["epidist"] =  trace.meta.distance
 
-def epidist2list(epidist):
+	else:
+
+		for network in inv:
+			for station in network:
+				scode = network.code + "." + station.code
+				lat1 = Array_Coords[scode]["latitude"]
+				lat2 = Array_Coords[scode]["longitude"]
+				# calculate epidist in km
+				# adds an epidist entry to the Array_coords dictionary 
+				Array_Coords[scode]["epidist"] = locations2degrees( lat1, lat2, eventlat, eventlon )
+
+	return(Array_Coords)
+
+def epidist2list(Array_Coords):
 	"""
-	converts dictionary entries of epidist into a list
+	Returns a list of all epidistances in Array_Coords.
 	"""
 	epidist_list = []
-	for scode in epidist:
-		epidist_list.append(epidist[scode]["epidist"])
+	for scode in Array_Coords:
+		if Array_Coords[scode]["epidist"]:
+			epidist_list.append(Array_Coords[scode]["epidist"])
 	
 	epidist_list.sort()
 
 	return(epidist_list)
 
-def epidist2nparray(epidist):
+def epidist2nparray(Array_Coords):
+	"""
+	Returns a numpy.ndarray of all epidistances in Array_Coords.
+	"""
 	epidist_np = []
 	for scode in epidist:
-		epidist_np = np.append(epidist_np, [epidist[scode]["epidist"]])
+		if Array_Coords[scode]["epidist"]:
+			epidist_np = np.append(epidist_np, [Array_Coords[scode]["epidist"]])
 	
 	epidist_np.sort()	
 	return(epidist_np)
+
+def isuniform(inv, stream=None, cat=None):
+	
+	return	
 
 def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135'):
 	"""
@@ -539,13 +535,11 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 		L = [ (epidist.min(), epidist.min() + bin_size) ]
 		y_resample = [ epidist.min() + bin_size/2. ]
 		i=0
-		print(epidist.max())
 		while ( L[i][0] + (1-overlap) * bin_size ) < epidist.max():
 			lower = L[i][0] + (1-overlap) * bin_size
 			upper = lower + bin_size
 			L.append( (lower, upper) ) 
 			y_resample.append( lower + bin_size/2. )
-			print("%f, %f" % (L[i][0],L[i][1]))
 			i += 1
 
 	else:

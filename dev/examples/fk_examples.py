@@ -31,7 +31,7 @@ import sipy.util.fkutil as fku
 from sipy.filter.fk import fk_filter
 from sipy.util.fkutil import get_polygon, nextpow2, find_subsets
 from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
-stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, epidist_inv, epidist2nparray, epidist2list, \
+stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, epidist, epidist2nparray, epidist2list, \
 alignon, partial_stack, shift2ref
 
 st = read_st("../data/synthetics_uniform/SUNEW.QHD")
