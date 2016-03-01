@@ -12,7 +12,7 @@ import scipy.signal as signal
 from sipy.util.array_util import array2stream, stream2array, epidist2nparray
 from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon, nextpow2
 
-def fk_filter(st, inv=None, cat=None, trafo=None, ftype=None, phase=None, epi_dist=None, polygon=4, normalize=True, SSA=False):
+def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', phase=None, polygon=12, normalize=True, SSA=False):
 	"""
 	At this point prework with programs like seismic handler or SAC is needed to perform correctly
 
@@ -28,17 +28,17 @@ def fk_filter(st, inv=None, cat=None, trafo=None, ftype=None, phase=None, epi_di
 	param inv: inventory
 	type inv: obspy.station.inventory.Inventory
 
-	param cat: catalog
-	type cat: obspy.core.event.Catalog
+	param event: Event
+	type event: obspy.core.event.Event
 
-	param trafo: Type of transformation, possible inputs are:
+	param trafo: Type of transformation, default is 'FK', possible inputs are:
 				 FK: for f-k transformation via numpy.fft.fft2
 				 FX: for f-x transformation via numpy.fft.fft
 				 LS: for a combination of 1D FFT in time-domain and and Lomb-Scargle
 				     in the space-domain, via numpy.fft.fft and scipy.signal.lombscargle
 	type trafo: string
 
-	param ftype: type of method, possible inputs are:
+	param ftype: type of method, default is 'eliminate-polygon', possible inputs are:
 				 eliminate
 				 extract
 				
@@ -50,13 +50,10 @@ def fk_filter(st, inv=None, cat=None, trafo=None, ftype=None, phase=None, epi_di
 
 	param phase: name of the phase to be investigated
 	type phase: string
-	
-	param epidist: list of epidistances, corresponding to st
-	type epidist: list
 
 	param polygon: number of vertices of polygon for fk filter, only needed 
 				   if ftype is set to eliminate-polygon or extract-polygon.
-				   Default is 4.
+				   Default is 12.
 	type polygon: int
 	
 	param normalize: normalize data to 1
@@ -64,6 +61,9 @@ def fk_filter(st, inv=None, cat=None, trafo=None, ftype=None, phase=None, epi_di
 
 	param SSA: Force SSA algorithm or let it check, default:False
 	type SSA: bool
+
+	returns:	stream_filtered, the filtered stream.
+			
 
 
 	References: Yilmaz, Thomas
@@ -83,13 +83,7 @@ def fk_filter(st, inv=None, cat=None, trafo=None, ftype=None, phase=None, epi_di
 
 	# Convert format.
 	ArrayData = stream2array(st, normalize)
-
-
-	if st and inv and cat:
-		epidist = epidist2nparray(epidist_stream(st, inv, cat))
-	
-	if not epi_dist == None:
-		epidist = epi_dist
+	epidist = epidist2list(epidist(inv, event, st))
 
 	# Calc mean diff of each epidist entry if it is reasonable
 	# do a partial stack and apply filter.

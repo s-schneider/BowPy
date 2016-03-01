@@ -27,6 +27,7 @@ from obspy.taup import TauPyModel
 
 import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
 import sipy.filter.fk as fk
+import sipy.filter.radon as radon
 import sipy.util.fkutil as fku
 from sipy.filter.fk import fk_filter
 from sipy.util.fkutil import get_polygon, nextpow2, find_subsets
@@ -40,14 +41,14 @@ invuni = read_inv("../data/synthetics_uniform/sunew_inv.xml")
 cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
 attach_network_to_traces(stuni, invuni[0])
 attach_coordinates_to_traces(stuni, invuni, cat[0])
-epiuni = epidist2nparray(epidist_inv(invuni, cat[0]))
+epiuni = epidist2nparray(epidist(invuni, cat[0]))
 
 st = read_st("../data/synthetics_random/SRNEW.QHD")
 stran = st.copy()
 invran= read_inv("../data/synthetics_random/SRNEW_inv.xml")
 attach_network_to_traces(stran, invran[0])
 attach_coordinates_to_traces(stran, invran, cat[0])
-epiran = epidist2nparray(epidist_inv(invran, cat[0]))
+epiran = epidist2nparray(epidist(invran, cat[0]))
 
 
 
@@ -390,5 +391,48 @@ plt.plot(pdiffran[0],label=("random, Pdiff eliminated"))
 plt.plot(pexran[0],label=("random, PP extractet"))
 plt.legend()
 plt.show()
+
+
+############################################################3
+# TEST FOR find_equi_sets
+from obspy.geodetics.base import degrees2kilometers
+
+#shift to zero
+epidist = epidist - epidist.min()
+
+signal = np.ones(len(epidist))
+nout = 1000
+
+#lam = np.linspace(0.1 * degrees2kilometers(1)*1000., (epidist.max()-epidist.min())*degrees2kilometers(1)*1000.)
+
+lam= np.linspace(0.1, (epidist.max()-epidist.min()))
+
+waveno = 1./lam
+
+angular_k = waveno * 2. * np.pi
+pgram = sp.signal.lombscargle(epidist, signal, angular_k)
+norm_pgram = np.sqrt( 4.*(pgram / signal.shape[0])  )
+
+
+plt.figure(figsize=(14,4))
+plt.plot(lam, norm_pgram)
+plt.xlabel(r"Wavelength $/lamda$ (deg)")
+deg_ticks, deg_labels = np.arange(10)*degrees2kilometers(1)*1000, ['{:2.1f}'.format for d in np.arange(10)]
+plt.xticks(deg_ticks, deg_labels)
+plt.tight_layout()
+
+# test with fft
+nout = 1000.
+T = 3
+d = T/nout
+
+x = np.linspace(0,T*2.0*np.pi, nout)
+y=np.sin(x)
+f = np.fft.fft(y)
+freq = np.fft.fftfreq(len(y), d)
+
+# will produce fft and its frequencies
+
+
 
 

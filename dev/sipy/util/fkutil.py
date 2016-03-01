@@ -425,16 +425,3 @@ def find_subsets(numbers, target, bottom, top, minlen, partial=[], sets=[]):
 		for item in find_subsets(remaining, target, bottom, top, minlen, partial + [n], sets + [numbers[i]]):
 			print item
 
-
-def find_equisets(numbers):
-	"""
-	Use Lomb-Scargle, get dominant wavelengths of the station-distribution.
-	Use those to create grids, with tolerance, to find matching station-sets
-	"""
-
-
-
-
-
-
-

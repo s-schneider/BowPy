@@ -428,9 +428,11 @@ def find_subsets(numbers, target, bottom, top, minlen, partial=[], sets=[]):
 
 def find_equisets(numbers):
 	"""
-	Generator to create all possible combinations of entrys in numbers, that are equidistant.
-
+	Use Lomb-Scargle, get dominant wavelengths of the station-distribution.
+	Use those to create grids, with tolerance, to find matching station-sets
 	"""
+
+
 
 
 

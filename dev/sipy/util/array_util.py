@@ -347,12 +347,21 @@ def isuniform(inv, event, stream=None, tolerance=0.5):
 	ubound = ideal_delta * (1. + tolerance)
 	lbound = ideal_delta * (1. - tolerance)
 
-		print i
+	for i in delta_distances:
 		if lbound < i < ubound:
 			continue
 		else:
 			return False
+
 	return True
+
+def find_equisets(numbers):
+	"""
+	Use Lomb-Scargle, get dominant wavelengths of the station-distribution.
+	Use those to create grids, with tolerance, to find matching station-sets
+	"""
+	
+	return
 
 
 def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135'):
