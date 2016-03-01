@@ -398,29 +398,41 @@ def convert_polygon_to_flat_index(data, vertices):
 
 	return(flat_index)	
 
-def find_equi_combi(x, N, bottom_mean, top_mean):
+
+
+
+def find_subsets(numbers, target, bottom, top, minlen, partial=[], sets=[]):
 	"""
-	Function to find all possible equidistant combinations in a list.
+	Generator to create all possible combinations of entrys in numbers, that sum up to target.
+	example:	for value in subset_sum([0,1,2,3,4], 5, 0, 0, minlen=2):
+					print value
 
-	Returns list of indicies, that fullfil this requirement.
+	output:		[0, 1, 4]
+				[0, 2, 3]
+				[1, 4]
+				[2, 3]
+	""" 
 
-	:param x: list of values
+	s = sum(partial)
+	if s >= target *( 1. - bottom) and s <= target * ( 1. + top):
+		if len(partial) >= minlen:
+			yield sets
+	if s > target:
+		return
+ 
+	for i, n in enumerate(numbers): #np.diff(numbers)):
+		remaining = numbers[i+1:] # np.diff(numbers)[i+1:]
+		for item in find_subsets(remaining, target, bottom, top, minlen, partial + [n], sets + [numbers[i]]):
+			print item
 
-	:param N: Minimum number of values, that should be combined.
+
+def find_equisets(numbers):
 	"""
-	import itertools
- 	
-	equi = []
+	Generator to create all possible combinations of entrys in numbers, that are equidistant.
 
-	for n in range(N, len(x)+1):
-		c = list(itertools.combinations(x, n))
-		tmp = np.array(c)
-		for item in tmp:
-			mean_element_diff = np.diff(item).mean()
-			if mean_element_diff > bottom_mean and mean_element_diff < top_mean:
-				equi.append(item.tolist())		
+	"""
 
-	return equi
-		
+
+
 
 

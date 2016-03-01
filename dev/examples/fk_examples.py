@@ -29,7 +29,7 @@ import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
 import sipy.filter.fk as fk
 import sipy.util.fkutil as fku
 from sipy.filter.fk import fk_filter
-from sipy.util.fkutil import get_polygon, nextpow2
+from sipy.util.fkutil import get_polygon, nextpow2, find_subsets
 from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
 stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, epidist_inv, epidist2nparray, epidist2list, \
 alignon, partial_stack, shift2ref
@@ -38,16 +38,16 @@ st = read_st("../data/synthetics_uniform/SUNEW.QHD")
 stuni = st.copy()
 invuni = read_inv("../data/synthetics_uniform/sunew_inv.xml")
 cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
-attach_coordinates_to_traces(stuni, invuni, cat[0])
 attach_network_to_traces(stuni, invuni[0])
 attach_coordinates_to_traces(stuni, invuni, cat[0])
+epiuni = epidist2nparray(epidist_inv(invuni, cat[0]))
 
 st = read_st("../data/synthetics_random/SRNEW.QHD")
 stran = st.copy()
-inv = read_inv("../data/synthetics_random/SRNEW_inv.xml")
-invran= inv
+invran= read_inv("../data/synthetics_random/SRNEW_inv.xml")
 attach_network_to_traces(stran, invran[0])
 attach_coordinates_to_traces(stran, invran, cat[0])
+epiran = epidist2nparray(epidist_inv(invran, cat[0]))
 
 
 
