@@ -331,9 +331,7 @@ def isuniform(inv, event, stream=None, tolerance=0.5):
 	
 	ubound = ideal_delta * (1. + tolerance)
 	lbound = ideal_delta * (1. - tolerance)
-	print lbound
-	print ubound
-	for i in delta_distances:
+
 		print i
 		if lbound < i < ubound:
 			continue

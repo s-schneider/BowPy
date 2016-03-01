@@ -323,7 +323,22 @@ def epidist2nparray(Array_Coords):
 	return(epidist_np)
 
 def isuniform(inv, event, stream=None, tolerance=0.5):
+	"""
+	Checks if the epicentral station distribution is uniform, in a given tolerance range.
 	
+	:param inv: Inventory with array information
+	
+	:param event:	 Event, that is used
+
+	:param stream: stream-data, optional. If stream is an input only stations in stream will be used
+			 for calculation
+
+	:param tolerance: Percentage of deviation of ideal interstation spacing.
+	:type tolerance: float
+
+	returns: True or False
+	"""
+
 	distances = epidist2nparray( epidist(inv,event,stream) )
 	delta_distances = np.diff(distances)	
 	L = distances.max() - distances.min()
