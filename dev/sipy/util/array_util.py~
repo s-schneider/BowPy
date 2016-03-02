@@ -11,6 +11,10 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from obspy import UTCDateTime, Stream
 from obspy.core import AttribDict
+from obspy.core.event.event import Event
+from obspy.core.inventory.inventory import Inventory
+from obspy.core.inventory.network import Network
+from obspy.core.stream import Stream
 from obspy.geodetics.base import locations2degrees, gps2DistAzimuth, \
    kilometer2degrees
 from obspy.taup import getTravelTimes
@@ -117,12 +121,14 @@ def array2stream(ArrayData, st_original=None, network=None):
 		newtrace = obspy.core.trace.Trace(trace)
 		traces.append(newtrace)
 		
-	stream = obspy.core.stream.Stream(traces)
+	stream = Stream(traces)
 	
 	# Just writes the network information, if possible input original stream
 	
-	if st_tmp:
-
+	if isinstance(st_tmp, Stream):
+		
+		# Checks length of ArrayData and st_original, if needed,
+		# corrects trace.stats.npts value of new generated Stream-object.
 		if ArrayData.shape[1] == len(st_tmp[0]):
 
 			for i, trace in enumerate(stream):
@@ -135,7 +141,7 @@ def array2stream(ArrayData, st_original=None, network=None):
 				trace.stats.npts = ArrayData.shape[1]
 			
 
-	elif network and st_tmp == None:
+	elif isinstance(network, Network) and not isinstance(st_tmp, Stream):
 
 		for trace in stream:
 			trace.meta.network = network.code
@@ -284,7 +290,7 @@ def epidist(inventory, event, stream=None):
 	eventlat = event.origins[0].latitude
 	eventlon = event.origins[0].longitude
 
-	if stream:
+	try:
 		
 		attach_network_to_traces(stream, inv[0])
 		attach_coordinates_to_traces(stream, inv, event)
@@ -292,7 +298,7 @@ def epidist(inventory, event, stream=None):
 			scode = trace.meta.network + "." + trace.meta.station
 			Array_Coords[scode]["epidist"] =  trace.meta.distance
 
-	else:
+	except:
 
 		for network in inv:
 			for station in network:
@@ -416,13 +422,13 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, shiftmethod='norm
 	tmin = 0
 	tmax = 0
 
-	if type(ref) == int:
+	if isinstance(ref, int):
 		ref_dist = st[ref].stats.distance
 		ref_start = st[ref].stats.starttime
 		delta = st[ref].stats.delta
 		iref = ref
 
-	elif type(ref) == str:
+	elif isinstance(ref, str):
 		for i, trace in enumerate(st):
 			if trace.stats['station'] != 'ref':
 				continue
@@ -445,7 +451,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, shiftmethod='norm
 		# Calculate arrivals, and shift times/indicies.
 		phase_time = origin + t - st[no_x].stats.starttime
 		phase_n = int(phase_time/delta)
-		datashift, shift_index = shift2ref(data[no_x,:], ref_n, phase_n, mtw=maxtimewindow/delta, shiftmethod)
+		datashift, shift_index = shift2ref(data[no_x,:], ref_n, phase_n, mtw=maxtimewindow/delta, method=shiftmethod)
 		shifttimes[no_x]=delta*shift_index
 		data[no_x,:] = datashift
 
@@ -481,7 +487,8 @@ def shift2ref(array, tref, tshift, mtw=None, method='normal'):
 	"""
 
 	data=array.copy()
-	if mtw:
+	# if mtw is set 
+	try:
 		tmin = tref - int(mtw/2.)
 		tmax = tref + int(mtw/2.)
 		stmax = data[tref]
@@ -499,7 +506,7 @@ def shift2ref(array, tref, tshift, mtw=None, method='normal'):
 			end1 =  end2 + shift_value
 			shift_data[end1:end2] = 0
 
-	else:
+	except:
 		shift_value = tref - tshift
 		shift_data = np.roll(data, shift_value)
 		if shift_value > 0:
@@ -508,7 +515,25 @@ def shift2ref(array, tref, tshift, mtw=None, method='normal'):
 			end2 = len(shift_data)
 			end1 =  end2 + shift_value
 			shift_data[end1:end2] = 0
+"""
+def shifttrace_freq(stream, t_shift):
+    if isinstance(stream, Stream):
+        for i, tr in enumerate(stream):
+            ndat = tr.stats.npts
+            samp = tr.stats.sampling_rate
+            nfft = nextpow2(ndat)
+            nfft *= 2
+            tr1 = np.fft.rfft(tr.data, nfft)
+            for k in xrange(0, nfft / 2):
+                tr1[k] *= np.complex(
+                    np.cos((t_shift[i] * samp) * (k / float(nfft))
+                           * 2. * np.pi),
+                    -np.sin((t_shift[i] * samp) *
+                            (k / float(nfft)) * 2. * np.pi))
 
+            tr1 = np.fft.irfft(tr1, nfft)
+            tr.data = tr1[0:ndat]
+"""
 	return shift_data, shift_value
 
 def truncate(data, tmin, tmax):
@@ -552,10 +577,10 @@ def stack(data, order=None):
 
 	i, j = data.shape
 	x = np.zeros(j)
-	if order:
- 		order = float(order)
 
-	if order:
+	# if order is not None	
+	try:
+ 		order = float(order)
 		for trace in data:
 			sgnps = np.sign(x)
 			sgnst = np.sign(trace)
@@ -564,7 +589,8 @@ def stack(data, order=None):
 
 		sgn = np.sign(x)
 		x = sgn * ( ( abs(x) / data.shape[0] ) ** order)
-	else:
+
+	except TypeError:
 
 		for trace in data:
 			x = x + trace
@@ -678,7 +704,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 			if i==0 :
 				if epidist[j] <= bins[1]:
 					if align:
-						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, shiftmethod)
+						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, method=shiftmethod)
 					else:
 						trace_shift = trace
 					stack_arr = np.vstack([bin_data[i],trace_shift])
@@ -687,7 +713,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 			# Check if current trace is inside bin-boundaries.
 			if epidist[j] > bins[0] and epidist[j] <= bins[1]:
 				if align:
-					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, shiftmethod)
+					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, method=shiftmethod)
 				else:
 					trace_shift = trace
 				stack_arr = np.vstack([bin_data[i],trace_shift])
@@ -696,7 +722,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 			if overlap:
 				if i == len(L):
 					if align:
-						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, shiftmethod)
+						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, method=shiftmethod)
 					else:
 						trace_shift = trace
 					stack_arr = np.vstack([bin_data[i],trace_shift])

@@ -62,11 +62,11 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 	"""
 
 	# Check for Data type of variables.
-	if not type(t) == numpy.ndarray and type(delta) == ndarray:
+	if not isinstance(t, numpy.ndarray) or not isinstance(delta, numpy.ndarray):
 		print( "Wrong input type of t or delta, must be numpy.ndarray" )
 		raise TypeError
 	
-	if not type(hyperparameters) == list:
+	if not isinstance(hyperparameters,list):
 		print( "Wrong input type of mu, must be list" )
 		raise TypeError
 
@@ -146,7 +146,7 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 		Rfft[:,i] = sp.linalg.solve((AtA + mu*Ident), AtM)
 
 		#Non-linear methods use IRLS to solve, iterate until convergence to solution.
-		if inversion_model == "Cauchy" or inversion_model == "L1":
+		if inversion_model in ("Cauchy", "L1"):
 			
 			#Initialize hyperparameters.
 			b=hyperparameters[1]
@@ -181,7 +181,7 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 				itercount += 1
 
 			#Assuming Hermitian symmetry of the fft make negative frequencies the complex conjugate of current solution.
-		if not i == 0:
+		if i != 0:
 			Rfft[:,iF-i] = Rfft[:,i].conjugate()
 
 	R = np.fft.ifft(Rfft, iF)
@@ -222,7 +222,7 @@ def radon_forward(t,p,R,delta,ref_dist,line_model):
 	"""
 
 	# Check for Data type of variables.
-	if not type(t) == numpy.ndarray and type(delta) == ndarray:
+	if not isinstance(t, numpy.ndarray) or not isinstance(delta, numpy.ndarray):
 		print( "Wrong input type of t or delta, must be numpy.ndarray" )
 		raise TypeError
 
@@ -232,7 +232,7 @@ def radon_forward(t,p,R,delta,ref_dist,line_model):
 	ip=len(p)
 
 	#Exit if inconsistent data is input.
-	if not R.shape == (ip, it):
+	if R.shape != (ip, it):
 		print("Dimensions inconsistent!\nShape of M is not equal to (len(delta),len(t)) \nShape of M = (%i , %i)\n(len(delta),len(t)) = (%i, %i) \n" % (M.shape[0],  M.shape[1], iDelta, it) )
 		M=0
 		return(M)
@@ -271,7 +271,7 @@ def radon_forward(t,p,R,delta,ref_dist,line_model):
 		Mfft[:,i]=dot(A, Rfft[:,i])
 
 		# Assuming Hermitian symmetry of the fft make negative frequencies the complex conjugate of current solution.
-		if not i == 0:
+		if i != 0:
 			Mfft[:,iF-i] = Mfft[:,i].conjugate()
 
 	M = np.fft.ifft(Mfft, iF)

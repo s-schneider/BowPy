@@ -12,7 +12,8 @@ import matplotlib.path as mplPath
 import obspy
 from obspy.geodetics import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy.taup import TauPyModel
-
+from obspy.core.event.event import Event
+from obspy.core.inventory.inventory import Inventory
 
 from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces,stream2array
 import datetime
@@ -61,7 +62,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 	"""
 
 	#check for Data input
-	if not type(st) == obspy.core.stream.Stream:
+	if not isinstance(st, obspy.core.stream.Stream):
 		msg = "Wrong data input, must be obspy.core.stream.Stream"
 		raise TypeError(msg)
 
@@ -70,20 +71,24 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 	
 	spacing=2.
 
-	# Set axis information.
+	# Set axis information and bools.
 	plt.xlabel("Time in s")
+	isinv = False
+	isevent = False
 
-	if inv and event:
+	if isinstance(inv, Inventory) and isinstance(event,Event):
 		# Calculates y-axis info using epidistance information of the stream.
 		# Check if there is a network entry
 		attach_network_to_traces(st,inv[0])
 		attach_coordinates_to_traces(st, inv, event)
 		depth = event.origins[0]['depth']/1000.
+		isinv = True
+		isevent = False
 
 	for j, trace in enumerate(data):
 		y_dist = st[j].stats.distance
 
-		if markphase and inv and event:
+		if markphase and isinv and isevent:
 			origin = event.origins[0]['time']
 			m = TauPyModel('ak135')
 			t = m.get_travel_times(depth, y_dist, phase_list=[markphase])[0].time
@@ -103,18 +108,18 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 				plt.plot(t_axis,zoom*trace+ spacing*j, color='black')
 				plt.plot( (Phase,Phase),(-1+spacing*j,1+spacing*j), color='red' )
 
-		elif markphase and not inv and not event:
+		elif markphase and not isinv and not isevent:
 			msg='Markphase needs Inventory and Event Information, not found.'
 			raise IOError(msg)
 
 		else:
 
-			if yinfo and inv and event:
+			if yinfo and isinv and isevent:
 				plt.ylabel("Distance in deg")
 				plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
 				plt.plot(t_axis,zoom*trace+ y_dist, color='black')
 			
-			elif yinfo and not inv and not event:
+			elif yinfo and not isinv and not isevent:
 				msg='yinfo needs Inventory and Event Information, not found.'
 				raise IOError(msg)
 			else:
@@ -141,12 +146,12 @@ def plot_data(data, zoom=1, y_dist=1, bins=None):
 	type y_dist:	int or list
 	"""
 
-	for i in range(len(data)):
-		if type(y_dist) == int:
-			plt.plot(zoom*data[i]+ y_dist*i, color='black')
-		if type(y_dist) == list or type(y_dist) == numpy.ndarray:
-			plt.plot(zoom*data[i]+ y_dist[i], color='black')
-	if type(bins) == numpy.ndarray:
+	for i, trace in enumerate(data):
+		if isinstance(y_dist,int):
+			plt.plot(zoom*trace+ y_dist*i, color='black')
+		if isinstance(y_dist,list) or isinstance(y_dist,numpy.ndarray):
+			plt.plot(zoom*trace+ y_dist[i], color='black')
+	if isinstance(bins,numpy.ndarray):
 		print('plotting bins')
 		for j in range(bins.size):
 			plt.plot( (0, data[0].size), (bins[j],bins[j]), color='red' )

@@ -1,5 +1,8 @@
 from __future__ import absolute_import
 import obspy
+from obspy.core.event.event import Event
+from obspy.core.inventory.inventory import Inventory
+
 import numpy
 import numpy as np
 import math
@@ -87,12 +90,13 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 	
 	ix = ArrayData.shape[0]
 	iK = int(math.pow(2,nextpow2(ix)+1))
-
-	if event and inv:
+	
+	try:
 		yinfo = epidist2nparray(epidist(inv, event, st_tmp))
 		dx = (yinfo.max() - yinfo.min() + 1) / yinfo.size
 		k_axis = np.fft.fftfreq(iK, dx)	
-	else:
+	except:
+		print("\nNo inventory or event-information found. \nContinue without specific distance and wavenumber information.")
 		yinfo=None
 		dx=None
 		k_axis=None
@@ -124,7 +128,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 			array_filtered_fk = line_cut(array_fk)				
 		
 		elif ftype == "eliminate-polygon":
-			if event and inv:
+			if isinstance(event, Event) and isinstance(inv, Inventory):
 				array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, xlabel=r'frequency-domain f in $\frac{1}{Hz}$', \
 														  xticks=f_axis, ylabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', yticks=k_axis)
 			else:
@@ -132,7 +136,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 				raise IOError(msg)
 
 		elif ftype == "extract-polygon":
-			if event and inv:
+			if isinstance(event, Event) and isinstance(inv, Inventory):
 				array_filtered_fk = _fk_extract_polygon(array_fk, polygon, xlabel=r'frequency-domain f in $\frac{1}{Hz}$', \
 														xticks=f_axis, ylabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', yticks=k_axis)
 			else:
@@ -293,11 +297,7 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=
 	#change dtype to integer, for further processing
 	period_range = period_range.astype('int')
 	fkspectra = knum
-	if maxk:
-		max_k = maxrow(fkspectra)
-		dsfft = line_set_zero(fkspectra, max_k)
-	else:
-		dsfft = line_set_zero(fkspectra, 0, radius)
+	dsfft = line_set_zero(fkspectra, 0, radius)
 	
 	return(fkspectra.conj().transpose(), period_range)
 
