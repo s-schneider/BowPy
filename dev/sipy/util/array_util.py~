@@ -110,28 +110,36 @@ def array2stream(ArrayData, st_original=None, network=None):
 	param network: Network, of with all the station information
 	type network: obspy.core.inventory.network.Network
 	"""
+	st_tmp = st_original.copy()
 	traces = []
 	
-	for i in range(len(ArrayData)):
-		newtrace = obspy.core.trace.Trace(ArrayData[i])
+	for i, trace in enumerate(ArrayData):
+		newtrace = obspy.core.trace.Trace(trace)
 		traces.append(newtrace)
 		
 	stream = obspy.core.stream.Stream(traces)
 	
 	# Just writes the network information, if possible input original stream
-	if st_original:
-		i=0
-		for trace in stream:
-			trace.meta = st_original[i].meta
-			i += 1	
-		
+	
+	if st_tmp:
 
-	elif network and st_original == None:
-		i=0
+		if ArrayData.shape[1] == len(st_tmp[0]):
+
+			for i, trace in enumerate(stream):
+				trace.stats = st_tmp[i].stats
+
+		else:
+
+			for i, trace in enumerate(stream):
+				trace.stats = st_tmp[i].stats
+				trace.stats.npts = ArrayData.shape[1]
+			
+
+	elif network and st_tmp == None:
+
 		for trace in stream:
 			trace.meta.network = network.code
 			trace.meta.station = network[0].code
-			i += 1
 
 
 	return(stream)
@@ -364,9 +372,10 @@ def find_equisets(numbers):
 	return
 
 
-def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135'):
+def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
 	"""
-	Aligns traces on a given phase
+	Aligns traces on a given phase and truncates the starts to the latest beginning and the ends
+	to the earliest end.
 	
 	:param st: stream
 	
@@ -380,14 +389,15 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135
 	:param ref: name or index of reference station, to which the others are aligned
 	:type ref: int or str
 
-	:param maxtimewindow: Timewindow around the theoretical arrivaltime
+	:param maxtimewindow: Maximum timewindow in seconds, symmetrical around theoretical phase arrival time, 
+						  in which to pick the maximum amplitude.
 	:type maxtimewindow: int or float
 	
 	:param taup_model: model used by TauPyModel to calculate arrivals, default is ak135
 	:type taup_model: str
 
 	returns:
-	:param st_align: Aligned stream on Phase
+	:param st_align: Aligned and truncated stream on Phase
 	:type st_align:
 
 	"""
@@ -403,6 +413,8 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135
 	depth = event.origins[0]['depth']/1000.
 	origin = event.origins[0]['time']
 	m = TauPyModel(taup_model)
+	tmin = 0
+	tmax = 0
 
 	if type(ref) == int:
 		ref_dist = st[ref].stats.distance
@@ -433,11 +445,17 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135
 		# Calculate arrivals, and shift times/indicies.
 		phase_time = origin + t - st[no_x].stats.starttime
 		phase_n = int(phase_time/delta)
-		datashift, shift_index = shift2ref(data[no_x,:], ref_n, phase_n, mtw=maxtimewindow)
+		datashift, shift_index = shift2ref(data[no_x,:], ref_n, phase_n, mtw=maxtimewindow/delta, shiftmethod)
 		shifttimes[no_x]=delta*shift_index
 		data[no_x,:] = datashift
 
-	st_align = array2stream(data, st)
+		# Positive shift_index indicates positive shift in time and vice versa.	
+		if shift_index > 0 and shift_index > tmin: tmin = shift_index
+		if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
+
+		data_trunc = truncate(data, tmin, tmax)
+
+	st_align = array2stream(data_trunc, st)
 
 	for i, trace in enumerate(st_align):
 		if i == iref:
@@ -446,7 +464,22 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135
 
 	return st_align
 
-def shift2ref(array, tref, tshift, mtw=None):
+def shift2ref(array, tref, tshift, mtw=None, method='normal'):
+	"""
+	Shifts the array to the order of tref - tshift. If mtw is given, tshift
+	will be calculated depdending on the maximum amplitude of array in the give
+	timewindow.
+
+	:param array: array-like trace
+
+	:param tref: Reference index, to be shifted
+
+	:param tshift: Nondimensional shift value
+
+	:param mtw: Maximum nondimensional timewindow symmetrical around tref, 
+				in which to calculate the highest value of array
+	"""
+
 	data=array.copy()
 	if mtw:
 		tmin = tref - int(mtw/2.)
@@ -477,6 +510,32 @@ def shift2ref(array, tref, tshift, mtw=None):
 			shift_data[end1:end2] = 0
 
 	return shift_data, shift_value
+
+def truncate(data, tmin, tmax):
+	"""
+	Truncates the data array on the left to tmin, on the right to right-end  - tmax.
+
+	:param data: array-like
+
+	:param tmin: new start index
+
+	:param tmax: difference of the ending indicies
+	"""
+	if data.ndim > 1:
+		trunc_n = data.shape[1] - tmin - tmax
+		trunc_data = np.zeros( (data.shape[0], trunc_n) )
+
+		for i,trace in enumerate(data):
+			trunc_data[i,:] = trace[tmin:trace.size - tmax]
+
+	else:
+		trunc_n = data.size - tmin - tmax
+		trunc_data = np.array( trunc_n )
+
+		for x in data:
+			trunc_data = data[tmin:data.size - tmax]
+
+	return trunc_data
 
 def stack(data, order=None):
 	"""
@@ -514,7 +573,7 @@ def stack(data, order=None):
 	return x
 
 
-def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, maxtimewindow=None, taup_model='ak135'):
+def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
 	"""
 	Will sort the traces into equally distributed bins and stack the bins.
 	The stacking is just an addition of the traces, more advanced schemes might follow.
@@ -546,7 +605,8 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 				  If Traces already aligned on a phase switch to False.
 	:type align: bool
 
-	:param maxtimewindow:
+	:param maxtimewindow: Maximum timewindow in seconds, symmetrical around theoretical phase arrival time, 
+						  in which to pick the maximum amplitude.
 
 	:param taup_model:
 
@@ -618,7 +678,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 			if i==0 :
 				if epidist[j] <= bins[1]:
 					if align:
-						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, shiftmethod)
 					else:
 						trace_shift = trace
 					stack_arr = np.vstack([bin_data[i],trace_shift])
@@ -627,7 +687,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 			# Check if current trace is inside bin-boundaries.
 			if epidist[j] > bins[0] and epidist[j] <= bins[1]:
 				if align:
-					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, shiftmethod)
 				else:
 					trace_shift = trace
 				stack_arr = np.vstack([bin_data[i],trace_shift])
@@ -636,7 +696,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 			if overlap:
 				if i == len(L):
 					if align:
-						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow)
+						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, shiftmethod)
 					else:
 						trace_shift = trace
 					stack_arr = np.vstack([bin_data[i],trace_shift])

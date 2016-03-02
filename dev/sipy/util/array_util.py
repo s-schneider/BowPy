@@ -372,7 +372,7 @@ def find_equisets(numbers):
 	return
 
 
-def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135'):
+def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
 	"""
 	Aligns traces on a given phase and truncates the starts to the latest beginning and the ends
 	to the earliest end.
@@ -445,7 +445,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135
 		# Calculate arrivals, and shift times/indicies.
 		phase_time = origin + t - st[no_x].stats.starttime
 		phase_n = int(phase_time/delta)
-		datashift, shift_index = shift2ref(data[no_x,:], ref_n, phase_n, mtw=maxtimewindow/delta)
+		datashift, shift_index = shift2ref(data[no_x,:], ref_n, phase_n, mtw=maxtimewindow/delta, method=shiftmethod)
 		shifttimes[no_x]=delta*shift_index
 		data[no_x,:] = datashift
 
@@ -464,7 +464,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135
 
 	return st_align
 
-def shift2ref(array, tref, tshift, mtw=None):
+def shift2ref(array, tref, tshift, mtw=None, method='normal'):
 	"""
 	Shifts the array to the order of tref - tshift. If mtw is given, tshift
 	will be calculated depdending on the maximum amplitude of array in the give
@@ -573,7 +573,7 @@ def stack(data, order=None):
 	return x
 
 
-def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, maxtimewindow=None, taup_model='ak135'):
+def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
 	"""
 	Will sort the traces into equally distributed bins and stack the bins.
 	The stacking is just an addition of the traces, more advanced schemes might follow.
@@ -678,7 +678,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 			if i==0 :
 				if epidist[j] <= bins[1]:
 					if align:
-						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta)
+						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, method=shiftmethod)
 					else:
 						trace_shift = trace
 					stack_arr = np.vstack([bin_data[i],trace_shift])
@@ -687,7 +687,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 			# Check if current trace is inside bin-boundaries.
 			if epidist[j] > bins[0] and epidist[j] <= bins[1]:
 				if align:
-					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta)
+					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, method=shiftmethod)
 				else:
 					trace_shift = trace
 				stack_arr = np.vstack([bin_data[i],trace_shift])
@@ -696,7 +696,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 			if overlap:
 				if i == len(L):
 					if align:
-						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta)
+						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, method=shiftmethod)
 					else:
 						trace_shift = trace
 					stack_arr = np.vstack([bin_data[i],trace_shift])
