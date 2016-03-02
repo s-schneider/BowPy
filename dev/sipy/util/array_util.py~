@@ -1,38 +1,31 @@
 from __future__ import absolute_import
-from collections import defaultdict
-import tempfile
+
+import os
+import ctypes as C
+
 import numpy
 import numpy as np
+import math
+import scipy as sp
+from scipy.integrate import cumtrapz
+import warnings
+
 import obspy
-import os
-import shutil
+
 import matplotlib.pyplot as plt
 #from mpl_toolkits.basemap import Basemap
 from matplotlib.ticker import MaxNLocator
-from obspy import UTCDateTime, Stream
-from obspy.core import AttribDict
+
+from obspy import UTCDateTime, Stream, Inventory
 from obspy.core.event.event import Event
-from obspy.core.inventory.inventory import Inventory
 from obspy.core.inventory.network import Network
-from obspy.core.stream import Stream
+from obspy.core import AttribDict
 from obspy.geodetics.base import locations2degrees, gps2DistAzimuth, \
    kilometer2degrees
-from obspy.taup import getTravelTimes
-import scipy.interpolate as spi
-import scipy as sp
-import matplotlib.cm as cm
-from obspy.signal.util import utlGeoKm,nextpow2
-import ctypes as C
-from obspy.core import Stream
-import math
-import warnings
-from scipy.integrate import cumtrapz
-from obspy.core import Stream
-from obspy.signal.headers import clibsignal
-from obspy.signal.invsim import cosTaper
-from obspy.clients.fdsn import Client
 from obspy.taup import TauPyModel
+from obspy.taup import getTravelTimes
 
+from sipy.util.base import nextpow2
 
 """
 Collection of useful functions for processing seismological array data
@@ -470,13 +463,37 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, shiftmethod='norm
 
 	return st_align
 
+
+"""
+
+NEW INPUT TO shift2ref
+	def shifttrace_freq(stream, t_shift):
+		if isinstance(stream, Stream):
+		    for i, tr in enumerate(stream):
+		        ndat = tr.stats.npts
+		        samp = tr.stats.sampling_rate
+		        nfft = nextpow2(ndat)
+		        nfft *= 2
+		        tr1 = np.fft.rfft(tr.data, nfft)
+		        for k in xrange(0, nfft / 2):
+		            tr1[k] *= np.complex(
+		                np.cos((t_shift[i] * samp) * 
+								(k / float(nfft)) * 2. * np.pi),
+		                -np.sin((t_shift[i] * samp) *
+		                        (k / float(nfft)) * 2. * np.pi))
+
+		        tr1 = np.fft.irfft(tr1, nfft)
+		        tr.data = tr1[0:ndat]
+"""
+
+
 def shift2ref(array, tref, tshift, mtw=None, method='normal'):
 	"""
-	Shifts the array to the order of tref - tshift. If mtw is given, tshift
+	Shifts the trace in array to the order of tref - tshift. If mtw is given, tshift
 	will be calculated depdending on the maximum amplitude of array in the give
 	timewindow.
 
-	:param array: array-like trace
+	:param array: array-like trace, 1D
 
 	:param tref: Reference index, to be shifted
 
@@ -484,57 +501,48 @@ def shift2ref(array, tref, tshift, mtw=None, method='normal'):
 
 	:param mtw: Maximum nondimensional timewindow symmetrical around tref, 
 				in which to calculate the highest value of array
+	
+	Author: S. Schneider, 2016
+	Source: Gubbins, D., 2004 Time series analysis and inverse theory for geophysicists
 	"""
 
-	data=array.copy()
+	trace=array.copy()
 	# if mtw is set 
+	
+
 	try:
 		tmin = tref - int(mtw/2.)
 		tmax = tref + int(mtw/2.)
-		stmax = data[tref]
+		stmax = trace[tref]
 		mtw_index = tref
 		for k in range(tmin,tmax+1):
-			if data[k] > stmax:
-					stmax=data[k]
+			if trace[k] > stmax:
+					stmax=trace[k]
 					mtw_index = k
 		shift_value = tref - mtw_index
-		shift_data = np.roll(data, shift_value)
-		if shift_value > 0:
-			shift_data[0:shift_value] = 0
-		elif shift_value < 0:
-			end2 = len(shift_data)
-			end1 =  end2 + shift_value
-			shift_data[end1:end2] = 0
 
 	except:
 		shift_value = tref - tshift
-		shift_data = np.roll(data, shift_value)
-		if shift_value > 0:
-			shift_data[0:shift_value] = 0
-		elif shift_value < 0:
-			end2 = len(shift_data)
-			end1 =  end2 + shift_value
-			shift_data[end1:end2] = 0
-"""
-def shifttrace_freq(stream, t_shift):
-    if isinstance(stream, Stream):
-        for i, tr in enumerate(stream):
-            ndat = tr.stats.npts
-            samp = tr.stats.sampling_rate
-            nfft = nextpow2(ndat)
-            nfft *= 2
-            tr1 = np.fft.rfft(tr.data, nfft)
-            for k in xrange(0, nfft / 2):
-                tr1[k] *= np.complex(
-                    np.cos((t_shift[i] * samp) * (k / float(nfft))
-                           * 2. * np.pi),
-                    -np.sin((t_shift[i] * samp) *
-                            (k / float(nfft)) * 2. * np.pi))
 
-            tr1 = np.fft.irfft(tr1, nfft)
-            tr.data = tr1[0:ndat]
-"""
-	return shift_data, shift_value
+	if method in ("normal", "Normal"):
+		shift_trace = np.roll(trace, shift_value)
+	
+	if method in ("FFT", "fft", "Fft", "fFt", "ffT", "FfT"):
+		it = trace.size		
+		iF = int(math.pow(2,nextpow2(it)+1)) 
+		dft = np.fft.rfft(trace, iF)
+
+		arg = -2. * np.pi * shift_value / float(iF)
+		dft_shift = np.zeros(dft.size).astype('complex')
+
+		for i, ampl in enumerate(dft):
+			dft_shift[i] = ampl * np.complex(np.cos(i * arg), np.sin(i * arg))
+
+		shift_trace = np.fft.irfft(dft_shift, iF)
+		shift_trace = shift_trace[0:it].real			
+	
+	
+	return shift_trace, shift_value
 
 def truncate(data, tmin, tmax):
 	"""
@@ -747,7 +755,7 @@ def plot(inventory, projection="local"):
     * ``"ortho"`` (Will center around the mean lat/long.)
     * ``"local"`` (Will plot around local events)   
     """
-    if inventory:
+    if isinstance(inventory, Inventory):
         inventory.plot(projection, show=False)
         bmap = plt.gca().basemap
 

@@ -13,7 +13,8 @@ import scipy as sp
 import scipy.signal as signal
 
 from sipy.util.array_util import array2stream, stream2array, epidist2nparray, epidist
-from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon, nextpow2
+from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon
+from sipy.util.base import nextpow2
 
 def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', phase=None, polygon=12, normalize=True, SSA=False):
 	"""

@@ -213,3 +213,12 @@ def maxrow(array):
 			rowsum = array[i].sum()
 			max_row_index = i
 	return(max_row_index)
+
+def nextpow2(i):
+	#See Matlab documentary
+	n = 1
+	count = 0
+	while n < abs(i):
+		n *= 2
+		count+=1
+	return count

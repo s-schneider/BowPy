@@ -15,7 +15,8 @@ from obspy.taup import TauPyModel
 from obspy.core.event.event import Event
 from obspy.core.inventory.inventory import Inventory
 
-from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces,stream2array
+from sipy.util.base import nextpow2
+from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces, stream2array
 import datetime
 import scipy as sp
 import scipy.signal as signal
@@ -309,16 +310,6 @@ def ls2ifft_prep(ls_periodogram, data):
 	a = a/N
 	fft_prep[0] = a
 	return(fft_prep)
-
-def nextpow2(i):
-	#See Matlab documentary
-	n = 1
-	count = 0
-	while n < abs(i):
-		n *= 2
-		count+=1
-	return count
-
 	
 def shift_array(array, shift_value=0, y_dist=False):
 	array_shift = array
