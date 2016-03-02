@@ -42,7 +42,7 @@ print( "Elapsed time is %s seconds." % str(time))
 
 
 # Pick Phase here!
-indicies = fku.get_polygon(R, no_of_vert=8, xlabel=r'$\tau', ylabel='p')
+indicies = fku.get_polygon(R, no_of_vert=8, xlabel=r'$\tau$', ylabel='p')
 
 
 

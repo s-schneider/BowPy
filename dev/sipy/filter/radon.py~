@@ -6,7 +6,7 @@ import math
 from math import pi
 import scipy as sp
 from scipy import sparse
-from utilities.fkutil import nextpow2
+from sipy.util.fkutil import nextpow2
 
 """
  This program is free software: you can redistribute it and/or modify

@@ -125,7 +125,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 		
 		elif ftype == "eliminate-polygon":
 			if event and inv:
-				array_filtered_fk = _fk_eliminate_polygon(array_fk,polygon, xlabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+				array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, xlabel=r'frequency-domain f in $\frac{1}{Hz}$', \
 														  xticks=f_axis, ylabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', yticks=k_axis)
 			else:
 				msg='For wavenumber calculation inventory and event information is needed, not found.'
@@ -133,7 +133,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 
 		elif ftype == "extract-polygon":
 			if event and inv:
-				array_filtered_fk = _fk_extract_polygon(array_fk,polygon, xlabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+				array_filtered_fk = _fk_extract_polygon(array_fk, polygon, xlabel=r'frequency-domain f in $\frac{1}{Hz}$', \
 														xticks=f_axis, ylabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', yticks=k_axis)
 			else:
 				msg='For wavenumber calculation inventory and event information is needed, not found.'
