@@ -76,50 +76,53 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 	if inv and event:
 		# Calculates y-axis info using epidistance information of the stream.
 		# Check if there is a network entry
-		if not st[0].meta.network:
-			msg="No network entry found in stream"
-			raise ValueError(msg)
-
+		attach_network_to_traces(st,inv[0])
 		attach_coordinates_to_traces(st, inv, event)
 		depth = event.origins[0]['depth']/1000.
 
-		for j, trace in enumerate(data):
-			y_dist = st[j].stats.distance
+	for j, trace in enumerate(data):
+		y_dist = st[j].stats.distance
 
-			if markphase:
-				origin = event.origins[0]['time']
-				m = TauPyModel('ak135')
-				t = m.get_travel_times(depth, y_dist, phase_list=[markphase])[0].time
-				phase_time = origin + t - st[j].stats.starttime
-				Phase_npt = int(phase_time/st[j].stats.delta)
-				Phase = Phase_npt * st[j].stats.delta
-			
-				if yinfo:
-					plt.ylabel("Distance in deg")
-					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-					plt.plot(t_axis,zoom*trace+ y_dist, color='black')
-					plt.plot( (Phase,Phase),(-1+y_dist,1+y_dist), color='red' )			
-				else:
-					plt.ylabel("No. of trace")
-					plt.gca().yaxis.set_major_locator(plt.NullLocator())
-					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-					plt.plot(t_axis,zoom*trace+ spacing*j, color='black')
-					plt.plot( (Phase,Phase),(-1+spacing*j,1+spacing*j), color='red' )
-
+		if markphase and inv and event:
+			origin = event.origins[0]['time']
+			m = TauPyModel('ak135')
+			t = m.get_travel_times(depth, y_dist, phase_list=[markphase])[0].time
+			phase_time = origin + t - st[j].stats.starttime
+			Phase_npt = int(phase_time/st[j].stats.delta)
+			Phase = Phase_npt * st[j].stats.delta
+	
+			if yinfo:
+				plt.ylabel("Distance in deg")
+				plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
+				plt.plot(t_axis,zoom*trace+ y_dist, color='black')
+				plt.plot( (Phase,Phase),(-1+y_dist,1+y_dist), color='red' )			
 			else:
-				if yinfo:
-					plt.ylabel("Distance in deg")
-					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-					plt.plot(t_axis,zoom*trace+ y_dist, color='black')
-				else:
-					plt.ylabel("No. of trace")
-					plt.gca().yaxis.set_major_locator(plt.NullLocator())
-					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-					plt.plot(t_axis,zoom*trace+ spacing*j, color='black')			
+				plt.ylabel("No. of trace")
+				plt.gca().yaxis.set_major_locator(plt.NullLocator())
+				plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
+				plt.plot(t_axis,zoom*trace+ spacing*j, color='black')
+				plt.plot( (Phase,Phase),(-1+spacing*j,1+spacing*j), color='red' )
 
-	else:
-		print("no inventory and event given")
-		raise ValueError
+		elif markphase and not inv and not event:
+			msg='Markphase needs Inventory and Event Information, not found.'
+			raise IOError(msg)
+
+		else:
+
+			if yinfo and inv and event:
+				plt.ylabel("Distance in deg")
+				plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
+				plt.plot(t_axis,zoom*trace+ y_dist, color='black')
+			
+			elif yinfo and not inv and not event:
+				msg='yinfo needs Inventory and Event Information, not found.'
+				raise IOError(msg)
+			else:
+				plt.ylabel("No. of trace")
+				plt.gca().yaxis.set_major_locator(plt.NullLocator())
+				plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
+				plt.plot(t_axis,zoom*trace+ spacing*j, color='black')			
+
 
 	plt.show()
 
@@ -322,7 +325,7 @@ def shift_array(array, shift_value=0, y_dist=False):
 			array_shift[i] = np.roll(array[i], -shift_value*i)
 	return(array_shift)
 
-def get_polygon(data, no_of_vert=4, xlabel=None, ylabel=None):
+def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, yticks=None):
 	"""
 	Interactive function to pick a polygon out of a figure and receive the vertices of it.
 	:param data:
@@ -336,12 +339,19 @@ def get_polygon(data, no_of_vert=4, xlabel=None, ylabel=None):
 	
 	no_of_vert = int(no_of_vert)
 	# Define shape of polygon.
-	y,x = data.shape
-	aspectratio = float(x) / (float(y) * 2.)
-	xmin= x/3.
-	xmax= x*2./3.
-	ymin= y/3.
-	ymax= y*2./3.
+	try:
+		x, y = xticks.max(), yticks.max() 
+		xmin= x/3.
+		xmax= x*2./3.
+		ymin= y/3.
+		ymax= y*2./3.
+
+	except AttributeError:
+		y,x = data.shape
+		xmin= x/3.
+		xmax= x*2./3.
+		ymin= y/3.
+		ymax= y*2./3.
 
 	xs = []
 	for i in range(no_of_vert):
@@ -360,16 +370,31 @@ def get_polygon(data, no_of_vert=4, xlabel=None, ylabel=None):
 	ax.add_patch(poly)
 	p = PolygonInteractor(ax, poly)
 	plt.title("Pick polygon, close figure to save vertices")
-	plt.xlabel(xlabel)
-	plt.ylabel(ylabel)
-	plt.imshow(abs(data), aspect=aspectratio)
+	plt.xlabel(xlabel, fontsize=20)
+	plt.ylabel(ylabel, fontsize=20)
+
+	try:
+		plt.imshow(abs(data), aspect='auto', extent=(xticks.min(), xticks.max(), yticks.min(), yticks.max()))
+	except AttributeError:
+		plt.imshow(abs(data), aspect='auto')
+
 	plt.show()		
 	
-	vertices = (poly.get_path().vertices).astype('int')
-	
-	indicies = convert_polygon_to_flat_index(data, vertices)
+	try:
+		vertices = (poly.get_path().vertices)
+		vert_tmp = []
+		xticks.sort()
+		yticks.sort()
+		for fkvertex in vertices:
+			vert_tmp.append([np.abs(xticks-fkvertex[0]).argmin(), np.abs(yticks[::-1]-fkvertex[1]).argmin()])
+		vertices = np.array(vert_tmp)	
+		
+	except AttributeError:
+		vertices = (poly.get_path().vertices).astype('int')
 
-	return(indicies)
+	indicies = convert_polygon_to_flat_index(data, vertices)
+	return indicies
+
 
 def convert_polygon_to_flat_index(data, vertices):
 	"""
@@ -424,17 +449,4 @@ def find_subsets(numbers, target, bottom, top, minlen, partial=[], sets=[]):
 		remaining = numbers[i+1:] # np.diff(numbers)[i+1:]
 		for item in find_subsets(remaining, target, bottom, top, minlen, partial + [n], sets + [numbers[i]]):
 			print item
-
-
-def find_equisets(numbers):
-	"""
-	Use Lomb-Scargle, get dominant wavelengths of the station-distribution.
-	Use those to create grids, with tolerance, to find matching station-sets
-	"""
-
-
-
-
-
-
 

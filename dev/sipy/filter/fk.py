@@ -9,7 +9,7 @@ import datetime
 import scipy as sp
 import scipy.signal as signal
 
-from sipy.util.array_util import array2stream, stream2array, epidist2nparray
+from sipy.util.array_util import array2stream, stream2array, epidist2nparray, epidist
 from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon, nextpow2
 
 def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', phase=None, polygon=12, normalize=True, SSA=False):
@@ -81,16 +81,32 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 	 GNU General Public License for more details: http://www.gnu.org/licenses/
 	"""
 
-	# Convert format.
-	ArrayData = stream2array(st, normalize)
-	epidist = epidist2list(epidist(inv, event, st))
+	# Convert format and prepare Variables.
+	st_tmp = st.copy()
+	ArrayData = stream2array(st_tmp, normalize)
+	
+	ix = ArrayData.shape[0]
+	iK = int(math.pow(2,nextpow2(ix)+1))
+
+	if event and inv:
+		yinfo = epidist2nparray(epidist(inv, event, st_tmp))
+		dx = (yinfo.max() - yinfo.min() + 1) / yinfo.size
+		k_axis = np.fft.fftfreq(iK, dx)	
+	else:
+		yinfo=None
+		dx=None
+		k_axis=None
+
+	it = ArrayData.shape[1]
+	iF = int(math.pow(2,nextpow2(it)+1))
+	dt = st_tmp[0].stats.delta
+	f_axis = np.fft.fftfreq(iF,dt)
+
 
 	# Calc mean diff of each epidist entry if it is reasonable
 	# do a partial stack and apply filter.
-	it = ArrayData.shape[1]
-	ix = ArrayData.shape[0]
-	iF = int(math.pow(2,nextpow2(it)+1))
-	iK = int(math.pow(2,nextpow2(ix)+1))
+
+
 	"""
 	2D Frequency-Space / Wavenumber-Frequency Filter #########################################################
 	"""
@@ -106,18 +122,28 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 			array_filtered_fk = line_set_zero(array_fk)
 		elif ftype == "extract":
 			array_filtered_fk = line_cut(array_fk)				
-
+		
 		elif ftype == "eliminate-polygon":
-			array_filtered_fk = _fk_eliminate_polygon(array_fk,polygon, xlabel="frequency-domain f", ylabel="wavenumber-domain k")
+			if event and inv:
+				array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, xlabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+														  xticks=f_axis, ylabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', yticks=k_axis)
+			else:
+				msg='For wavenumber calculation inventory and event information is needed, not found.'
+				raise IOError(msg)
 
 		elif ftype == "extract-polygon":
-			array_filtered_fk = _fk_extract_polygon(array_fk,polygon, xlabel="frequency-domain f", ylabel="wavenumber-domain k")
+			if event and inv:
+				array_filtered_fk = _fk_extract_polygon(array_fk, polygon, xlabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+														xticks=f_axis, ylabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', yticks=k_axis)
+			else:
+				msg='For wavenumber calculation inventory and event information is needed, not found.'
+				raise IOError(msg)
 
 		else:
 			print("No type of filter specified")
 			raise TypeError
 
-		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF))
+		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF)).real
 
 	# 2D f-x Transformation 
 	elif trafo == "FX":
@@ -127,17 +153,17 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 
 		elif ftype == "extract":
 			array_filtered = line_cut(array_fx)
-		array_filtered = np.fft.ifft(ArrayData, iF)
+		array_filtered = np.fft.ifft(ArrayData, iF).real
 
 	# 2D FFT-LS 
 	# UNDER CONSTRUCTION
-	elif trafo == "LS":
+	elif trafo == "LS" and yinfo:
 
 		# Apply filter.
 		if ftype == "eliminate":
-			array_filtered, periods = _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=epidist)
+			array_filtered, periods = _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=yinfo)
 		elif ftype == "extract":
-			array_filtered, periods = _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=epidist)
+			array_filtered, periods = _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=yinfo)
 		else:
 			print("No type of fk-filter specified")
 			raise TypeError		
@@ -149,7 +175,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 
 	# Convert to Stream object.
 	array_filtered = array_filtered[0:ix, 0:it]
-	stream_filtered = array2stream(array_filtered, st_original=st)
+	stream_filtered = array2stream(array_filtered, st_original=st.copy())
 
 	return(stream_filtered)
 
@@ -159,7 +185,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 FFT FUNCTIONS 
 """
 
-def _fk_extract_polygon(data, polygon):
+def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
@@ -170,7 +196,7 @@ def _fk_extract_polygon(data, polygon):
 	dsfk = np.fft.fftshift(data)
 
 	# Define polygon by user-input.
-	indicies = get_polygon(np.log(abs(dsfk)), no_of_vert=polygon, xlabel=None, ylabel=None)
+	indicies = get_polygon(np.log(abs(dsfk)), polygon, xlabel, xticks, ylabel, yticks)
 
 	# Create new array, only contains extractet energy, pointed to with indicies
 	dsfk_extract = np.zeros(dsfk.shape)
@@ -182,7 +208,7 @@ def _fk_extract_polygon(data, polygon):
 	return(data_fk)
 
 
-def _fk_eliminate_polygon(data,polygon, xlabel=None, ylabel=None):
+def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
@@ -193,7 +219,7 @@ def _fk_eliminate_polygon(data,polygon, xlabel=None, ylabel=None):
 	dsfk = np.fft.fftshift(data)
 	
 	# Define polygon by user-input.
-	indicies = get_polygon(np.log(abs(dsfk)), no_of_vert=polygon, xlabel=None, ylabel=None)
+	indicies = get_polygon(np.log(abs(dsfk)), polygon, xlabel, xticks, ylabel, yticks)
 
 	# Create new array, contains all the energy, except the eliminated, pointed to with indicies
 	dsfk_elim = dsfk.conj().transpose()
@@ -230,7 +256,6 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=
 	type snes:	int
 	"""
 	# Define freq Array 
-	epidist=y_dist
 	freq = np.zeros((len(ArrayData), len(ArrayData[0]) / 2  + 1)) + 1j
 
 	for i in range(len(ArrayData)):
@@ -260,7 +285,7 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=
 	period_range = period_range.astype('float')
 	
 	for j in range(len(freqT)):
-		k_new = signal.lombscargle(epidist, abs(freqT[j]), period_range)
+		k_new = signal.lombscargle(y_dist, abs(freqT[j]), period_range)
 		k_new = ls2ifft_prep(k_new, abs(freqT[j]))
 		knum[j] = k_new
 

@@ -391,18 +391,18 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, taup_model='ak135
 	:type st_align:
 
 	"""
-	
-	# Calculate depth and distance of receiver and event.
-	# Set some variables.
-	attach_coordinates_to_traces(st, inv, event)
-	depth = event.origins[0]['depth']/1000.
-	origin = event.origins[0]['time']
-	m = TauPyModel(taup_model)
-
 	# Prepare Array of data.
 	st_tmp = st.copy()
 	data = stream2array(st_tmp)
 	shifttimes=np.zeros(data.shape[0])
+
+	
+	# Calculate depth and distance of receiver and event.
+	# Set some variables.
+	attach_coordinates_to_traces(st_tmp, inv, event)
+	depth = event.origins[0]['depth']/1000.
+	origin = event.origins[0]['time']
+	m = TauPyModel(taup_model)
 
 	if type(ref) == int:
 		ref_dist = st[ref].stats.distance

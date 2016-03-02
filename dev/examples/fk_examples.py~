@@ -27,6 +27,7 @@ from obspy.taup import TauPyModel
 
 import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
 import sipy.filter.fk as fk
+import sipy.filter.radon as radon
 import sipy.util.fkutil as fku
 from sipy.filter.fk import fk_filter
 from sipy.util.fkutil import get_polygon, nextpow2, find_subsets
