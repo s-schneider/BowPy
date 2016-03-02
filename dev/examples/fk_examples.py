@@ -162,7 +162,7 @@ from sipy.filter.fk import fk_filter
 import sipy.util.fkutil as fku
 import instaseis as ins
 
-uniform=True
+uniform=False
 db = ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
 
 tofe = obspy.UTCDateTime(2016,2,9,18,41,1)
@@ -174,7 +174,7 @@ no_of_stations=20
 # in degrees
 distance_to_source=100
 # magnitude of randomness 
-magn=2.
+magn=1.
 
 #output
 
@@ -195,9 +195,29 @@ origin_time=tofe
 )
 
 x = []
+#station_range = np.linspace(0,aperture-1,no_of_stations) + 100.
+#r = np.random.randn(no_of_stations)
+#randrange = station_range + magn * r  
+#randrange[0] = station_range[0]
+#randrange[no_of_stations-1] = station_range[no_of_stations-1]
+# while randrange.max() > randrange[19]:
+# 	i = randrange.argmax()
+# 	randrange[i] = randrange[i]-0.1
+
+# randrange.sort()
+
+
+randrange = np.array([ 100.        ,  101.74222711,  102.8608334 ,  104.13732881,
+        105.28349288,  106.78556465,  107.488736  ,  108.34593815,
+        109.6161234 ,  110.27633321,  111.35174204,  112.90012348,
+        113.63875348,  114.34439107,  115.29740496,  116.96181391,
+        117.24875298,  117.77155468,  118.14675172,  119.        ])
+
+
+
+
 
 with open( qstfile, "w") as fh:
-	station_range = np.linspace(0,aperture-1,no_of_stations) + 100.
 	if uniform:
 		k=0
 		for i in station_range:
@@ -209,21 +229,12 @@ with open( qstfile, "w") as fh:
 			fh.write("%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, lon, latdiff))
 			k+=1	
 	else:
-		i=0
-		r = np.random.randn(no_of_stations)
-		randrange = station_range + magn * r  
-		randrange[0] = station_range[0]
-		randrange[no_of_stations-1] = station_range[no_of_stations-1]
-		while randrange.max() > randrange[19]:
-			i = randrange.argmax()
-			randrange[i] = randrange[i]-0.1
-		randrange.sort()
-		for slon in randrange:
+		for i, slon in enumerate(randrange):
 			name="X"+str(int(i))
 			x.append(ins.Receiver(latitude="0", longitude=slon, network="LA", station=name ))
 			latdiff = gps2dist_azimuth(0.1,0,0.1,slon)[0]/1000.
 			fh.write("%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))		
-			i+=1
+
 st_synth = []    
 for i in range(len(x)):
     st_synth.append(db.get_seismograms(source=source, receiver=x[i]))
