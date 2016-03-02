@@ -37,7 +37,7 @@ alignon, partial_stack
 
 stuni = read_st("../data/synthetics_uniform/SUNEW.QHD")
 stuni.normalize()
-invuni = read_inv("../data/synthetics_uniform/sunew_inv.xml")
+invuni = read_inv("../data/synthetics_uniform/SUNEW_inv.xml")
 cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
 attach_network_to_traces(stuni, invuni[0])
 attach_coordinates_to_traces(stuni, invuni, cat[0])
