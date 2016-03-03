@@ -1,11 +1,11 @@
 from __future__ import absolute_import
 import numpy
 import numpy as np
-import matplotlib
+import math
 
+import matplotlib
 # If using a Mac Machine, otherwitse comment the next line out:
 #matplotlib.use('TkAgg')
-
 import matplotlib.pyplot as plt
 import matplotlib.path as mplPath
 
@@ -116,13 +116,14 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 		else:
 
 			if yinfo:
-				plt.ylabel("Distance in deg")
-				plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-				plt.plot(t_axis,zoom*trace+ y_dist, color='black')
+				try:
+					plt.ylabel("Distance in deg")
+					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
+					plt.plot(t_axis,zoom*trace+ y_dist, color='black')
 			
-			elif yinfo and not isinv and not isevent:
-				msg='yinfo needs Inventory and Event Information, not found.'
-				raise IOError(msg)
+				except:
+					msg='Oops, something not found.'
+					raise IOError(msg)
 			else:
 				plt.ylabel("No. of trace")
 				plt.gca().yaxis.set_major_locator(plt.NullLocator())
@@ -422,20 +423,66 @@ def convert_polygon_to_flat_index(data, vertices):
 def slope_distribution(fkdata, prange, pdelta):
 	"""
 	Generates a distribution of slopes in a range given in prange.
-	Needs fkdata as input
+	Needs fkdata as input. 
+
+	k on the y-axis fkdata[0]
+	f on the x-axis fkdata[1]
 
 	:param fkdata: array-like dataset transformed to f-k domain.
 
 	:param prange: range of slopes, with minimum and maximum value
-	:type prange: array-like
+				   Slopes are defined as nondimensional, by the formula
+
+							m = 1/2 * (ymax - ymin)/(xmax - xmin),
+
+				   respectively
+
+							p = 1/2 * (kmax - kmin)/(fmax - fmin).
+
+				   The factor 1/2 is due too the periodicity in the f-k domain.
+				
+	:type prange: array-like, tuple or list
 
 	:param pdelta: stepsize of slope-interval
 	:type pdelta: int
+
+	returns:
+
+	:param MofS: Magnitude distribution of the slopes p
+	:type MofS: 1D array, numpy.ndarray
+
+	:param prange: Range of slopes
+	:type prange: 1D array, numpy.ndarray
 	"""
+
+	M = fkdata.copy()
+
+	#Mt = np.fft.fftshift(M.conj().transpose(), axes=1)
+	Mt = M.conj().transpose()
+	fk_shift =	np.zeros(M.shape).astype('complex')
 	
-	data = fkdata.copy()
+	pmin = prange[0]
+	pmax = prange[1]
+	N = abs(pmax - pmin) / pdelta + 1
+	prange = np.linspace(pmin,pmax,N)
+	MofS = np.zeros(N)
+	pnorm = 1/2. * ( float(fkdata.shape[0])/float(fkdata.shape[1]) )
+
+	for i, delta in enumerate(prange):
+
+		p = delta*pnorm
+		if delta % 1 == 0 and delta != 0:
+			print("Calculating now slope p = %i \n" % delta )
+		elif delta == 0:
+			print("Calculating now slope p = 0 \n")
+
+		for j, trace in enumerate(Mt):
+			shift = int(math.floor(p*j))		
+			fk_shift[:,j] = np.roll(trace, shift)
+		
+		MofS[i] = sum(abs(fk_shift[0,:])) / len(fk_shift[0,:])
 	
-	return
+	return MofS, prange
 
 
 def find_subsets(numbers, target, bottom, top, minlen, partial=[], sets=[]):

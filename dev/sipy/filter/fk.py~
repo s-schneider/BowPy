@@ -189,6 +189,34 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 """
 FFT FUNCTIONS 
 """
+def fktrafo(stream, inv, event, normalize=True):
+	"""
+	Calculates the f,k - transformation of the data in stream. Returns the trafo as an array.
+
+	:param st: Stream
+	:type st: obspy.core.stream.Stream
+
+	:param inv: inventory
+	:type inv: obspy.station.inventory.Inventory
+
+	:param event: Event
+	:type event: obspy.core.event.Event
+
+	returns
+	:param fkdata: f,k - transformation of data in stream
+	:type fkdata: numpyndarray
+	"""
+	st_tmp = stream.copy()
+	ArrayData = stream2array(st_tmp, normalize)
+	
+	ix = ArrayData.shape[0]
+	iK = int(math.pow(2,nextpow2(ix)+1))
+	it = ArrayData.shape[1]
+	iF = int(math.pow(2,nextpow2(it)+1))
+
+	fkdata = np.fft.fft2(ArrayData, s=(iK,iF))
+	
+	return fkdata
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
 	"""
