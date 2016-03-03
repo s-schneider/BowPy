@@ -738,7 +738,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 
 	return bin_data
 
-def fill_gaps(stream, inv, event):
+def fill_gaps_zeros(stream, inv, event):
 	"""
 	Fills the gaps inbetween irregular distributed traces 
 	in Stream with zero-padded Traces for further work.

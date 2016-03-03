@@ -34,7 +34,7 @@ from sipy.filter.fk import fk_filter, fktrafo
 from sipy.util.fkutil import get_polygon, nextpow2, find_subsets, slope_distribution
 from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
 stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, epidist, epidist2nparray, epidist2list, \
-alignon, partial_stack, fill_gaps_zeros
+alignon, partial_stack, gaps_fill_zeros
 
 stuni = read_st("../data/synthetics_uniform/SUNEW.QHD")
 stuni.normalize()

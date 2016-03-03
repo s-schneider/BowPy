@@ -464,29 +464,6 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, shiftmethod='norm
 	return st_align
 
 
-"""
-
-NEW INPUT TO shift2ref
-	def shifttrace_freq(stream, t_shift):
-		if isinstance(stream, Stream):
-		    for i, tr in enumerate(stream):
-		        ndat = tr.stats.npts
-		        samp = tr.stats.sampling_rate
-		        nfft = nextpow2(ndat)
-		        nfft *= 2
-		        tr1 = np.fft.rfft(tr.data, nfft)
-		        for k in xrange(0, nfft / 2):
-		            tr1[k] *= np.complex(
-		                np.cos((t_shift[i] * samp) * 
-								(k / float(nfft)) * 2. * np.pi),
-		                -np.sin((t_shift[i] * samp) *
-		                        (k / float(nfft)) * 2. * np.pi))
-
-		        tr1 = np.fft.irfft(tr1, nfft)
-		        tr.data = tr1[0:ndat]
-"""
-
-
 def shift2ref(array, tref, tshift, mtw=None, method='normal'):
 	"""
 	Shifts the trace in array to the order of tref - tshift. If mtw is given, tshift
@@ -738,7 +715,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 
 	return bin_data
 
-def fill_gaps_zeros(stream, inv, event):
+def gaps_fill_zeros(stream, inv, event):
 	"""
 	Fills the gaps inbetween irregular distributed traces 
 	in Stream with zero-padded Traces for further work.
