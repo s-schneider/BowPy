@@ -130,16 +130,16 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 		
 		elif ftype == "eliminate-polygon":
 			if isinstance(event, Event) and isinstance(inv, Inventory):
-				array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, xlabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-														  xticks=f_axis, ylabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', yticks=k_axis)
+				array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+														  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
 			else:
 				msg='For wavenumber calculation inventory and event information is needed, not found.'
 				raise IOError(msg)
 
 		elif ftype == "extract-polygon":
 			if isinstance(event, Event) and isinstance(inv, Inventory):
-				array_filtered_fk = _fk_extract_polygon(array_fk, polygon, xlabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-														xticks=f_axis, ylabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', yticks=k_axis)
+				array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+														yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
 			else:
 				msg='For wavenumber calculation inventory and event information is needed, not found.'
 				raise IOError(msg)
@@ -198,7 +198,7 @@ def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yt
 	type data:	numpy.ndarray
 	"""
 	# Shift 0|0 f-k to center, for easier handling
-	dsfk = np.fft.fftshift(data)
+	dsfk = np.fft.fftshift(data.conj().transpose())
 
 	# Define polygon by user-input.
 	indicies = get_polygon(np.log(abs(dsfk)), polygon, xlabel, xticks, ylabel, yticks)
@@ -208,7 +208,7 @@ def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yt
 	dsfk_extract.conj().transpose().flat[ indicies ]=1.
 	data_fk = dsfk * dsfk_extract
 	
-	data_fk = np.fft.ifftshift(data_fk)
+	data_fk = np.fft.ifftshift(data_fk.conj().transpose())
 
 	return(data_fk)
 
@@ -221,7 +221,7 @@ def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, 
 	type data:	numpy.ndarray
 	"""
 	# Shift 0|0 f-k to center, for easier handling
-	dsfk = np.fft.fftshift(data)
+	dsfk = np.fft.fftshift(data.conj().transpose())
 	
 	# Define polygon by user-input.
 	indicies = get_polygon(np.log(abs(dsfk)), polygon, xlabel, xticks, ylabel, yticks)
@@ -231,7 +231,7 @@ def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, 
 	dsfk_elim.flat[ indicies ]=0.
 	data_fk = dsfk_elim.conj().transpose()
 
-	data_fk = np.fft.ifftshift(data_fk)
+	data_fk = np.fft.ifftshift(data_fk.conj().transpose())
 
 	return(data_fk)
 

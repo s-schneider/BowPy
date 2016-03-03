@@ -84,11 +84,11 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 		attach_coordinates_to_traces(st, inv, event)
 		depth = event.origins[0]['depth']/1000.
 		isinv = True
-		isevent = False
+		isevent = True
 
 	for j, trace in enumerate(data):
 		y_dist = st[j].stats.distance
-
+		
 		if markphase and isinv and isevent:
 			origin = event.origins[0]['time']
 			m = TauPyModel('ak135')
@@ -366,8 +366,8 @@ def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, ytick
 	ax.add_patch(poly)
 	p = PolygonInteractor(ax, poly)
 	plt.title("Pick polygon, close figure to save vertices")
-	plt.xlabel(xlabel, fontsize=20)
-	plt.ylabel(ylabel, fontsize=20)
+	plt.xlabel(xlabel, fontsize=15)
+	plt.ylabel(ylabel, fontsize=15)
 
 	try:
 		plt.imshow(abs(data), aspect='auto', extent=(xticks.min(), xticks.max(), yticks.min(), yticks.max()))
