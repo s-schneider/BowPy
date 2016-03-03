@@ -419,7 +419,23 @@ def convert_polygon_to_flat_index(data, vertices):
 
 	return(flat_index)	
 
+def slope_distribution(fkdata, prange, pdelta):
+	"""
+	Generates a distribution of slopes in a range given in prange.
+	Needs fkdata as input
 
+	:param fkdata: array-like dataset transformed to f-k domain.
+
+	:param prange: range of slopes, with minimum and maximum value
+	:type prange: array-like
+
+	:param pdelta: stepsize of slope-interval
+	:type pdelta: int
+	"""
+	
+	data = fkdata.copy()
+	
+	return
 
 
 def find_subsets(numbers, target, bottom, top, minlen, partial=[], sets=[]):
