@@ -25,6 +25,7 @@ from obspy import read_inventory as read_inv
 from obspy import read_events as read_cat
 from obspy.taup import TauPyModel
 
+import sipy
 import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
 import sipy.filter.fk as fk
 import sipy.filter.radon as radon
@@ -33,7 +34,7 @@ from sipy.filter.fk import fk_filter
 from sipy.util.fkutil import get_polygon, nextpow2, find_subsets
 from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
 stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, epidist, epidist2nparray, epidist2list, \
-alignon, partial_stack
+alignon, partial_stack, fill_gaps_zeros
 
 stuni = read_st("../data/synthetics_uniform/SUNEW.QHD")
 stuni.normalize()

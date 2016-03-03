@@ -738,7 +738,71 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 
 	return bin_data
 
+def fill_gaps(stream, inv, event):
+	"""
+	Fills the gaps inbetween irregular distributed traces 
+	in Stream with zero-padded Traces for further work.
 
+	:param stream: Obspy Stream
+
+	:param inv: Obspy Inventory
+
+	:param event: Obspy Event 
+
+	:param d: Number of digits to round
+
+	:returns: equi_stream
+	"""
+	st_tmp = stream.copy()
+	d = 0.
+	try:
+		yinfo = epidist2nparray(epidist(inv, event, stream))
+		attach_network_to_traces(stream, inv[0])
+		attach_coordinates_to_traces(stream, inv, event)
+	except:
+		msg = "Need inventory and event information, not found"
+		raise TypeError(msg)
+
+	star = stream2array(st_tmp)
+	
+	# Define new grid for y-axis.
+	grd_min = yinfo.min()
+	grd_max = yinfo.max()
+	grd_delta = 0.
+	
+	# Find biggest value for y-ticks.
+	while grd_delta == 0.:
+		grd_delta = round( np.diff(yinfo).min() * (10.**d) ) / (10.**d)
+		d += 1.
+
+	N=(grd_max - grd_min)/grd_delta + 1
+	
+	grd = np.linspace(grd_min, grd_max, N) 
+	
+	equi_data = np.zeros((grd.size, star.shape[1]))
+	
+	# Create new Array and new Trace-object
+	traces = []
+	for i, trace in enumerate(equi_data):
+		newtrace = obspy.core.trace.Trace(trace)
+		newtrace.stats.distance = grd[i]
+		traces.append(newtrace)
+
+	# Append data in Trace-Object
+	for i, trace in enumerate(star):
+		# Find nearest matching gridpoint for each trace.
+		new_index = np.abs(grd-yinfo[i]).argmin()
+		traces[ new_index ] = obspy.core.trace.Trace(trace)
+		traces[ new_index ].stats = st_tmp[i].stats
+		traces[ new_index ].stats.distance = grd[new_index]
+	
+	
+	# Create new equidistant Stream-Object.
+	equi_stream = Stream(traces)
+	
+
+
+	return equi_stream
 
 def plot(inventory, projection="local"):
     """

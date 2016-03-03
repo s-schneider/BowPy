@@ -115,14 +115,15 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 
 		else:
 
-			if yinfo and isinv and isevent:
-				plt.ylabel("Distance in deg")
-				plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-				plt.plot(t_axis,zoom*trace+ y_dist, color='black')
+			if yinfo:
+				try:
+					plt.ylabel("Distance in deg")
+					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
+					plt.plot(t_axis,zoom*trace+ y_dist, color='black')
 			
-			elif yinfo and not isinv and not isevent:
-				msg='yinfo needs Inventory and Event Information, not found.'
-				raise IOError(msg)
+				except:
+					msg='Oops, something not found.'
+					raise IOError(msg)
 			else:
 				plt.ylabel("No. of trace")
 				plt.gca().yaxis.set_major_locator(plt.NullLocator())
