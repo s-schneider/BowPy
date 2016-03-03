@@ -43,6 +43,8 @@ cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
 attach_network_to_traces(stuni, invuni[0])
 attach_coordinates_to_traces(stuni, invuni, cat[0])
 epiuni = epidist2nparray(epidist(invuni, cat[0]))
+stuni_al = alignon(stuni.copy(), invuni, cat[0], phase='PP', maxtimewindow=350)
+fk = fktrafo(stuni_al, invuni, cat[0])
 
 stran = read_st("../data/synthetics_random/SRNEW.QHD")
 stran.normalize()

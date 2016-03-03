@@ -481,9 +481,43 @@ def slope_distribution(fkdata, prange, pdelta):
 			fk_shift[:,j] = np.roll(trace, shift)
 		
 		MofS[i] = sum(abs(fk_shift[0,:])) / len(fk_shift[0,:])
-	
-	return MofS, prange
+		peaks = find_peaks(MofS, prange)
 
+	return MofS, prange, peaks
+
+def find_peaks(data, drange=None):
+	"""
+	Finds peaks in given 1D array, by search for values that are higher
+	than the two neighbours. First and last value are added if larger
+	than the mean of data.
+
+	:param data: 1D array-like
+
+	:param drange: optional, range of the data distribution.
+
+	returns:
+	:param peaks: array with position on 0 axis and value on 1-axis.
+	"""
+	pos = []
+	peak = []
+
+	if data[0] > data.mean():
+		pos.append(drange[0])
+		peak.append(data[0])
+		
+	for p, value in enumerate(data[1:len(data)-1]):
+		if value > data[p] and value > data[p+2] and value > data.mean():
+			pos.append(drange[p+1])			
+			peak.append(value)
+
+	if data[::-1][0] > data.mean(): 
+		pos.append(drange[len(data)])
+		peak.append(data[::-1][0])
+
+	peaks = np.append([pos], [peak], axis=0)
+		
+
+	return peaks
 
 def find_subsets(numbers, target, bottom, top, minlen, partial=[], sets=[]):
 	"""
