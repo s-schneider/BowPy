@@ -438,6 +438,7 @@ def fk_reconstruct(data, fkdata, Mask, mu):
 			mu := Trade-off parameter between misfit and model norm
 
 	Minimizing is done via a method of conjugate gradients, de-noising (1-2 iterations), reconstruction(8-10) iterations.
+								scipy.sparse.linalg.cg
 
 	:param:
 
