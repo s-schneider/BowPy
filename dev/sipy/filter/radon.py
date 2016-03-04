@@ -28,6 +28,16 @@ def radon_filter(st, inv, event, p, weights, line_model, inversion_model, hyperp
 	"""
 	This function applies the radon_inverse, the user is now able to pick a polygon around the energy 
 	that should be extracted. It returns the dataset containing only the extracted energy.
+
+	example:	P_axis=np.arange(-5,5.01,0.01)
+				Mpick, x, y = radon.radon_filter(st, inv, cat[0], P_axis, None, "Linear", "L2", [5e-2])
+
+				plt.yticks(y)
+				plt.xticks(x)
+				plt.imshow(abs(Mpick), extent=[min(x), max(x), min(y), max(y)], aspect='auto' )
+				plt.show()
+				
+				Look in radon_example.py for more details
 	"""
 	st_input = st.copy()
 	
@@ -41,7 +51,7 @@ def radon_filter(st, inv, event, p, weights, line_model, inversion_model, hyperp
 	yticks = np.arange(int(math.ceil(min(Delta_resampled/10)))*10, int(math.ceil(max(Delta_resampled/10)))*10 + 10,10)[::-1]
 	xticks =  np.arange(int(math.ceil(min(t/100)))*100, int(math.ceil(max(t/100)))*100 + 100,100)[::2
 
-	Mpick=radon.radon_forward(t, P_axis, R670, Delta_resampled, meandelta, 'Linear')
+	Mpick=radon.radon_forward(t, p, Rpick, Delta_resampled, np.mean(epi), line_model)
 
 	return Mpick, xticks, yticks
 

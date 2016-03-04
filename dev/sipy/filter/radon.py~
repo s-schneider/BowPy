@@ -23,8 +23,12 @@ from obspy.core.event.event import Event
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details: http://www.gnu.org/licenses/
 """
-def radon_filter(st, inv, event, p, weights, line_model, inversion_model, hyperparameters):
 
+def radon_filter(st, inv, event, p, weights, line_model, inversion_model, hyperparameters):
+	"""
+	This function applies the radon_inverse, the user is now able to pick a polygon around the energy 
+	that should be extracted. It returns the dataset containing only the extracted energy.
+	"""
 	st_input = st.copy()
 	
 	R, t, epi = radon_inverse(st_input, inv, event, p, weights, line_model, inversion_model, hyperparameters)
@@ -37,7 +41,7 @@ def radon_filter(st, inv, event, p, weights, line_model, inversion_model, hyperp
 	yticks = np.arange(int(math.ceil(min(Delta_resampled/10)))*10, int(math.ceil(max(Delta_resampled/10)))*10 + 10,10)[::-1]
 	xticks =  np.arange(int(math.ceil(min(t/100)))*100, int(math.ceil(max(t/100)))*100 + 100,100)[::2
 
-	Mpick=radon.radon_forward(t, P_axis, R670, Delta_resampled, meandelta, 'Linear')
+	Mpick=radon.radon_forward(t, p, Rpick, Delta_resampled, np.mean(epi), line_model)
 
 	return Mpick, xticks, yticks
 
