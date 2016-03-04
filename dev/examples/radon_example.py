@@ -22,7 +22,7 @@ data = sio.loadmat("../data/mtz_radon/data.mat")
 
 # Define some variables for RT.
 
-t = data['t']
+t = data['t'][0]
 IDelta = data['Delta']
 M = data['M']
 indicies_matlab = data['indicies']
@@ -67,10 +67,10 @@ M670=radon.radon_forward(t, P_axis, R670, Delta_resampled, meandelta, 'Linear')
 plt.subplot(3,1,1)
 plt.title('Aligned SS')
 yticksorg =  np.arange(int(math.ceil(min(IDelta[0]/10)))*10, int(math.ceil(max(IDelta[0]/10)))*10 + 10,10)[::1]
-xticksorg =  np.arange(int(math.ceil(min(t[0]/100)))*100, int(math.ceil(max(t[0]/100)))*100 + 100,100)[::2]
+xticksorg =  np.arange(int(math.ceil(min(t/100)))*100, int(math.ceil(max(t/100)))*100 + 100,100)[::2]
 plt.yticks(yticksorg)
 plt.xticks(xticksorg)
-plt.imshow(M, extent=[max(t[0]), min(t[0]), min(IDelta[0]), max(IDelta[0])], aspect=16)
+plt.imshow(M, extent=[min(t), max(t), max(IDelta[0]), min(IDelta[0])], aspect=16)
 
 plt.subplot(3,1,2)
 ytickshilbert = np.arange(-1, 1, 0.5)[::-1]

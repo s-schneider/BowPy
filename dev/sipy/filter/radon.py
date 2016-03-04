@@ -110,7 +110,7 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 
 	#Define some values
 	Dist_array=delta-ref_dist
-	dF=1./(t[0][0]-t[0][1])
+	dF=1./(t[0]-t[1])
 	Mfft=np.fft.fft(M,iF,1)
 	W=sparse.spdiags(weights.conj().transpose(), 0, iDelta, iDelta).A
 	

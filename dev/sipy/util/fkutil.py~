@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.path as mplPath
 
 import obspy
+import obspy.signal.filter as obsfilter
 from obspy.geodetics import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy.taup import TauPyModel
 from obspy.core.event.event import Event
@@ -420,7 +421,7 @@ def convert_polygon_to_flat_index(data, vertices):
 
 	return(flat_index)	
 
-def slope_distribution(fkdata, prange, pdelta):
+def slope_distribution(fkdata, prange, pdelta, peakpick='mod'):
 	"""
 	Generates a distribution of slopes in a range given in prange.
 	Needs fkdata as input. 
@@ -445,6 +446,15 @@ def slope_distribution(fkdata, prange, pdelta):
 
 	:param pdelta: stepsize of slope-interval
 	:type pdelta: int
+	
+	:param peakpick: method to pick the peaks of distribution possible is:
+						mod - minimum mean of distribution (default)
+						mop  - minimum mean of peaks
+						float - minimum float value
+						None - pick all peaks
+					 
+	:type peakpick: int or float
+
 
 	returns:
 
@@ -481,16 +491,19 @@ def slope_distribution(fkdata, prange, pdelta):
 			fk_shift[:,j] = np.roll(trace, shift)
 		
 		MofS[i] = sum(abs(fk_shift[0,:])) / len(fk_shift[0,:])
-		peaks = find_peaks(MofS, prange)
+	peaks_first = find_peaks(MofS, prange, peakpick)
 
+	# Calculate envelope of the picked peaks, and pick the 
+	# peaks of the envelope.
+	peak_env = obsfilter.envelope(peaks_first[1])
+	peaks = find_peaks( peak_env, peaks_first[0], peaks_first[1].mean()-delta_threshold )		
+	
 	return MofS, prange, peaks
 
-def find_peaks(data, drange=None):
+def find_peaks(data, drange=None, peakpick='mod'):
 	"""
-	Finds peaks in given 1D array, by search for values that are higher
-	than the two neighbours. First and last value are added if larger
-	than the mean of data.
-
+	Finds peaks in given 1D array, by search for values in data
+	that are higher than the two neighbours. Except first and last.
 	:param data: 1D array-like
 
 	:param drange: optional, range of the data distribution.
@@ -498,24 +511,53 @@ def find_peaks(data, drange=None):
 	returns:
 	:param peaks: array with position on 0 axis and value on 1-axis.
 	"""
+
 	pos = []
 	peak = []
-
-	if data[0] > data.mean():
-		pos.append(drange[0])
-		peak.append(data[0])
-		
+	
+	# Loop through all values except first and last.
+	pick = None
 	for p, value in enumerate(data[1:len(data)-1]):
-		if value > data[p] and value > data[p+2] and value > data.mean():
-			pos.append(drange[p+1])			
-			peak.append(value)
+		if peakpick in ['mod', 'MoD', 'Mod', 'MoP', 'Mop', 'mop']:
+			if value > data[p] and value > data[p+2] and value > data.mean():
+				pick = data[p+1]
+		elif isinstance(peakpick, float) or isinstance(peakpick, int):
+			if value > data[p] and value > data[p+2] and value > peakpick:
+				pick = data[p+1]
+		elif not peakpick:
+			if value > data[p] and value > data[p+2]:
+				pick = data[p+1]
+		if pick:		
+			try:		
+				pos.append(drange[p+1])			
+				peak.append(pick)
+			except:
+				peak.append(pick)
+			pick = None
 
-	if data[::-1][0] > data.mean(): 
-		pos.append(drange[len(data)])
-		peak.append(data[::-1][0])
+	peak = np.array(peak)
 
-	peaks = np.append([pos], [peak], axis=0)
-		
+	# If mean of picks is choosen.
+	if peakpick in ['MoP', 'Mop', 'mop']:
+		newpeak = []
+		newpos = []
+		for i, value in enumerate(peak):
+			if value > peak.mean():
+				try:
+					newpeak.append(value)
+					newpos.append(pos[i])
+				except:
+					newpeak.append(value)
+		try:
+			peaks = np.append([newpos], [newpeak], axis=0)
+		except:
+			peaks = np.array(newpeak)
+
+	else:
+		try:
+			peaks = np.append([pos], [peak], axis=0)
+		except:
+			peaks = np.array(peak)		
 
 	return peaks
 
