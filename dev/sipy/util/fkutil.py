@@ -421,6 +421,28 @@ def convert_polygon_to_flat_index(data, vertices):
 
 	return(flat_index)	
 
+def makeMask(fkdata,slope):
+	"""
+	This function creates a Mask-array in shape of the original fkdata,
+	with straight lines along the angles, given in slope.
+	"""
+	M = fkdata.copy()
+	
+	pnorm = 1/2. * ( float(Mt.shape[1])/float(Mt.shape[0]) )
+	
+	prange = slope * pnorm
+
+	Mask = np.zeros(M.shape)
+	
+	for m in prange:
+		for f in range(Mask.shape[1]):
+			Mask[:,f] = np.roll(Mask[:,f], -int(f*m))
+		Mask[0,:] = 1.
+		for f in range(Mask.shape[1]):
+			Mask[:,f] = np.roll(Mask[:,f], int(f*m))
+
+	returns Mask
+
 def slope_distribution(fkdata, prange, pdelta, peakpick='mod', delta_threshold=0):
 	"""
 	Generates a distribution of slopes in a range given in prange.
@@ -465,8 +487,6 @@ def slope_distribution(fkdata, prange, pdelta, peakpick='mod', delta_threshold=0
 	:param prange: Range of slopes
 	:type prange: 1D array, numpy.ndarray
 
-	:param pnorm:  normalized slope
-	:type pnorm:
 
 	:param peaks: position ( peaks[0] ) and value ( peaks[1] ) of the peaks.
 	:type peaks: numpy.ndarray
@@ -483,7 +503,7 @@ def slope_distribution(fkdata, prange, pdelta, peakpick='mod', delta_threshold=0
 	N = abs(pmax - pmin) / pdelta + 1
 	prange = np.linspace(pmin,pmax,N)
 	MofS = np.zeros(N)
-	pnorm = 1/2. * ( float(fkdata.shape[0])/float(fkdata.shape[1]) )
+	pnorm = 1/2. * ( float(Mt.shape[1])/float(Mt.shape[0]) )
 
 	for i, delta in enumerate(prange):
 
@@ -505,7 +525,7 @@ def slope_distribution(fkdata, prange, pdelta, peakpick='mod', delta_threshold=0
 	peak_env = obsfilter.envelope(peaks_first[1])
 	peaks = find_peaks( peak_env, peaks_first[0], peaks_first[1].mean()- delta_threshold )		
 	
-	return MofS, prange, pnorm, peaks
+	return MofS, prange, peaks
 
 def find_peaks(data, drange=None, peakpick='mod'):
 	"""
