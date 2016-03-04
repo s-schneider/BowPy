@@ -14,7 +14,7 @@ import obspy.signal.filter as obsfilter
 from obspy.geodetics import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy.taup import TauPyModel
 from obspy.core.event.event import Event
-from obspy.core.inventory.inventory import Inventory
+from obspy import Stream, Inventory
 
 from sipy.util.base import nextpow2
 from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces, stream2array

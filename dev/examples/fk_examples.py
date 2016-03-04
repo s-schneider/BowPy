@@ -44,6 +44,8 @@ attach_network_to_traces(stuni, invuni[0])
 attach_coordinates_to_traces(stuni, invuni, cat[0])
 delta = epidist2nparray(epidist(invuni, cat[0]))
 stuni_al = alignon(stuni.copy(), invuni, cat[0], phase='PP', maxtimewindow=350)
+
+
 fk = fktrafo(stuni_al, invuni, cat[0])
 M = stream2array(stuni_al)
 t_axis = np.linspace(0,stuni_al[0].stats.delta * stuni_al[0].stats.npts, stuni_al[0].stats.npts)

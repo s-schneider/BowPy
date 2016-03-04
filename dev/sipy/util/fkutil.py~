@@ -421,7 +421,7 @@ def convert_polygon_to_flat_index(data, vertices):
 
 	return(flat_index)	
 
-def slope_distribution(fkdata, prange, pdelta, peakpick='mod'):
+def slope_distribution(fkdata, prange, pdelta, peakpick='mod', delta_threshold=0):
 	"""
 	Generates a distribution of slopes in a range given in prange.
 	Needs fkdata as input. 
@@ -454,7 +454,8 @@ def slope_distribution(fkdata, prange, pdelta, peakpick='mod'):
 						None - pick all peaks
 					 
 	:type peakpick: int or float
-
+	
+	:param delta_threshold: Value to lower manually 
 
 	returns:
 
@@ -496,7 +497,7 @@ def slope_distribution(fkdata, prange, pdelta, peakpick='mod'):
 	# Calculate envelope of the picked peaks, and pick the 
 	# peaks of the envelope.
 	peak_env = obsfilter.envelope(peaks_first[1])
-	peaks = find_peaks( peak_env, peaks_first[0], peaks_first[1].mean()-delta_threshold )		
+	peaks = find_peaks( peak_env, peaks_first[0], peaks_first[1].mean()- delta_threshold )		
 	
 	return MofS, prange, peaks
 

@@ -7,6 +7,10 @@ from math import pi
 import scipy as sp
 from scipy import sparse
 from sipy.util.fkutil import nextpow2
+from sipy.util.array_util import stream2array, epidist, epidist2nparray
+
+from obspy import Stream, Inventory
+from obspy.core.event.event import Event
 
 """
  This program is free software: you can redistribute it and/or modify
@@ -19,31 +23,53 @@ from sipy.util.fkutil import nextpow2
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details: http://www.gnu.org/licenses/
 """
+def radon_filter(st, inv, event, p, weights, line_model, inversion_model, hyperparameters):
 
-def radon_inverse(t,epi,M,p,weights,ref_dist,line_model,inversion_model,hyperparameters):
+	st_input = st.copy()
+	
+	R, t, epi = radon_inverse(st_input, inv, event, p, weights, line_model, inversion_model, hyperparameters)
+
+	Rpick=np.zeros(R.shape)
+	Rpick.conj().transpose().flat[ indicies ]=1
+	Rpick=R*Rpick
+
+	Delta_resampled = np.arange( int(math.floor(min(epi[0]))), int(math.ceil(max(epi[0])))+1, (int(math.ceil(max(epi[0]))) - int(math.floor(min(epi[0]))))/20.)
+	yticks = np.arange(int(math.ceil(min(Delta_resampled/10)))*10, int(math.ceil(max(Delta_resampled/10)))*10 + 10,10)[::-1]
+	xticks =  np.arange(int(math.ceil(min(t/100)))*100, int(math.ceil(max(t/100)))*100 + 100,100)[::2
+
+	Mpick=radon.radon_forward(t, P_axis, R670, Delta_resampled, meandelta, 'Linear')
+
+	return Mpick, xticks, yticks
+
+
+def radon_inverse(st, inv, event, p, weights, line_model, inversion_model, hyperparameters):
 	"""
 	This function inverts move-out data to the Radon domain given the inputs:
-	 -t        -- vector of time axis.
-	 -epi    -- vector of distance axis.
-	 -M        -- matrix of move-out data, ordered size(M)==[length(delta),length(t)].
-	 -p        -- vector of slowness axis you would like to invert to.
-	 -weights  -- weighting vector that determines importance of each trace.
-	              set vector to ones for no preference.
-	 -ref_dist -- reference distance the path-function will shift about.
+	:param st:
 	
-	 -line_model, select one of the following options for path integration:
-	     'linear'     - linear paths in the spatial domain (default)
-	     'parabolic'  - parabolic paths in the spatial domain.
+	:param inv:
+
+	:param event:
 	
-	 -inversion model, select one of the following options for regularization schema:
-	     'L2'       - Regularized on the L2 norm of the Radon domain (default)
-	     'L1'       - Non-linear regularization based on L1 norm and iterative
-	                  reweighted least sqaures (IRLS) see Sacchi 1997.
-	     'Cauchy'   - Non-linear regularization see Sacchi & Ulrych 1995
+	:param p:        -- vector of slowness axis you would like to invert to.
+	 
+	:param weights:  -- weighting vector that determines importance of each trace.
+	              		set vector to ones for no preference.
+
 	
-	 -hyperparameters, trades-off between fitting the data and chosen damping.
+	:param line_model: 	select one of the following options for path integration:
+	     				'linear'     - linear paths in the spatial domain (default)
+	     				'parabolic'  - parabolic paths in the spatial domain.
 	
-	Output radon domain is ordered size(R)==[length(p),length(t)].
+	:param inversion model:	 select one of the following options for regularization schema:
+								 'L2'       - Regularized on the L2 norm of the Radon domain (default)
+								 'L1'       - Non-linear regularization based on L1 norm and iterative
+											  reweighted least sqaures (IRLS) see Sacchi 1997.
+								 'Cauchy'   - Non-linear regularization see Sacchi & Ulrych 1995
+	
+	:param hyperparameters: trades-off between fitting the data and chosen damping.
+	
+	returns: radon domain is ordered size(R)==[length(p),length(t)], time-axis and distance-axis.
 	
 	Known limitations:
 	 - Assumes evenly sampled time axis.
@@ -51,7 +77,7 @@ def radon_inverse(t,epi,M,p,weights,ref_dist,line_model,inversion_model,hyperpar
 	
 	
 	 References: Schultz, R., Gu, Y. J., 2012. Flexible Matlab implementation
-	             of the Radon Transform.  Computers and Geosciences [In Preparation]
+	             of the Radon Transform.  Computers and Geosciences.
 	
 	             An, Y., Gu, Y. J., Sacchi, M., 2007. Imaging mantle 
 	             discontinuities using least-squares Radon transform. 
@@ -62,23 +88,36 @@ def radon_inverse(t,epi,M,p,weights,ref_dist,line_model,inversion_model,hyperpar
 	"""
 
 	# Check for Data type of variables.
-	if not isinstance(t, numpy.ndarray) or not isinstance(epi, numpy.ndarray):
-		print( "Wrong input type of t or epi, must be numpy.ndarray" )
-		raise TypeError
-	
-	if not isinstance(hyperparameters,list):
-		print( "Wrong input type of mu, must be list" )
+
+	if not isinstance(st, Stream) or not isinstance(inv, Inventory) or not isinstance(event, Event):
+		msg = "Wrong input type must be obspy Stream, Inventory and Event" 
 		raise TypeError
 
+	if not isinstance(hyperparameters,list):
+		msg = "Wrong input type of mu, must be list"
+		raise TypeError
+
+
+
 	# Define some array/matrices lengths.
+	st_tmp = st.copy()
+	M = stream2array(st_tmp)
+	epi = epidist2nparray(epidist(inv, event, st_tmp))
 	delta = np.array([ epi.copy() ])
-	#delta = epi.copy()	
+	ref_dist = np.mean(delta)
+
+	if not weights:
+		weights = np.ones(delta.size)
+
+	t = np.linspace(0,st_tmp[0].stats.delta * st_tmp[0].stats.npts, st_tmp[0].stats.npts)
 	it=t.size
 	iF=int(math.pow(2,nextpow2(it)+1)) # Double length
+
+   
 	iDelta=delta.size
 	ip=len(p)
 	iw=len(weights)
-
+	
 	#Exit if inconsistent data is input.
 	if M.shape != (iDelta, it):
 		print("Dimensions inconsistent!\nShape of M is not equal to (len(delta),len(t)) \nShape of M = (%i , %i)\n(len(delta),len(t)) = (%i, %i) \n" % (M.shape[0],  M.shape[1], iDelta, it) )
@@ -188,7 +227,7 @@ def radon_inverse(t,epi,M,p,weights,ref_dist,line_model,inversion_model,hyperpar
 	R = np.fft.ifft(Rfft, iF)
 	R = R[:,0:it]
 
-	return(R)
+	return R, t, epi
 
 def radon_forward(t,p,R,delta,ref_dist,line_model):
 	"""
