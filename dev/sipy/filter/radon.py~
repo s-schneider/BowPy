@@ -20,11 +20,11 @@ from sipy.util.fkutil import nextpow2
  GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperparameters):
+def radon_inverse(t,epi,M,p,weights,ref_dist,line_model,inversion_model,hyperparameters):
 	"""
 	This function inverts move-out data to the Radon domain given the inputs:
 	 -t        -- vector of time axis.
-	 -delta    -- vector of distance axis.
+	 -epi    -- vector of distance axis.
 	 -M        -- matrix of move-out data, ordered size(M)==[length(delta),length(t)].
 	 -p        -- vector of slowness axis you would like to invert to.
 	 -weights  -- weighting vector that determines importance of each trace.
@@ -62,8 +62,8 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 	"""
 
 	# Check for Data type of variables.
-	if not isinstance(t, numpy.ndarray) or not isinstance(delta, numpy.ndarray):
-		print( "Wrong input type of t or delta, must be numpy.ndarray" )
+	if not isinstance(t, numpy.ndarray) or not isinstance(epi, numpy.ndarray):
+		print( "Wrong input type of t or epi, must be numpy.ndarray" )
 		raise TypeError
 	
 	if not isinstance(hyperparameters,list):
@@ -71,6 +71,8 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 		raise TypeError
 
 	# Define some array/matrices lengths.
+	delta = np.array([ epi.copy() ])
+	#delta = epi.copy()	
 	it=t.size
 	iF=int(math.pow(2,nextpow2(it)+1)) # Double length
 	iDelta=delta.size
@@ -78,11 +80,11 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 	iw=len(weights)
 
 	#Exit if inconsistent data is input.
-	if not M.shape == (iDelta, it):
+	if M.shape != (iDelta, it):
 		print("Dimensions inconsistent!\nShape of M is not equal to (len(delta),len(t)) \nShape of M = (%i , %i)\n(len(delta),len(t)) = (%i, %i) \n" % (M.shape[0],  M.shape[1], iDelta, it) )
 		R=0
 		return(R)
-	if not iw == iDelta:
+	if iw != iDelta:
 		print("Dimensions inconsistent!\nlen(delta) ~= len(weights)\nlen(delta) = %i\nlen(weights) = %i\n" % (iDelta, iw))
 		R=0
 		return(R)
@@ -110,10 +112,9 @@ def radon_inverse(t,delta,M,p,weights,ref_dist,line_model,inversion_model,hyperp
 
 	#Define some values
 	Dist_array=delta-ref_dist
-	dF=1./(t[0][0]-t[0][1])
+	dF=1./(t[0]-t[1])
 	Mfft=np.fft.fft(M,iF,1)
 	W=sparse.spdiags(weights.conj().transpose(), 0, iDelta, iDelta).A
-	
 	dCOST=0.
 	COST_curv=0.
 	COST_prev=0.

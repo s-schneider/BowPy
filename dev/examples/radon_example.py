@@ -23,9 +23,10 @@ data = sio.loadmat("../data/mtz_radon/data.mat")
 # Define some variables for RT.
 
 t = data['t'][0]
-IDelta = data['Delta']
+IDelta = data['Delta'][0]
+#IDelta = np.array([ epi.copy() ])
 M = data['M']
-indicies_matlab = data['indicies']
+indicies_matlab = data['indicies'][0]
 
 mu=[5e-2]
 P_axis=np.arange(-1,1.01,0.01)
@@ -39,6 +40,8 @@ R=radon.radon_inverse(t, IDelta, M, P_axis, np.ones(IDelta.size), meandelta, "Li
 toc = datetime.datetime.now()
 time = toc-tic
 print( "Elapsed time is %s seconds." % str(time))
+plt.imshow(abs(R), aspect='auto')
+plt.show()
 
 
 # Pick Phase here!
