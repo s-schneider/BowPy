@@ -49,9 +49,9 @@ def radon_filter(st, inv, event, p, weights, line_model, inversion_model, hyperp
 
 	Delta_resampled = np.arange( int(math.floor(min(epi[0]))), int(math.ceil(max(epi[0])))+1, (int(math.ceil(max(epi[0]))) - int(math.floor(min(epi[0]))))/20.)
 	yticks = np.arange(int(math.ceil(min(Delta_resampled/10)))*10, int(math.ceil(max(Delta_resampled/10)))*10 + 10,10)[::-1]
-	xticks =  np.arange(int(math.ceil(min(t/100)))*100, int(math.ceil(max(t/100)))*100 + 100,100)[::2
+	xticks =  np.arange(int(math.ceil(min(t/100)))*100, int(math.ceil(max(t/100)))*100 + 100,100)[::2]
 
-	Mpick=radon.radon_forward(t, p, Rpick, Delta_resampled, np.mean(epi), line_model)
+	Mpick = radon_forward(t, p, Rpick, Delta_resampled, np.mean(epi), line_model)
 
 	return Mpick, xticks, yticks
 

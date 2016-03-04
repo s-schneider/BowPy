@@ -464,6 +464,12 @@ def slope_distribution(fkdata, prange, pdelta, peakpick='mod', delta_threshold=0
 
 	:param prange: Range of slopes
 	:type prange: 1D array, numpy.ndarray
+
+	:param pnorm:  normalized slope
+	:type pnorm:
+
+	:param peaks: position ( peaks[0] ) and value ( peaks[1] ) of the peaks.
+	:type peaks: numpy.ndarray
 	"""
 
 	M = fkdata.copy()
@@ -499,7 +505,7 @@ def slope_distribution(fkdata, prange, pdelta, peakpick='mod', delta_threshold=0
 	peak_env = obsfilter.envelope(peaks_first[1])
 	peaks = find_peaks( peak_env, peaks_first[0], peaks_first[1].mean()- delta_threshold )		
 	
-	return MofS, prange, peaks
+	return MofS, prange, pnorm, peaks
 
 def find_peaks(data, drange=None, peakpick='mod'):
 	"""
