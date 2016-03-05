@@ -162,7 +162,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 
 		elif ftype in ("extract"):
 			array_filtered = line_cut(array_fx)
-		array_filtered = np.fft.ifft(ArrayData, iF).real
+			array_filtered = np.fft.ifft(ArrayData, iF).real
 
 		else:
 			msg = "No type of filter specified"
@@ -233,7 +233,7 @@ def fktrafo(stream, inv, event, normalize=True):
 	
 	return fkdata
 
-def fk_reconstruct(data, fkdata, Mask, mu):
+def fk_reconstruct(str, inv, event, mu):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
@@ -262,8 +262,56 @@ def fk_reconstruct(data, fkdata, Mask, mu):
 	Reference:	Mostafa Naghizadeh, Seismic data interpolation and de-noising in the frequency-wavenumber
 				domain, 2012, GEOPHYSICS
 	"""
+	peackpick = None
+	deltaslope = 0.1
+	slopes = [-10,10]
+	st_tmp = st.copy()
+
+	# Prepare data.
+	st_tmp = st.copy()
+	ArrayData = stream2array(st_tmp, normalize)
+	
+	ix = ArrayData.shape[0]
+	iK = int(math.pow(2,nextpow2(ix)+1))
+	it = ArrayData.shape[1]
+	iF = int(math.pow(2,nextpow2(it)+1))
+
+	fkData = np.fft.fft2(ArrayData, s=(iK,iF))
+
+	# Calculate mask-function W.
+	M, prange, peaks = slope_distribution(fkdata, slopes, deltaslope, peakpick)
+	W = makeMask(fkdata, peaks[0])
+
+	# Prepare arrays for cost-function.
+	dv = ArrayData.reshape(1, ArrayData.size)
+	Dv = fkData.reshape(1, fkData.size)
+	Y = np.diag( W.reshape(1, W.size) ) 
+
+	T = np.zeros((ArrayData.shape[0], ArrayData.shape[0]))
+	for i,trace in enumerate(ArrayData):
+		if sum(trace) == 0.:
+			T[i] = 1.
+
+	YDfft = np.dot(Y, Dv)
+	YDifft = np.fft.ifft2( YDfft, s=(iK,iF) )
+
+	dnew = np.dot(T, YDifft)
+
+	# Create cost-function
+	J = _cost_function_denoise_interpolation(dv, dnew, Dv, mu)
+
+	# Now minimize it with a cg method
 	
 	return
+
+def _cost_function_denoise_interpolation(d, dnew, D, mu):
+	"""
+	Only use with the function fk_reconstruct!
+	"""
+
+	J = np.linalg.norm(d - dnew , 2) + mu**2. * np.linalg.norm(D, 2)
+
+	returns J
 
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
