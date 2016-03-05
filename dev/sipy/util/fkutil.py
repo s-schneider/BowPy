@@ -438,7 +438,8 @@ def fk_reconstruct(data, fkdata, Mask, mu):
 			mu := Trade-off parameter between misfit and model norm
 
 	Minimizing is done via a method of conjugate gradients, de-noising (1-2 iterations), reconstruction(8-10) iterations.
-								scipy.sparse.linalg.cg
+								scipy.optimize
+								scipy.optimize.fmin_cg
 
 	:param:
 
@@ -456,10 +457,20 @@ def makeMask(fkdata,slope):
 	"""
 	This function creates a Mask-array in shape of the original fkdata,
 	with straight lines along the angles, given in slope.
+	slope shows the position of L linear dominants in the f-k domain.
+
+	:param fkdata:
+
+	:param slope:
+
+
+	Returns 
+
+	:param W: Mask function W
 	"""
 	M = fkdata.copy()
 	
-	pnorm = 1/2. * ( float(Mt.shape[1])/float(Mt.shape[0]) )
+	pnorm = 1/2. * ( float(M.shape[0])/float(M.shape[1]) )
 	
 	prange = slope * pnorm
 
@@ -472,9 +483,17 @@ def makeMask(fkdata,slope):
 		for f in range(Mask.shape[1]):
 			Mask[:,f] = np.roll(Mask[:,f], int(f*m))
 
-	returns Mask
+	# Convolving each frequency slice of the mask with a boxcar
+	# of size L. Widens the the maskfunction along k-axis.
+	b = sp.signal.boxcar(slope.size)
+	
+	for i, fslice in enumerate(mask.conj().transpose()):
+		W[:,i] = sp.signal.convolve(fslice, b, mode=1)
 
-def slope_distribution(fkdata, prange, pdelta, peakpick='mod', delta_threshold=0):
+
+	return W
+
+def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0):
 	"""
 	Generates a distribution of slopes in a range given in prange.
 	Needs fkdata as input. 
