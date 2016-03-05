@@ -13,7 +13,8 @@ import scipy as sp
 import scipy.signal as signal
 
 from sipy.util.array_util import array2stream, stream2array, epidist2nparray, epidist
-from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon
+from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon,\
+							find_peaks, slope_distribution, makeMask
 from sipy.util.base import nextpow2
 
 def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', phase=None, polygon=12, normalize=True, SSA=False):
@@ -125,12 +126,13 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 		# For interaction the conj.-transposed Array is shown!!! 
 		array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
 
-		if ftype == "eliminate":
+		if ftype in ("eliminate"):
 			array_filtered_fk = line_set_zero(array_fk)
-		elif ftype == "extract":
+
+		elif ftype in ("extract"):
 			array_filtered_fk = line_cut(array_fk)				
 		
-		elif ftype == "eliminate-polygon":
+		elif ftype in ("eliminate-polygon"):
 			if isinstance(event, Event) and isinstance(inv, Inventory):
 				array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
 														  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
@@ -138,7 +140,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 				msg='For wavenumber calculation inventory and event information is needed, not found.'
 				raise IOError(msg)
 
-		elif ftype == "extract-polygon":
+		elif ftype in ("extract-polygon"):
 			if isinstance(event, Event) and isinstance(inv, Inventory):
 				array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
 														yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
@@ -153,27 +155,38 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF)).real
 
 	# 2D f-x Transformation 
-	elif trafo == "FX":
+	elif trafo in ("FX"):
 		array_fx = np.fft.fft(ArrayData, iF)
-		if ftype == "eliminate":
+		if ftype in ("eliminate"):
 			array_filtered = line_set_zero(array_fx)
 
-		elif ftype == "extract":
+		elif ftype in ("extract"):
 			array_filtered = line_cut(array_fx)
 		array_filtered = np.fft.ifft(ArrayData, iF).real
 
-	# 2D FFT-LS 
-	# UNDER CONSTRUCTION
-	elif trafo == "LS" and yinfo:
-
-		# Apply filter.
-		if ftype == "eliminate":
-			array_filtered, periods = _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=yinfo)
-		elif ftype == "extract":
-			array_filtered, periods = _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=yinfo)
 		else:
-			print("No type of fk-filter specified")
-			raise TypeError		
+			msg = "No type of filter specified"
+			raise TypeError(msg)
+
+	# 2D FFT-LS 
+	# elif trafo in ("LS"):
+
+	# 	try:
+	# 		yinfo = epidist2nparray(epidist(inv, event, st_tmp))
+	# 	else:
+	# 		msg='For wavenumber calculation inventory and event information is needed, not found.'
+	# 		raise IOError(msg)	
+
+	# 	# Apply filter.
+	# 	if ftype in ("eliminate"):
+	# 		array_filtered, periods = _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=yinfo)
+
+	# 	elif ftype in ("extract"):
+	# 		array_filtered, periods = _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=yinfo)
+
+	# 	else:
+	# 		print("No type of fk-filter specified")
+	# 		raise TypeError		
 
 
 	else:
@@ -184,7 +197,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 	array_filtered = array_filtered[0:ix, 0:it]
 	stream_filtered = array2stream(array_filtered, st_original=st.copy())
 
-	return(stream_filtered)
+	return stream_filtered
 
 
 
@@ -220,6 +233,39 @@ def fktrafo(stream, inv, event, normalize=True):
 	
 	return fkdata
 
+def fk_reconstruct(data, fkdata, Mask, mu):
+	"""
+	This functions reconstructs missing signals in the f-k domain, using the original data,
+	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
+	Uses the following cost function to minimize:
+
+			J = ||dv - T F^(-1) Wv Dv ||^{2}_{2} + mu^2 ||Dv||^{2}_{2}
+			
+			J := Cost function
+			dv:= Column-wise-ordered long vector of the 2D signal d
+			DV:= Column-wise-ordered long vector of the	f-k-spectrum
+			W := Diagnoal matrix built from the column-wise-ordered long vector of Mask
+			T := Sampling matrix which maps the fully sampled desired seismic data to the available samples.
+				 For de-noising problems T = I (identity matrix)
+			mu := Trade-off parameter between misfit and model norm
+
+	Minimizing is done via a method of conjugate gradients, de-noising (1-2 iterations), reconstruction(8-10) iterations.
+								scipy.optimize
+								scipy.optimize.fmin_cg
+
+	:param:
+
+	returns:
+
+	:param: 
+
+	Reference:	Mostafa Naghizadeh, Seismic data interpolation and de-noising in the frequency-wavenumber
+				domain, 2012, GEOPHYSICS
+	"""
+	
+	return
+
+
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
 	"""
 	Only use with the function fk_filter!
@@ -240,7 +286,7 @@ def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yt
 	
 	data_fk = np.fft.ifftshift(data_fk.conj().transpose())
 
-	return(data_fk)
+	return data_fk
 
 
 def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
@@ -263,7 +309,7 @@ def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, 
 
 	data_fk = np.fft.ifftshift(data_fk.conj().transpose())
 
-	return(data_fk)
+	return data_fk
 
 """
 LS FUNCTIONS
@@ -278,7 +324,7 @@ def _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=False, radius=None, maxk=Fa
 	param snes:	slownessvalue of the desired extracted phase
 	type snes:	int
 	"""
-	return()
+	return 
 
 def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=False):
 	"""
@@ -330,6 +376,7 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=
 	fkspectra = knum
 	dsfft = line_set_zero(fkspectra, 0, radius)
 	
-	return(fkspectra.conj().transpose(), period_range)
+	return fkspectra.conj().transpose(), period_range
+
 
 

@@ -421,37 +421,6 @@ def convert_polygon_to_flat_index(data, vertices):
 
 	return(flat_index)	
 
-def fk_reconstruct(data, fkdata, Mask, mu):
-	"""
-	This functions reconstructs missing signals in the f-k domain, using the original data,
-	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
-	Uses the following cost function to minimize:
-
-			J = ||dv - T F^(-1) Wv Dv ||^{2}_{2} + mu^2 ||Dv||^{2}_{2}
-			
-			J := Cost function
-			dv:= Column-wise-ordered long vector of the 2D signal d
-			DV:= Column-wise-ordered long vector of the	f-k-spectrum
-			W := Diagnoal matrix built from the column-wise-ordered long vector of Mask
-			T := Sampling matrix which maps the fully sampled desired seismic data to the available samples.
-				 For de-noising problems T = I (identity matrix)
-			mu := Trade-off parameter between misfit and model norm
-
-	Minimizing is done via a method of conjugate gradients, de-noising (1-2 iterations), reconstruction(8-10) iterations.
-								scipy.optimize
-								scipy.optimize.fmin_cg
-
-	:param:
-
-	returns:
-
-	:param: 
-
-	Reference:	Mostafa Naghizadeh, Seismic data interpolation and de-noising in the frequency-wavenumber
-				domain, 2012, GEOPHYSICS
-	"""
-	
-	return
 
 def makeMask(fkdata,slope):
 	"""
