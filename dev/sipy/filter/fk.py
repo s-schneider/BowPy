@@ -11,6 +11,7 @@ from sipy.util.array_util import get_coords
 import datetime
 import scipy as sp
 import scipy.signal as signal
+from scipy.optimize import fmin_cg
 
 from sipy.util.array_util import array2stream, stream2array, epidist2nparray, epidist
 from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon,\
@@ -297,20 +298,25 @@ def fk_reconstruct(str, inv, event, mu):
 
 	dnew = np.dot(T, YDifft)
 
-	# Create cost-function
-	J = _cost_function_denoise_interpolation(dv, dnew, Dv, mu)
+	# Create callable cost-function
+	args = (dv, T, Y, mu, iK, iF)
+	def _cost_function_denoise_interpolation(x, *args):
+		"""
+		Only use with the function fk_reconstruct!
+		"""
+		d, T, Y, mu, iK, iF = args
 
-	# Now minimize it with a cg method
-	def _cost_function_denoise_interpolation(x=dnew):
-	"""
-	Only use with the function fk_reconstruct!
-	"""
-		J = np.linalg.norm(d - x , 2) + mu**2. * np.linalg.norm(D, 2)
-		returns J
+		YDfft = np.dot(Y, x)
+		YDifft = np.fft.ifft2( YDfft, s=(iK,iF) )
+
+		return np.linalg.norm(d - np.dot(T, YDifft) , 2) + mu**2. * np.linalg.norm(D, 2)
+
+	# Initial conditions.
+	x0 = Dv
+	res1 = optimize.fmin_cg( _cost_function_denoise_interpolation , x0)
+
 
 	return
-
-
 
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
