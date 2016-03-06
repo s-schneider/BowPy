@@ -301,17 +301,16 @@ def fk_reconstruct(str, inv, event, mu):
 	J = _cost_function_denoise_interpolation(dv, dnew, Dv, mu)
 
 	# Now minimize it with a cg method
-	
-	return
-
-def _cost_function_denoise_interpolation(d, dnew, D, mu):
+	def _cost_function_denoise_interpolation(x=dnew):
 	"""
 	Only use with the function fk_reconstruct!
 	"""
+		J = np.linalg.norm(d - x , 2) + mu**2. * np.linalg.norm(D, 2)
+		returns J
 
-	J = np.linalg.norm(d - dnew , 2) + mu**2. * np.linalg.norm(D, 2)
+	return
 
-	returns J
+
 
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
