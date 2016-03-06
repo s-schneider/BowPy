@@ -234,7 +234,7 @@ def fktrafo(stream, inv, event, normalize=True):
 	
 	return fkdata
 
-def fk_reconstruct(str, inv, event, mu):
+def fk_reconstruct(st, inv, event, mu=5e-2):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
@@ -263,14 +263,13 @@ def fk_reconstruct(str, inv, event, mu):
 	Reference:	Mostafa Naghizadeh, Seismic data interpolation and de-noising in the frequency-wavenumber
 				domain, 2012, GEOPHYSICS
 	"""
-	peackpick = None
+	peakpick = None
 	deltaslope = 0.1
 	slopes = [-10,10]
-	st_tmp = st.copy()
 
 	# Prepare data.
 	st_tmp = st.copy()
-	ArrayData = stream2array(st_tmp, normalize)
+	ArrayData = stream2array(st_tmp, normalize=True)
 	
 	ix = ArrayData.shape[0]
 	iK = int(math.pow(2,nextpow2(ix)+1))
@@ -280,13 +279,13 @@ def fk_reconstruct(str, inv, event, mu):
 	fkData = np.fft.fft2(ArrayData, s=(iK,iF))
 
 	# Calculate mask-function W.
-	M, prange, peaks = slope_distribution(fkdata, slopes, deltaslope, peakpick)
-	W = makeMask(fkdata, peaks[0])
+	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick)
+	W = makeMask(fkData, peaks[0])
 
 	# Prepare arrays for cost-function.
 	dv = ArrayData.reshape(1, ArrayData.size)
 	Dv = fkData.reshape(1, fkData.size)
-	Y = np.diag( W.reshape(1, W.size) ) 
+	Y = np.diag( W.reshape(1, W.size)[0]) 
 
 	T = np.zeros((ArrayData.shape[0], ArrayData.shape[0]))
 	for i,trace in enumerate(ArrayData):

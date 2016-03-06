@@ -444,6 +444,7 @@ def makeMask(fkdata,slope):
 	prange = slope * pnorm
 
 	Mask = np.zeros(M.shape)
+	W = np.zeros(M.shape)
 	
 	for m in prange:
 		for f in range(Mask.shape[1]):
@@ -456,7 +457,7 @@ def makeMask(fkdata,slope):
 	# of size L. Widens the the maskfunction along k-axis.
 	b = sp.signal.boxcar(slope.size)
 	
-	for i, fslice in enumerate(mask.conj().transpose()):
+	for i, fslice in enumerate(Mask.conj().transpose()):
 		W[:,i] = sp.signal.convolve(fslice, b, mode=1)
 
 
