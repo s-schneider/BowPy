@@ -55,10 +55,9 @@ stuni.remove(stuni[12])
 stuni.remove(stuni[11])
 ns = gaps_fill_zeros(stuni_al, invuni, cat[0])
 st = ns.copy()
+fkData = fktrafo(stuni_al, invuni, cat[0])
 
 fkr = fk_reconstruct(ns, invuni, cat[0], mu=5e-2)
-
-fk = fktrafo(stuni_al, invuni, cat[0])
 M = stream2array(stuni_al)
 t_axis = np.linspace(0,stuni_al[0].stats.delta * stuni_al[0].stats.npts, stuni_al[0].stats.npts)
 

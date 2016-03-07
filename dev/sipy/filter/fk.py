@@ -264,7 +264,7 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 				domain, 2012, GEOPHYSICS
 	"""
 	peakpick = None
-	deltaslope = 0.1
+	deltaslope = 0.05
 	slopes = [-10,10]
 
 	# Prepare data.
@@ -300,7 +300,7 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 		if sum(trace) == 0.:
 			T[i] = 1.
 
-	YDfft = np.dot(Y, Dv)
+	YDfft = Y * Dv
 	YDifft = np.fft.ifft2( YDfft, s=(iK,iF) )
 
 	dnew = np.dot(T, YDifft)

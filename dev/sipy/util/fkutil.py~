@@ -421,60 +421,55 @@ def convert_polygon_to_flat_index(data, vertices):
 
 	return(flat_index)	
 
-def fk_reconstruct(data, fkdata, Mask, mu):
-	"""
-	This functions reconstructs missing signals in the f-k domain, using the original data,
-	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
-	Uses the following cost function to minimize:
-
-			J = ||dv - T F^(-1) Wv Dv ||^{2}_{2} + mu^2 ||Dv||^{2}_{2}
-			
-			J := Cost function
-			dv:= Column-wise-ordered long vector of the 2D signal d
-			DV:= Column-wise-ordered long vector of the	f-k-spectrum
-			W := Diagnoal matrix built from the column-wise-ordered long vector of Mask
-			T := Sampling matrix which maps the fully sampled desired seismic data to the available samples.
-				 For de-noising problems T = I (identity matrix)
-			mu := Trade-off parameter between misfit and model norm
-
-	Minimizing is done via a method of conjugate gradients, de-noising (1-2 iterations), reconstruction(8-10) iterations.
-								scipy.sparse.linalg.cg
-
-	:param:
-
-	returns:
-
-	:param: 
-
-	Reference:	Mostafa Naghizadeh, Seismic data interpolation and de-noising in the frequency-wavenumber
-				domain, 2012, GEOPHYSICS
-	"""
-	
-	return
 
 def makeMask(fkdata,slope):
 	"""
 	This function creates a Mask-array in shape of the original fkdata,
 	with straight lines along the angles, given in slope.
+	slope shows the position of L linear dominants in the f-k domain.
+
+	:param fkdata:
+
+	:param slope:
+
+
+	Returns 
+
+	:param W: Mask function W
 	"""
 	M = fkdata.copy()
 	
-	pnorm = 1/2. * ( float(Mt.shape[1])/float(Mt.shape[0]) )
+	pnorm = 1/2. * ( float(M.shape[0])/float(M.shape[1]) )
 	
 	prange = slope * pnorm
 
 	Mask = np.zeros(M.shape)
-	
+	W = np.zeros(M.shape)
+
 	for m in prange:
-		for f in range(Mask.shape[1]):
-			Mask[:,f] = np.roll(Mask[:,f], -int(f*m))
-		Mask[0,:] = 1.
+		
+		if m == 0.:
+			Mask[0,:] = 1.
+			Mask[1,:] = 1.
+			Mask[Mask.shape[0]-1,:] = 1.
 		for f in range(Mask.shape[1]):
 			Mask[:,f] = np.roll(Mask[:,f], int(f*m))
+		Mask[0,:] = 1.
+		for f in range(Mask.shape[1]):
+			Mask[:,f] = np.roll(Mask[:,f], -int(f*m))
 
-	returns Mask
+	# Convolving each frequency slice of the mask with a boxcar
+	# of size L. Widens the the maskfunction along k-axis.
+	b = sp.signal.boxcar(slope.size)
+	
+	for i, fslice in enumerate(Mask.conj().transpose()):
+		W[:,i] = sp.signal.convolve(fslice, b, mode=1)
 
-def slope_distribution(fkdata, prange, pdelta, peakpick='mod', delta_threshold=0):
+	W[np.where(W!=0)]=1
+
+	return W
+
+def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0):
 	"""
 	Generates a distribution of slopes in a range given in prange.
 	Needs fkdata as input. 
@@ -532,11 +527,11 @@ def slope_distribution(fkdata, prange, pdelta, peakpick='mod', delta_threshold=0
 	pmin = prange[0]
 	pmax = prange[1]
 	N = abs(pmax - pmin) / pdelta + 1
-	prange = np.linspace(pmin,pmax,N)
+	srange = np.linspace(pmin,pmax,N)
 	MofS = np.zeros(N)
-	pnorm = 1/2. * ( float(Mt.shape[1])/float(Mt.shape[0]) )
+	pnorm = 1/2. * ( float(M.shape[0])/float(M.shape[1]) )
 
-	for i, delta in enumerate(prange):
+	for i, delta in enumerate(srange):
 
 		p = delta*pnorm
 		if delta % 1 == 0 and delta != 0:
@@ -549,14 +544,14 @@ def slope_distribution(fkdata, prange, pdelta, peakpick='mod', delta_threshold=0
 			fk_shift[:,j] = np.roll(trace, shift)
 		
 		MofS[i] = sum(abs(fk_shift[0,:])) / len(fk_shift[0,:])
-	peaks_first = find_peaks(MofS, prange, peakpick)
+	peaks_first = find_peaks(MofS, srange, peakpick)
 
 	# Calculate envelope of the picked peaks, and pick the 
 	# peaks of the envelope.
 	peak_env = obsfilter.envelope(peaks_first[1])
-	peaks = find_peaks( peak_env, peaks_first[0], peaks_first[1].mean()- delta_threshold )		
+	peaks = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean()- delta_threshold )		
 	
-	return MofS, prange, peaks
+	return MofS, srange, peaks
 
 def find_peaks(data, drange=None, peakpick='mod'):
 	"""

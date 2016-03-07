@@ -425,7 +425,7 @@ def convert_polygon_to_flat_index(data, vertices):
 def makeMask(fkdata,slope):
 	"""
 	This function creates a Mask-array in shape of the original fkdata,
-	with straight lines along the angles, given in slope.
+	with straight lines (value = 1.) along the angles, given in slope and 0 everywhere else.
 	slope shows the position of L linear dominants in the f-k domain.
 
 	:param fkdata:
@@ -447,11 +447,16 @@ def makeMask(fkdata,slope):
 	W = np.zeros(M.shape)
 
 	for m in prange:
-		for f in range(Mask.shape[1]):
-			Mask[:,f] = np.roll(Mask[:,f], -int(f*m))
-		Mask[0,:] = 1.
+		
+		if m == 0.:
+			Mask[0,:] = 1.
+			Mask[1,:] = 1.
+			Mask[Mask.shape[0]-1,:] = 1.
 		for f in range(Mask.shape[1]):
 			Mask[:,f] = np.roll(Mask[:,f], int(f*m))
+		Mask[0,:] = 1.
+		for f in range(Mask.shape[1]):
+			Mask[:,f] = np.roll(Mask[:,f], -int(f*m))
 
 	# Convolving each frequency slice of the mask with a boxcar
 	# of size L. Widens the the maskfunction along k-axis.
@@ -460,6 +465,7 @@ def makeMask(fkdata,slope):
 	for i, fslice in enumerate(Mask.conj().transpose()):
 		W[:,i] = sp.signal.convolve(fslice, b, mode=1)
 
+	W[np.where(W!=0)]=1
 
 	return W
 
@@ -521,11 +527,11 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0)
 	pmin = prange[0]
 	pmax = prange[1]
 	N = abs(pmax - pmin) / pdelta + 1
-	prange = np.linspace(pmin,pmax,N)
+	srange = np.linspace(pmin,pmax,N)
 	MofS = np.zeros(N)
-	pnorm = 1/2. * ( float(Mt.shape[1])/float(Mt.shape[0]) )
+	pnorm = 1/2. * ( float(M.shape[0])/float(M.shape[1]) )
 
-	for i, delta in enumerate(prange):
+	for i, delta in enumerate(srange):
 
 		p = delta*pnorm
 		if delta % 1 == 0 and delta != 0:
@@ -538,14 +544,14 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0)
 			fk_shift[:,j] = np.roll(trace, shift)
 		
 		MofS[i] = sum(abs(fk_shift[0,:])) / len(fk_shift[0,:])
-	peaks_first = find_peaks(MofS, prange, peakpick)
+	peaks_first = find_peaks(MofS, srange, peakpick)
 
 	# Calculate envelope of the picked peaks, and pick the 
 	# peaks of the envelope.
 	peak_env = obsfilter.envelope(peaks_first[1])
-	peaks = find_peaks( peak_env, peaks_first[0], peaks_first[1].mean()- delta_threshold )		
+	peaks = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean()- delta_threshold )		
 	
-	return MofS, prange, peaks
+	return MofS, srange, peaks
 
 def find_peaks(data, drange=None, peakpick='mod'):
 	"""

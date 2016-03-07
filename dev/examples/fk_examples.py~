@@ -30,8 +30,8 @@ import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
 import sipy.filter.fk as fk
 import sipy.filter.radon as radon
 import sipy.util.fkutil as fku
-from sipy.filter.fk import fk_filter, fktrafo
-from sipy.util.fkutil import get_polygon, nextpow2, find_subsets, slope_distribution
+from sipy.filter.fk import fk_filter, fktrafo, fk_reconstruct
+from sipy.util.fkutil import get_polygon, nextpow2, find_subsets, slope_distribution, makeMask
 from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
 stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, epidist, epidist2nparray, epidist2list, \
 alignon, partial_stack, gaps_fill_zeros
@@ -45,8 +45,19 @@ attach_coordinates_to_traces(stuni, invuni, cat[0])
 delta = epidist2nparray(epidist(invuni, cat[0]))
 stuni_al = alignon(stuni.copy(), invuni, cat[0], phase='PP', maxtimewindow=350)
 
-
+stuni.remove(stuni[1])
+stuni.remove(stuni[7])
+stuni.remove(stuni[8])
+stuni.remove(stuni[9])
+stuni.remove(stuni[12])
+stuni.remove(stuni[10])
+stuni.remove(stuni[12])
+stuni.remove(stuni[11])
+ns = gaps_fill_zeros(stuni_al, invuni, cat[0])
+st = ns.copy()
 fk = fktrafo(stuni_al, invuni, cat[0])
+
+fkr = fk_reconstruct(ns, invuni, cat[0], mu=5e-2)
 M = stream2array(stuni_al)
 t_axis = np.linspace(0,stuni_al[0].stats.delta * stuni_al[0].stats.npts, stuni_al[0].stats.npts)
 
