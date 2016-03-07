@@ -53,7 +53,7 @@ stuni.remove(stuni[12])
 stuni.remove(stuni[10])
 stuni.remove(stuni[12])
 stuni.remove(stuni[11])
-ns = gaps_fill_zeros(stuni, invuni, cat[0])
+ns = gaps_fill_zeros(stuni_al, invuni, cat[0])
 st = ns.copy()
 
 fkr = fk_reconstruct(ns, invuni, cat[0], mu=5e-2)

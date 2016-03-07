@@ -445,7 +445,7 @@ def makeMask(fkdata,slope):
 
 	Mask = np.zeros(M.shape)
 	W = np.zeros(M.shape)
-	
+
 	for m in prange:
 		for f in range(Mask.shape[1]):
 			Mask[:,f] = np.roll(Mask[:,f], -int(f*m))

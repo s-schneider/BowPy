@@ -284,8 +284,16 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 
 	# Prepare arrays for cost-function.
 	dv = ArrayData.reshape(1, ArrayData.size)
-	Dv = fkData.reshape(1, fkData.size)
-	Y = np.diag( W.reshape(1, W.size)[0]) 
+	
+	# First.
+	#Dv = fkData.reshape(1, fkData.size)
+
+	#Y = np.diag( W.reshape(1, W.size)[0]) 
+
+	# Second.
+
+	Dv = fkData 
+	Y = W
 
 	T = np.zeros((ArrayData.shape[0], ArrayData.shape[0]))
 	for i,trace in enumerate(ArrayData):
