@@ -31,7 +31,7 @@ import sipy.filter.fk as fk
 import sipy.filter.radon as radon
 import sipy.util.fkutil as fku
 from sipy.filter.fk import fk_filter, fktrafo, fk_reconstruct
-from sipy.util.fkutil import get_polygon, nextpow2, find_subsets, slope_distribution, makeMask
+from sipy.util.fkutil import get_polygon, nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx
 from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
 stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, epidist, epidist2nparray, epidist2list, \
 alignon, partial_stack, gaps_fill_zeros

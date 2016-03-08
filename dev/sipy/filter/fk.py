@@ -16,7 +16,7 @@ from scipy.optimize import fmin_cg
 
 from sipy.util.array_util import array2stream, stream2array, epidist2nparray, epidist
 from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon,\
-							find_peaks, slope_distribution, makeMask
+							find_peaks, slope_distribution, makeMask, create_iFFT2mtx
 from sipy.util.base import nextpow2
 
 def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', phase=None, polygon=12, normalize=True, SSA=False):
@@ -296,14 +296,10 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 			T[i] = 1.
 	
 	Yw = sparse.diags(Y[0])
-
-	# Create sparse-matrix with iFFT operations.
 	
-	iFFTmtx = np.zeros(N).repeat(
-	indptr=np.arange(iFFTmtx.shape[0]+1)
-	indices = np.arange(iFFTmtx.shape[0])
-
-	A = sparse.bsr_matrix((iFFTmtx, indices, indptr), shape(M*N, M*N))
+	FH = 
+	# Create sparse-matrix with iFFT operations.
+	A = 
 
 	# Create callable cost-function
 
@@ -434,72 +430,3 @@ def _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=False, radius=None, maxk=
 	dsfft = line_set_zero(fkspectra, 0, radius)
 	
 	return fkspectra.conj().transpose(), period_range
-
-
-
- def create_iFFT2mtx(x):
-	"""
-	Creates the Matrixoperator for an array x.
-	"""
-
-	"""
-	MATLAB ORIGNAL
-	nx = 10;
-	ny = 4;
-
-	D  = rand(nx, ny);
-	Dv = D(:);
-	N  = length(Dv);
-
-	iDFT1 = fft(eye(nx));
-	iDFT1 = real(iDFT1) - i*imag(iDFT1);
-	iDFT2 = fft(eye(ny));
-	iDFT2 = real(iDFT2) - i*imag(iDFT2);
-
-	flname = 'IDFT1.txt';
-	fid    = fopen(flname, 'w');  
-	for ii = 1: ny
-		for jj = 1: nx
-		    fid = fopen(flname, 'a');
-		    tmp = zeros(1, nx * ny);
-		    tmp((ii-1)*nx+1: ii*nx) = iDFT1(jj, :);
-		    fprintf(fid, '%s\n', num2str(tmp(1, :), 7));
-		end
-	end
-	fclose(fid);
-
-	flname = 'IDFT2.txt';
-	fid    = fopen(flname, 'w');
-	for ii = 1: ny
-		for jj = 1: nx
-		    fid = fopen(flname, 'a');
-		    tmp = zeros(1, nx * ny);
-		    indx = (jj: nx: nx*ny);
-		    tmp(indx) = iDFT2(ii, :);
-		    fprintf(fid, '%s\n', num2str(tmp(1, :), 7));
-		end
-	end
-	fclose(fid);
-
-	%% Test the output:
-	% MATLAB built-in function:
-	d = ifft2(D);
-
-	% our dicrete operator:
-	flname1 = 'IDFT1.txt';
-	idft1 = dlmread(flname);
-	flname2 = 'IDFT2.txt';
-	idft2 = dlmread(flname);
-
-	d_ = idft2 * idft1 * Dv;
-	d_ = reshape(d_, nx, ny) / (nx*ny);
-	"""
-	iDFT1 = sp.fft(sparse.eye(x.shape[1]).conj()
-	iDFT2 = sp.fft(sparse.eye(x.shape[0]).conj()
-
-	# Create Sparse matrix, with iDFT1 x(how many times?) repeatet on the diagonal.
-	# The same with iDFT2, but different pattern, see in function
-
-	return
-
-

@@ -21,6 +21,7 @@ from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attac
 import datetime
 import scipy as sp
 import scipy.signal as signal
+from scipy import sparse
 
 """
 A collection of useful functions for handling the fk_filter and seismic data.
@@ -633,4 +634,51 @@ def find_subsets(numbers, target, bottom, top, minlen, partial=[], sets=[]):
 		for item in find_subsets(remaining, target, bottom, top, minlen, partial + [n], sets + [numbers[i]]):
 			print item
 
+def create_iFFT2mtx(x):
+	"""
+	Take advantage of the use of scipy.sparse library.
+	Creates the Matrixoperator for an array x.
+	
+	:param x: Array to calculate the Operator for
+	:type x: array-like
+
+	returns
+	:param sparse_iFFT2mtx: 2D iFFT operator for matrix of shape of x.
+	:type sparse_iFFT2mtx: scipy.sparse.csr.csr_matrix
+
+	"""
+	nx = x.shape[1]
+	ny = x.shape[0]
+	N = nx * ny
+
+	iDFT1 = sp.fft(sparse.eye( nx ).toarray()).conj()
+	iDFT2 = sp.fft(sparse.eye( ny ).toarray()).conj()
+
+	# Create Sparse matrix, with iDFT1 ny-times repeatet on the diagonal.
+
+	# Initialze lil_matrix, to write diagonals in correct way.
+	tmp = sparse.lil_matrix((N,N), dtype='complex')
+	row = 0
+	for i in range(ny):
+		for j in range(nx):
+			tmp[row, (i)*nx:(i+1)*nx] = iDFT1[j,:]
+			row += 1
+	# Export tmp to a diagonal sparse matrix.
+	sparse_iDFT1 = tmp.tocsc()
+
+	# Initialze lil_matrix for iDFT2 and export it to sparse.
+	tmp = sparse.lil_matrix((N,N), dtype='complex')
+	row = 0	
+	for i in range(ny):
+		for j in range(nx):
+			indx = np.arange(j,N,nx)
+			tmp[row,indx] = iDFT2[i,:]
+			row += 1
+
+	sparse_iDFT2 = tmp.tocsc()
+	
+	# Calculate matrix dot-product iDFT2 * iDFT1
+	sparse_iFFT2mtx = sparse_iDFT2.dot(sparse_iDFT1)
+
+	return sparse_iFFT2mtx
 
