@@ -534,11 +534,6 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0)
 	for i, delta in enumerate(srange):
 
 		p = delta*pnorm
-		if delta % 1 == 0 and delta != 0:
-			print("Calculating now slope p = %i \n" % delta )
-		elif delta == 0:
-			print("Calculating now slope p = 0 \n")
-
 		for j, trace in enumerate(Mt):
 			shift = int(math.floor(p*j))		
 			fk_shift[:,j] = np.roll(trace, shift)
@@ -637,4 +632,5 @@ def find_subsets(numbers, target, bottom, top, minlen, partial=[], sets=[]):
 		remaining = numbers[i+1:] # np.diff(numbers)[i+1:]
 		for item in find_subsets(remaining, target, bottom, top, minlen, partial + [n], sets + [numbers[i]]):
 			print item
+
 

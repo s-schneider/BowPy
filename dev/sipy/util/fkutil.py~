@@ -425,7 +425,7 @@ def convert_polygon_to_flat_index(data, vertices):
 def makeMask(fkdata,slope):
 	"""
 	This function creates a Mask-array in shape of the original fkdata,
-	with straight lines along the angles, given in slope.
+	with straight lines (value = 1.) along the angles, given in slope and 0 everywhere else.
 	slope shows the position of L linear dominants in the f-k domain.
 
 	:param fkdata:
@@ -534,11 +534,6 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0)
 	for i, delta in enumerate(srange):
 
 		p = delta*pnorm
-		if delta % 1 == 0 and delta != 0:
-			print("Calculating now slope p = %i \n" % delta )
-		elif delta == 0:
-			print("Calculating now slope p = 0 \n")
-
 		for j, trace in enumerate(Mt):
 			shift = int(math.floor(p*j))		
 			fk_shift[:,j] = np.roll(trace, shift)
