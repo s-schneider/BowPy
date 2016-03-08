@@ -289,16 +289,18 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 	dv = ArrayData.reshape(1, ArrayData.size)
 	Dv = fkData.reshape(1, fkData.size)
 	Y = W.reshape(1,W.size)
-	T = np.zeros((ArrayData.shape[0], ArrayData.shape[0]))
 
+	T = np.zeros((ArrayData.shape[0], ArrayData.shape[0]))
 	for i,trace in enumerate(ArrayData):
 		if sum(trace) == 0.:
 			T[i] = 1.
+	Tw =  T.reshape(1, T.size)
 	
 	Yw = sparse.diags(Y[0])
 	
-	FH = 
+	FH = create_iFFT2mtx(fkData.shape[0], fkData.shape[1]) 
 	# Create sparse-matrix with iFFT operations.
+	
 	A = 
 
 	# Create callable cost-function

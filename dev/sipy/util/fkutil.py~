@@ -634,7 +634,7 @@ def find_subsets(numbers, target, bottom, top, minlen, partial=[], sets=[]):
 		for item in find_subsets(remaining, target, bottom, top, minlen, partial + [n], sets + [numbers[i]]):
 			print item
 
-def create_iFFT2mtx(x):
+def create_iFFT2mtx(nx, ny):
 	"""
 	Take advantage of the use of scipy.sparse library.
 	Creates the Matrixoperator for an array x.
@@ -647,8 +647,6 @@ def create_iFFT2mtx(x):
 	:type sparse_iFFT2mtx: scipy.sparse.csr.csr_matrix
 
 	"""
-	nx = x.shape[1]
-	ny = x.shape[0]
 	N = nx * ny
 
 	iDFT1 = sp.fft(sparse.eye( nx ).toarray()).conj()

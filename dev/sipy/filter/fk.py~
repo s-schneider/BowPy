@@ -16,7 +16,7 @@ from scipy.optimize import fmin_cg
 
 from sipy.util.array_util import array2stream, stream2array, epidist2nparray, epidist
 from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon,\
-							find_peaks, slope_distribution, makeMask
+							find_peaks, slope_distribution, makeMask, create_iFFT2mtx
 from sipy.util.base import nextpow2
 
 def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', phase=None, polygon=12, normalize=True, SSA=False):
@@ -296,9 +296,10 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 			T[i] = 1.
 	
 	Yw = sparse.diags(Y[0])
-
+	
+	FH = create_iFFT2mtx(fkData.shape[1], fkData.shape[0]) 
 	# Create sparse-matrix with iFFT operations.
-	# A = 
+	#A = 
 
 	# Create callable cost-function
 
