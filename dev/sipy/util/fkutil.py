@@ -649,11 +649,8 @@ def create_iFFT2mtx(nx, ny):
 	"""
 	N = nx * ny
 
-	iF = int(math.pow(2,nextpow2(ny)+1))
-	iK = int(math.pow(2,nextpow2(nx)+1))
-
-	iDFT1 = np.fft.fft(sparse.eye(nx).toarray(), n=iK).conj()
-	iDFT2 = np.fft.fft(sparse.eye(ny).toarray(), n=iF ).conj()
+	iDFT1 = np.fft.fft(sparse.eye(nx).toarray()).conj()
+	iDFT2 = np.fft.fft(sparse.eye(ny).toarray()).conj()
 
 	# Create Sparse matrix, with iDFT1 ny-times repeatet on the diagonal.
 
@@ -682,4 +679,3 @@ def create_iFFT2mtx(nx, ny):
 	sparse_iFFT2mtx = sparse_iDFT2.dot(sparse_iDFT1)
 
 	return sparse_iFFT2mtx
-

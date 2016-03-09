@@ -241,12 +241,12 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
 	Uses the following cost function to minimize:
 
-			J = ||dv - T F^(-1) Wv Dv ||^{2}_{2} + mu^2 ||Dv||^{2}_{2}
+			J = ||dv - T FHmtx2D Yw Dv ||^{2}_{2} + mu^2 ||Dv||^{2}_{2}
 			
 			J := Cost function
 			dv:= Column-wise-ordered long vector of the 2D signal d
 			DV:= Column-wise-ordered long vector of the	f-k-spectrum
-			W := Diagnoal matrix built from the column-wise-ordered long vector of Mask
+			Yw := Diagonal matrix built from the column-wise-ordered long vector of Mask
 			T := Sampling matrix which maps the fully sampled desired seismic data to the available samples.
 				 For de-noising problems T = I (identity matrix)
 			mu := Trade-off parameter between misfit and model norm
@@ -254,6 +254,14 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 	Minimizing is done via a method of conjugate gradients, de-noising (1-2 iterations), reconstruction(8-10) iterations.
 								scipy.optimize
 								scipy.optimize.fmin_cg
+
+	T FHmtx2D Yw Dv will be formed to one matrix A, so at the end the equation has the form:
+			
+							/   A    \		  / dv \
+							|    	 | * Dv = |    |
+							\ mu * I /		  \ 0  /
+
+							  Afinal		  dfinal
 
 	:param:
 
@@ -270,14 +278,20 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 
 	# Prepare data.
 	st_tmp = st.copy()
-	ArrayData = stream2array(st_tmp, normalize=True)
-	
-	ix = ArrayData.shape[0]
-	iK = int(math.pow(2,nextpow2(ix)+1))
-	it = ArrayData.shape[1]
-	iF = int(math.pow(2,nextpow2(it)+1))
+	d = stream2array(st_tmp, normalize=True)
 
-	fkData = np.fft.fft2(ArrayData, s=(iK,iF))
+	# Example around PP.
+	ArrayData = np.zeros((d.shape[0], 80))
+	for i, trace in enumerate(d):
+		ArrayData[i,:]=trace[430:510]
+
+
+	#ix = ArrayData.shape[0]
+	#iK = int(math.pow(2,nextpow2(ix)+1))
+	#it = ArrayData.shape[1]
+	#iF = int(math.pow(2,nextpow2(it)+1))
+
+	fkData = np.fft.fft2(ArrayData)
 
 	# Calculate mask-function W.
 	print("Calculating slope distribution...\n")
@@ -290,35 +304,39 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 	Dv = fkData.reshape(1, fkData.size)
 	Y = W.reshape(1,W.size)
 
-	T = np.zeros((ArrayData.shape[0], ArrayData.shape[0]))
+	T = np.zeros((ArrayData.shape[0], ArrayData.shape[1]))
 	for i,trace in enumerate(ArrayData):
 		if sum(trace) == 0.:
 			T[i] = 1.
-	Tw =  T.reshape(1, T.size)
-	
+	T = T.reshape(1, T.size)
+	Ts = sparse.diags(T[0])
 	Yw = sparse.diags(Y[0])
 	
+	# Create sparse-matrix with iFFT operations.	
+	print("Creating iFFT2 matrix operator function...\n")
+
 	FH = create_iFFT2mtx(fkData.shape[0], fkData.shape[1]) 
-	# Create sparse-matrix with iFFT operations.
 	
-	A = 
+	# Create model matrix Afinal and data vector dfinal.
+	print("Creating final matrix A in shape of %ix%i ...\n" %(2*FH.shape[0], FH.shape[1]))	
 
-	# Create callable cost-function
-
-	def _cost_function_denoise_interpolation(x):
-		YDfft = Y * x.reshape(fkData.shape)
-		YDifft = np.fft.ifft2( YDfft, s=(iK,iF) )
-		YDifft = YDifft[0:ix, 0:it]
-		dnew = np.dot(T, YDifft)
-		dvnew = dnew.reshape(1, dnew.size)
-
-		return np.linalg.norm(dv - dvnew , 2) + mu**2. * np.linalg.norm(Dv, 2)
-
-	# Initial conditions.
+	A =  Ts.dot(FH.dot(Yw))	
+	tmp = sparse.lil_matrix((2*A.shape[0], A.shape[1]), dtype='complex')
+	tmpeye = sparse.lil_matrix(sparse.eye(A.shape[0]))
+	for i, trace in enumerate(A):
+		tmp[i,:]=trace
+	for i, trace in enumerate(tmpeye):
+		tmp[i+A.shape[0],:] = trace
+	
+	Af = tmp.copy()
+	tmp = None
+	dvf = np.array(np.append(dv, np.zeros(dv.size)))
+	
 	print("Starting reconstruction...\n")
-	x0 = Dv.reshape(1,Dv.size)
+	
+	x, res, rank, s = sp.linalg.lstsq(Af.toarray(), dvf)
 
-	return res
+	return x, res, rank, s
 
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):

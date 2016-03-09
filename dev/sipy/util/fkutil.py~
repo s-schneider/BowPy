@@ -649,8 +649,8 @@ def create_iFFT2mtx(nx, ny):
 	"""
 	N = nx * ny
 
-	iDFT1 = sp.fft(sparse.eye( nx ).toarray()).conj()
-	iDFT2 = sp.fft(sparse.eye( ny ).toarray()).conj()
+	iDFT1 = np.fft.fft(sparse.eye(nx).toarray()).conj()
+	iDFT2 = np.fft.fft(sparse.eye(ny).toarray()).conj()
 
 	# Create Sparse matrix, with iDFT1 ny-times repeatet on the diagonal.
 
