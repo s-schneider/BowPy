@@ -121,7 +121,7 @@ def fx_ssa(DATA,dt,p,flow,fhigh):
 	 [DATA_f] = fx_ssa(DATA,dt,p,flow,fhigh);
 	
 	  IN   DATA:      data (traces are columns)
-	       dt:     samplimg interval
+	       dt:     sampling interval
 	       p:      number of singular values used to reconstuct the data
 	       flow:   min  freq. in the data in Hz
 	       fhigh:  max  freq. in the data in Hz
