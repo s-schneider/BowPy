@@ -16,7 +16,7 @@ from scipy.optimize import fmin_cg
 
 from sipy.util.array_util import array2stream, stream2array, epidist2nparray, epidist
 from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon,\
-							find_peaks, slope_distribution, makeMask, create_iFFT2mtx
+							find_peaks, slope_distribution, makeMask, create_iFFT2mtx, cg_solver
 from sipy.util.base import nextpow2
 
 def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', phase=None, polygon=12, normalize=True, SSA=False):
@@ -235,7 +235,7 @@ def fktrafo(stream, inv, event, normalize=True):
 	
 	return fkdata
 
-def fk_reconstruct(st, inv, event, mu=5e-2):
+def fk_reconstruct(st, inv, event, mu=5e-2, maxiter=8):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
@@ -257,9 +257,9 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 
 	T FHmtx2D Yw Dv will be formed to one matrix A, so at the end the equation has the form:
 			
-							/   A    \		  / dv \
+							|   A    |		  | dv |
 							|    	 | * Dv = |    |
-							\ mu * I /		  \ 0  /
+							| mu * I |		  | 0  |
 
 							  Afinal		  dfinal
 
@@ -304,10 +304,10 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 	Dv = fkData.reshape(1, fkData.size)
 	Y = W.reshape(1,W.size)
 
-	T = np.zeros((ArrayData.shape[0], ArrayData.shape[1]))
+	T = np.ones((ArrayData.shape[0], ArrayData.shape[1]))
 	for i,trace in enumerate(ArrayData):
 		if sum(trace) == 0.:
-			T[i] = 1.
+			T[i] = 0.
 	T = T.reshape(1, T.size)
 	Ts = sparse.diags(T[0])
 	Yw = sparse.diags(Y[0])
@@ -333,11 +333,9 @@ def fk_reconstruct(st, inv, event, mu=5e-2):
 	dvf = np.array(np.append(dv, np.zeros(dv.size)))
 	
 	print("Starting reconstruction...\n")
-	
-	x, res, rank, s = sp.linalg.lstsq(Af.toarray(), dvf)
+	st_reconstructed = cg_solver(Af.toarray(), dvf, maxiter, Dv[0])
 
-	return x, res, rank, s
-
+	return st_reconstructed
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
 	"""

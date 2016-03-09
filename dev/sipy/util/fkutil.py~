@@ -649,8 +649,8 @@ def create_iFFT2mtx(nx, ny):
 	"""
 	N = nx * ny
 
-	iDFT1 = np.fft.fft(sparse.eye(nx).toarray()).conj()
-	iDFT2 = np.fft.fft(sparse.eye(ny).toarray()).conj()
+	iDFT1 = np.fft.fft(sparse.eye(nx).toarray().transpose()).conj().transpose()
+	iDFT2 = np.fft.fft(sparse.eye(ny).toarray().transpose()).conj().transpose()
 
 	# Create Sparse matrix, with iDFT1 ny-times repeatet on the diagonal.
 
@@ -679,4 +679,56 @@ def create_iFFT2mtx(nx, ny):
 	sparse_iFFT2mtx = sparse_iDFT2.dot(sparse_iDFT1)
 
 	return sparse_iFFT2mtx
+
+def cg_solver(A,b,niter,x0=None):
+	"""
+	Conjugate gradient solver for Ax = b lstsqs problems, as shown in Tomographic 
+	inversion via the conjugate gradient method, Scales, J. 1987
+	Expect a mxn Matrix A, a rhs b and an optional startvalue x0
+	
+	:param A:
+	:type A:
+	
+	:param b:
+	:type b:
+
+	:param x0:
+	:type x0:
+
+	:param niter:
+	:type niter:
+
+	returns
+
+	:param:
+	:type:
+	"""
+	if not x0:
+		x = np.zeros(A.shape[1])
+	else:
+		x = x0.copy()
+
+	s = np.zeros(A.shape[0])
+	r = np.zeros(A.shape[1])
+	p = np.zeros(A.shape[1])
+	q = np.zeros(A.shape[1])
+
+	s = b - np.dot(A,x)
+	r = np.dot( A.conj().transpose(), b - np.dot(A, x) )
+	p = r.copy()
+	q = np.dot(A, p)
+	
+	for k in range(niter):
+		alpha = np.dot(r,r) / np.dot(q,q)
+		x = x + alpha * p
+		s = s - alpha * q
+	
+		r_old = r.copy()
+		r = np.dot(A.conj().transpose(),s)
+		
+		beta = np.dot(r,r) / np.dot(r_old, r_old)
+		p = r + beta * p
+		q = np.dot(A, p)
+	
+	return x
 
