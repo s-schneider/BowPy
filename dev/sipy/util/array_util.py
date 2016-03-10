@@ -152,32 +152,32 @@ def attach_network_to_traces(stream, network):
 		trace.meta.network = network.code
 
 def attach_coordinates_to_traces(stream, inventory, event=None):
-    """
-    Function to add coordinates to traces.
+	"""
+	Function to add coordinates to traces.
 
-    It extracts coordinates from a :class:`obspy.station.inventory.Inventory`
-    object and writes them to each trace's stats attribute. If an event is
-    given, the distance in degree will also be attached.
+	It extracts coordinates from a :class:`obspy.station.inventory.Inventory`
+	object and writes them to each trace's stats attribute. If an event is
+	given, the distance in degree will also be attached.
 
-    :param stream: Waveforms for the array processing.
-    :type stream: :class:`obspy.core.stream.Stream`
-    :param inventory: Station metadata for waveforms
-    :type inventory: :class:`obspy.station.inventory.Inventory`
-    :param event: If the event is given, the event distance in degree will also
-     be attached to the traces.
-    :type event: :class:`obspy.core.event.Event`
-    """
-    # Get the coordinates for all stations
-    coords = {}
-    for network in inventory:
-        for station in network:
-            coords["%s.%s" % (network.code, station.code)] = \
-                {"latitude": station.latitude,
-                 "longitude": station.longitude,
-                 "elevation": station.elevation}
+	:param stream: Waveforms for the array processing.
+	:type stream: :class:`obspy.core.stream.Stream`
+	:param inventory: Station metadata for waveforms
+	:type inventory: :class:`obspy.station.inventory.Inventory`
+	:param event: If the event is given, the event distance in degree will also
+	 be attached to the traces.
+	:type event: :class:`obspy.core.event.Event`
+	"""
+	# Get the coordinates for all stations
+	coords = {}
+	for network in inventory:
+		for station in network:
+			coords["%s.%s" % (network.code, station.code)] = \
+				{"latitude": station.latitude,
+				 "longitude": station.longitude,
+				 "elevation": station.elevation}
 
-    # Calculate the event-station distances.
-    if event:
+	# Calculate the event-station distances.
+	if event:
 		event_lat = event.origins[0].latitude
 		event_lng = event.origins[0].longitude
 		event_dpt = event.origins[0].depth/1000.
@@ -186,17 +186,21 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 				value["latitude"], value["longitude"], event_lat, event_lng)
 			value["depth"] = event_dpt
 
-    # Attach the information to the traces.
-    for trace in stream:
-        station = ".".join(trace.id.split(".")[:2])
-        value = coords[station]
-        trace.stats.coordinates = AttribDict()
-        trace.stats.coordinates.latitude = value["latitude"]
-        trace.stats.coordinates.longitude = value["longitude"]
-        trace.stats.coordinates.elevation = value["elevation"]
-        if event:
-			trace.stats.distance = value["distance"]
-			trace.stats.depth = value["depth"]
+	# Attach the information to the traces.
+	for trace in stream:
+		try:
+			if trace.stats.processing in ('empty'):
+				continue
+		except:
+			station = ".".join(trace.id.split(".")[:2])
+			value = coords[station]
+			trace.stats.coordinates = AttribDict()
+			trace.stats.coordinates.latitude = value["latitude"]
+			trace.stats.coordinates.longitude = value["longitude"]
+			trace.stats.coordinates.elevation = value["elevation"]
+			if event:
+				trace.stats.distance = value["distance"]
+				trace.stats.depth = value["depth"]
 
 
 def center_of_gravity(inventory):
@@ -763,6 +767,7 @@ def gaps_fill_zeros(stream, inv, event):
 	for i, trace in enumerate(equi_data):
 		newtrace = obspy.core.trace.Trace(trace)
 		newtrace.stats.distance = grd[i]
+		newtrace.stats.processing = "empty"
 		traces.append(newtrace)
 
 	# Append data in Trace-Object

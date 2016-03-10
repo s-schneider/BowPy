@@ -276,7 +276,7 @@ def line_cut(array, stat=0):
 	Sets the array to zero, except for the stat line and the radius values around it.
 	"Cuts" one line out. 
 	"""
-	new_array = np.zeros( (len(array[0]),len(array)) )
+	new_array = np.zeros( (array.shape) ).astype('complex')
 	new_array[stat] = array[stat]
 
 	return(new_array)
@@ -703,7 +703,7 @@ def cg_solver(A,b,niter,x0=None):
 	:param:
 	:type:
 	"""
-	if not x0:
+	if not x0.any():
 		x = np.zeros(A.shape[1])
 	else:
 		x = x0.copy()

@@ -167,7 +167,7 @@ def fx_ssa(data,dt,p,flow,fhigh):
 
 	ihigh = int(math.floor(fhigh*dt*nf)+1)
 	if ihigh > math.floor(nf/2)+1:
-		ihigh = math.floor(nf/2)+1
+		ihigh = int(math.floor(nf/2)+1)
 	
 	data_FX = np.fft.fft(data, nf, axis=0)
 	data_FX_f = np.zeros(data_FX.shape).astype('complex')
