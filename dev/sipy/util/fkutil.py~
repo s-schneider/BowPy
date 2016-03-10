@@ -471,7 +471,7 @@ def makeMask(fkdata,slope):
 
 	return W
 
-def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0):
+def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0, mindist=0):
 	"""
 	Generates a distribution of slopes in a range given in prange.
 	Needs fkdata as input. 
@@ -553,7 +553,7 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0)
 	
 	peaks = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean() + delta_threshold )		
 	
-	return MofS, srange, peaks
+	return MD, srange, peaks
 
 def find_peaks(data, drange=None, peakpick='mod', mindist=0.2):
 	"""
@@ -671,6 +671,12 @@ def create_iFFT2mtx(nx, ny):
 		for j in range(nx):
 			tmp[row, (i)*nx:(i+1)*nx] = iDFT1[j,:]
 			row += 1
+
+		#Screen feedback.
+		prcnt = 50*(i+1) / float(ny)
+		print("%i %% done" % prcnt, end="\r")
+		sys.stdout.flush()	
+
 	# Export tmp to a diagonal sparse matrix.
 	sparse_iDFT1 = tmp.tocsc()
 
@@ -683,6 +689,10 @@ def create_iFFT2mtx(nx, ny):
 			tmp[row,indx] = iDFT2[i,:]
 			row += 1
 
+		prcnt = (50*(i+1) / float(ny)) + 50
+		print("%i %% done" % prcnt, end="\r")
+		sys.stdout.flush()	
+		
 	sparse_iDFT2 = tmp.tocsc()
 	
 	# Calculate matrix dot-product iDFT2 * iDFT1
@@ -713,6 +723,8 @@ def cg_solver(A,b,niter,x0=None):
 	:param:
 	:type:
 	"""
+	print("Using CG-method: \n \nInitiating matrices \n \n")
+	
 	if not x0.any():
 		x = np.zeros(A.shape[1])
 	else:
@@ -728,7 +740,11 @@ def cg_solver(A,b,niter,x0=None):
 	p = r.copy()
 	q = np.dot(A, p)
 	
+	print("Starting iterations. \n \n")
 	for k in range(niter):
+		print("Currently in iteration %i" % int(k+1), end="\r")
+		sys.stdout.flush()
+
 		alpha = np.dot(r,r) / np.dot(q,q)
 		x = x + alpha * p
 		s = s - alpha * q

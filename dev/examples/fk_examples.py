@@ -37,6 +37,10 @@ from sipy.util.array_util import get_coords, attach_network_to_traces, attach_co
 stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, epidist, epidist2nparray, epidist2list, \
 alignon, partial_stack, gaps_fill_zeros
 
+
+
+
+
 stuni = read_st("../data/synthetics_uniform/SUNEW.QHD")
 stuni.normalize()
 invuni = read_inv("../data/synthetics_uniform/SUNEW_inv.xml")
@@ -44,17 +48,12 @@ cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
 attach_network_to_traces(stuni, invuni[0])
 attach_coordinates_to_traces(stuni, invuni, cat[0])
 delta = epidist2nparray(epidist(invuni, cat[0]))
-#stuni_al = alignon(stuni.copy(), invuni, cat[0], phase='PP', maxtimewindow=350)
+
+stgap = read_st("../data/synthetics_uniform/SUGAP.QHD")
+
+
+stuni_al = alignon(stuni.copy(), invuni, cat[0], phase='PP', maxtimewindow=350)
 stuni_al=stuni.copy()
-stuni_al.remove(stuni_al[1])
-stuni_al.remove(stuni_al[7])
-stuni_al.remove(stuni_al[8])
-stuni_al.remove(stuni_al[9])
-stuni_al.remove(stuni_al[12])
-stuni_al.remove(stuni_al[10])
-stuni_al.remove(stuni_al[12])
-stuni_al.remove(stuni_al[11])
-ns = gaps_fill_zeros(stuni_al, invuni, cat[0])
 st = ns.copy()
 
 fkdata = fktrafo(stuni_al, invuni, cat[0])

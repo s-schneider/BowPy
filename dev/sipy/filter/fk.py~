@@ -3,6 +3,8 @@ import obspy
 from obspy.core.event.event import Event
 from obspy.core.inventory.inventory import Inventory
 
+import sys
+
 import numpy
 import numpy as np
 import math
@@ -276,12 +278,12 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 				event = cat[0]
 
 				#Example around PP.
-				stream_org = stream.copy()
+				stream_org = st.copy()
 				d = sipy.util.array_util.stream2array(stream_org)
-				ArrayData = np.zeros((d.shape[0], 80))
+				ArrayData = np.zeros((d.shape[0], 300))
 				for i, trace in enumerate(d):
-					ArrayData[i,:]=trace[430:510]
-				stream = sipy.util.array_utilarray2stream(d, stream_org)
+					ArrayData[i,:]=trace[400:700]
+				stream = sipy.util.array_util.array2stream(ArrayData, stream_org)
 	
 				dssa = sipy.filter.fk.fk_reconstruct(stream, mu=5e-2, maxiter=8)
 				
@@ -298,14 +300,14 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 
 	# Prepare data.
 	st_tmp = st.copy()
-	d = stream2array(st_tmp, normalize=True)
-	fkData = np.fft.fft2(d)
+	ArrayData = stream2array(st_tmp, normalize=True)
+	fkData = np.fft.fft2(ArrayData)
 
 	# Calculate mask-function W.
 	print("Calculating slope distribution...\n")
 	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick)
 	print("Creating mask function...\n")
-	W = makeMask(fkData, peaks[0])
+	W = makeMask(fkData, peaks[0][0:3])
 
 	# Initialize arrays for cost-function.
 	dv = ArrayData.reshape(1, ArrayData.size)
@@ -322,27 +324,36 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 	Yw = sparse.diags(Y[0])
 	
 	# Create sparse-matrix with iFFT operations.	
-	print("Creating iFFT2 matrix operator function...\n")
+	print("Creating iFFT2 operator as a %ix%i matrix ...\n" %(fkData.shape[0]*fkData.shape[1], fkData.shape[0]*fkData.shape[1]))	
 
 	FH = create_iFFT2mtx(fkData.shape[0], fkData.shape[1]) 
 	
 	# Create model matrix Afinal and data vector dfinal.
-	print("Creating final matrix A in shape of %ix%i ...\n" %(2*FH.shape[0], FH.shape[1]))	
+	print("Creating final  %ix%i matrix A ...\n" %(2*FH.shape[0], FH.shape[1]))	
 
 	A =  Ts.dot(FH.dot(Yw))	
 	tmp = sparse.lil_matrix((2*A.shape[0], A.shape[1]), dtype='complex')
 	tmpeye = sparse.lil_matrix(sparse.eye(A.shape[0]))
 	for i, trace in enumerate(A):
 		tmp[i,:]=trace
+
+		prcnt = 50*(i+1) / float(A.shape[0])
+		print("%i %% done" % prcnt, end="\r")
+		sys.stdout.flush()	
+
 	for i, trace in enumerate(tmpeye):
 		tmp[i+A.shape[0],:] = trace
+
+		prcnt = (50*(i+1) / float(A.shape[0]) + 50
+		print("%i %% done" % prcnt, end="\r")
+		sys.stdout.flush()	
 	
 	Af = tmp.copy()
 	tmp = None
-	dvf = np.array(np.append(dv, np.zeros(dv.size)))
+	dvf = sparse.lil_matrix(np.array(np.append(dv, np.zeros(dv.size))))
 	
 	print("Starting reconstruction...\n")
-	st_reconstructed = cg_solver(Af.toarray(), dvf, maxiter, Dv[0])
+	st_reconstructed = cg_solver(Af.toarray(), dvf.toarray()[0], maxiter, Dv[0])
 
 	return st_reconstructed
 
