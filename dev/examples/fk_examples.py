@@ -57,7 +57,7 @@ stuni_al.remove(stuni_al[11])
 ns = gaps_fill_zeros(stuni_al, invuni, cat[0])
 st = ns.copy()
 
-fkData = fktrafo(stuni_al, invuni, cat[0])
+fkdata = fktrafo(stuni_al, invuni, cat[0])
 
 fkr = fk_reconstruct(ns, invuni, cat[0], mu=5e-2)
 M = stream2array(stuni_al)

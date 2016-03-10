@@ -7,6 +7,21 @@ import scipy as sp
 from sipy.util.fkutil import nextpow2
 import sys
 
+def ssa_denoise(st, dt,p,flow,fhigh):
+	"""
+	SSA method
+	"""
+	
+	st_tmp = st.copy()
+	
+	data = stream2array(st_tmp)
+
+	data_ssa = fx_ssa(data,dt,p,flow,fhigh)
+	
+	st_ssa = arra2stream(data_ssa, st_tmp)
+	
+	return st_ssa
+
 def ssa(d,nw,p,ssa_flag):
 	"""
 	SSA: 1D Singular Spectrum Analysis for snr enhancement
@@ -167,7 +182,7 @@ def fx_ssa(data,dt,p,flow,fhigh):
 
 	ihigh = int(math.floor(fhigh*dt*nf)+1)
 	if ihigh > math.floor(nf/2)+1:
-		ihigh = math.floor(nf/2)+1
+		ihigh = int(math.floor(nf/2)+1)
 	
 	data_FX = np.fft.fft(data, nf, axis=0)
 	data_FX_f = np.zeros(data_FX.shape).astype('complex')

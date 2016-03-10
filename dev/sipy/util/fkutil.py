@@ -1,8 +1,9 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import numpy
 import numpy as np
 import math
 
+import sys
 import matplotlib
 # If using a Mac Machine, otherwitse comment the next line out:
 #matplotlib.use('TkAgg')
@@ -508,8 +509,8 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0)
 
 	returns:
 
-	:param MofS: Magnitude distribution of the slopes p
-	:type MofS: 1D array, numpy.ndarray
+	:param MD: Magnitude distribution of the slopes p
+	:type MD: 1D array, numpy.ndarray
 
 	:param prange: Range of slopes
 	:type prange: 1D array, numpy.ndarray
@@ -520,8 +521,6 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0)
 	"""
 
 	M = fkdata.copy()
-
-	#Mt = np.fft.fftshift(M.conj().transpose(), axes=1)
 	Mt = M.conj().transpose()
 	fk_shift =	np.zeros(M.shape).astype('complex')
 	
@@ -529,27 +528,34 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0)
 	pmax = prange[1]
 	N = abs(pmax - pmin) / pdelta + 1
 	srange = np.linspace(pmin,pmax,N)
-	MofS = np.zeros(N)
+	MD = np.zeros(N)
 	pnorm = 1/2. * ( float(M.shape[0])/float(M.shape[1]) )
 
+	rend = float( len(srange) )
 	for i, delta in enumerate(srange):
 
 		p = delta*pnorm
 		for j, trace in enumerate(Mt):
 			shift = int(math.floor(p*j))		
 			fk_shift[:,j] = np.roll(trace, shift)
-		
-		MofS[i] = sum(abs(fk_shift[0,:])) / len(fk_shift[0,:])
-	peaks_first = find_peaks(MofS, srange, peakpick)
+		MD[i] = sum(abs(fk_shift[0,:])) / len(fk_shift[0,:])
+
+		prcnt = 100*(i+1) / rend
+		print("%i %% done" % prcnt, end="\r")
+		sys.stdout.flush()	
+
+	MDconv = sp.signal.convolve(MD, sp.signal.boxcar(int(abs(pmin-pmax)/3)),mode=1)
+	peaks_first = find_peaks(MDconv, srange, peakpick='All', mindist=0.3)
 
 	# Calculate envelope of the picked peaks, and pick the 
 	# peaks of the envelope.
-	peak_env = obsfilter.envelope(peaks_first[1])
-	peaks = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean()- delta_threshold )		
+	peak_env = obsfilter.envelope( peaks_first[1] )
+	
+	peaks = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean() + delta_threshold )		
 	
 	return MofS, srange, peaks
 
-def find_peaks(data, drange=None, peakpick='mod'):
+def find_peaks(data, drange=None, peakpick='mod', mindist=0.2):
 	"""
 	Finds peaks in given 1D array, by search for values in data
 	that are higher than the two neighbours. Except first and last.
@@ -570,18 +576,29 @@ def find_peaks(data, drange=None, peakpick='mod'):
 		if peakpick in ['mod', 'MoD', 'Mod', 'MoP', 'Mop', 'mop']:
 			if value > data[p] and value > data[p+2] and value > data.mean():
 				pick = data[p+1]
+
 		elif isinstance(peakpick, float) or isinstance(peakpick, int):
 			if value > data[p] and value > data[p+2] and value > peakpick:
 				pick = data[p+1]
+
+		elif peakpick in ['all', 'All', 'AlL', 'ALl', 'ALL']:
+			if value > data[p] and value > data[p+2]:
+				pick = data[p+1]
+			elif value < data[p] and value < data[p+2]:
+				pick = data[p+1]
+
 		elif not peakpick:
 			if value > data[p] and value > data[p+2]:
 				pick = data[p+1]
+
 		if pick:		
-			try:		
+			if len(pos)>0 and abs(pos[len(pos)-1] - drange[p+1]) <= mindist:
+				pick = None
+				continue
+			else:		
 				pos.append(drange[p+1])			
 				peak.append(pick)
-			except:
-				peak.append(pick)
+
 			pick = None
 
 	peak = np.array(peak)
@@ -592,21 +609,14 @@ def find_peaks(data, drange=None, peakpick='mod'):
 		newpos = []
 		for i, value in enumerate(peak):
 			if value > peak.mean():
-				try:
-					newpeak.append(value)
-					newpos.append(pos[i])
-				except:
-					newpeak.append(value)
-		try:
-			peaks = np.append([newpos], [newpeak], axis=0)
-		except:
-			peaks = np.array(newpeak)
+				newpeak.append(value)
+				newpos.append(pos[i])
+
+
+		peaks = np.append([newpos], [newpeak], axis=0)
 
 	else:
-		try:
-			peaks = np.append([pos], [peak], axis=0)
-		except:
-			peaks = np.array(peak)		
+		peaks = np.append([pos], [peak], axis=0)
 
 	return peaks
 
@@ -632,7 +642,7 @@ def find_subsets(numbers, target, bottom, top, minlen, partial=[], sets=[]):
 	for i, n in enumerate(numbers): #np.diff(numbers)):
 		remaining = numbers[i+1:] # np.diff(numbers)[i+1:]
 		for item in find_subsets(remaining, target, bottom, top, minlen, partial + [n], sets + [numbers[i]]):
-			print item
+			print(item)
 
 def create_iFFT2mtx(nx, ny):
 	"""

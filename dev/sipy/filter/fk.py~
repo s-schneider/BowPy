@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import obspy
 from obspy.core.event.event import Event
 from obspy.core.inventory.inventory import Inventory
@@ -21,12 +21,10 @@ from sipy.util.base import nextpow2
 
 def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', phase=None, polygon=12, normalize=True, SSA=False):
 	"""
-	At this point prework with programs like seismic handler or SAC is needed to perform correctly
-
-
 	Import stream, the function applies an 2D FFT, removes a certain window around the
 	desired phase to surpress a slownessvalue corresponding to a wavenumber and applies an 2d iFFT.
-	To fill the gap between uneven distributed stations use the SSA algorithm.
+	To fill the gap between uneven distributed stations use array_util.gaps_fill_zeros(). A method to interpolate the signals in the
+	fk-domain is beeing build, also a method using a norm minimization method.
 	Alternative is an nonequidistant 2D Lombard-Scargle transformation.
 
 	param st: Stream
@@ -235,7 +233,7 @@ def fktrafo(stream, inv, event, normalize=True):
 	
 	return fkdata
 
-def fk_reconstruct(st, inv, event, mu=5e-2, maxiter=8):
+def fk_reconstruct(st, mu=5e-2, maxiter=8):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
@@ -269,29 +267,39 @@ def fk_reconstruct(st, inv, event, mu=5e-2, maxiter=8):
 
 	:param: 
 
+	Example:
+				from obspy import read as read_st
+				import sipy
+				
+				stream = read_st("../data/synthetics_uniform/SUNEW.QHD")
+
+				event = cat[0]
+
+				#Example around PP.
+				stream_org = stream.copy()
+				d = sipy.util.array_util.stream2array(stream_org)
+				ArrayData = np.zeros((d.shape[0], 80))
+				for i, trace in enumerate(d):
+					ArrayData[i,:]=trace[430:510]
+				stream = sipy.util.array_utilarray2stream(d, stream_org)
+	
+				dssa = sipy.filter.fk.fk_reconstruct(stream, mu=5e-2, maxiter=8)
+				
+				stream_ssa = sipy.util.array_util.array2stream(dssa, stream)
+
+				sipy.util.fkutil.plot(stream_ssa)
+
 	Reference:	Mostafa Naghizadeh, Seismic data interpolation and de-noising in the frequency-wavenumber
 				domain, 2012, GEOPHYSICS
 	"""
 	peakpick = None
 	deltaslope = 0.05
-	slopes = [-10,10]
+	slopes = [-10,15]
 
 	# Prepare data.
 	st_tmp = st.copy()
 	d = stream2array(st_tmp, normalize=True)
-
-	# Example around PP.
-	ArrayData = np.zeros((d.shape[0], 80))
-	for i, trace in enumerate(d):
-		ArrayData[i,:]=trace[430:510]
-
-
-	#ix = ArrayData.shape[0]
-	#iK = int(math.pow(2,nextpow2(ix)+1))
-	#it = ArrayData.shape[1]
-	#iF = int(math.pow(2,nextpow2(it)+1))
-
-	fkData = np.fft.fft2(ArrayData)
+	fkData = np.fft.fft2(d)
 
 	# Calculate mask-function W.
 	print("Calculating slope distribution...\n")
@@ -309,6 +317,7 @@ def fk_reconstruct(st, inv, event, mu=5e-2, maxiter=8):
 		if sum(trace) == 0.:
 			T[i] = 0.
 	T = T.reshape(1, T.size)
+
 	Ts = sparse.diags(T[0])
 	Yw = sparse.diags(Y[0])
 	
