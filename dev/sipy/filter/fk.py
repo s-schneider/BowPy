@@ -309,6 +309,7 @@ def fk_reconstruct(st, inv, event, mu=5e-2, maxiter=8):
 		if sum(trace) == 0.:
 			T[i] = 0.
 	T = T.reshape(1, T.size)
+
 	Ts = sparse.diags(T[0])
 	Yw = sparse.diags(Y[0])
 	

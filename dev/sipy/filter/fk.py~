@@ -304,10 +304,10 @@ def fk_reconstruct(st, inv, event, mu=5e-2, maxiter=8):
 	Dv = fkData.reshape(1, fkData.size)
 	Y = W.reshape(1,W.size)
 
-	T = np.zeros((ArrayData.shape[0], ArrayData.shape[1]))
+	T = np.ones((ArrayData.shape[0], ArrayData.shape[1]))
 	for i,trace in enumerate(ArrayData):
 		if sum(trace) == 0.:
-			T[i] = 1.
+			T[i] = 0.
 	T = T.reshape(1, T.size)
 	Ts = sparse.diags(T[0])
 	Yw = sparse.diags(Y[0])

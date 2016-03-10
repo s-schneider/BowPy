@@ -1,11 +1,11 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import numpy
 import numpy as np
 from numpy import dot
 import math
 import scipy as sp
 from sipy.util.fkutil import nextpow2
-
+import sys
 
 def ssa(d,nw,p,ssa_flag):
 	"""
@@ -72,38 +72,38 @@ def ssa(d,nw,p,ssa_flag):
 		raise TypeError
 
 	nt = d.size
-	N = nt-nw+1
+	N = int(nt-nw+1)
 	l = np.arange(0,nw,1)
 	R = np.zeros((nt,p))
 
  	# Make Hankel Matrix.
-	M = np.zeros((N-1,N))
-	Mp = np.zeros((N-1,N))
+	M = np.zeros((N-1,N)).astype('complex')
+	Mp = np.zeros((N-1,N)).astype('complex')
 
 	for k in range(N):
 		M[:,k] = d[k+l]
 
  	# Eigenimage decomposition
 
- 	U,S,V = sp.linalg.svd(M)
+	U,S,V = sp.linalg.svd(M)
 	
 
 
-	 # Reconstruct with one oscillatory component at the time.
+	# Reconstruct with one oscillatory component at the time.
 	if not ssa_flag == 0:
 	 	for k in range(p):
-			u = np.zeros((N-1,2))
+			u = np.zeros((N-1,2)).astype('complex')
 	 		u[:,0] = U[:,k]
-	 		Mp = dot( dot(u, u.transpose()), M )
+	 		Mp = dot( dot(u, u.conj().transpose()), M )
 	 		R[:,k] = average_anti_diag(Mp)
 	 	dp = sum(d)
 
 	else:
 	 	
 		for k in range(p):
-			u = np.zeros((N-1,2))
+			u = np.zeros((N-1,2)).astype('complex')
 			u[:,0] = U[:,k]
-			Mp = Mp + dot( dot(u, u.transpose()), M )
+			Mp = Mp + dot( dot(u, u.conj().transpose()), M )
 
 		R = None
 		dp = average_anti_diag(Mp)
@@ -113,21 +113,21 @@ def ssa(d,nw,p,ssa_flag):
 
 	return(dp,sing,R)
 
-def fx_ssa(DATA,dt,p,flow,fhigh):
+def fx_ssa(data,dt,p,flow,fhigh):
 	"""
 	FX_SSA: Singular Spectrum Analysis in the fx domain for snr enhancement
 	
 	
-	 [DATA_f] = fx_ssa(DATA,dt,p,flow,fhigh);
+	 [data_f] = fx_ssa(data,dt,p,flow,fhigh);
 	
-	  IN   DATA:      data (traces are columns)
+	  IN   data:      data (traces are columns)
 	       dt:     sampling interval
 	       p:      number of singular values used to reconstuct the data
 	       flow:   min  freq. in the data in Hz
 	       fhigh:  max  freq. in the data in Hz
 	
 	
-	  OUT  DATA_f:  filtered data
+	  OUT  data_f:  filtered data
 	
 	  Example:
 	
@@ -156,36 +156,48 @@ def fx_ssa(DATA,dt,p,flow,fhigh):
 	  GNU General Public License for more details: http://www.gnu.org/licenses/
 	
 	"""
-	nt, ntraces = DATA.shape
+	nt, ntraces = data.shape
 	nf = 2 * 2 ** nextpow2(nt)
-	
-	DATA_FX_f = np.zeros((nf, ntraces))
+
 	# First and last samples of the DFT.
 
-	ilow = math.floor(fhigh*dt*nf)+1
-	
+	ilow = int(math.floor(flow*dt*nf)+1)
+	if ilow < 1:
+		ilow = 1
+
+	ihigh = int(math.floor(fhigh*dt*nf)+1)
 	if ihigh > math.floor(nf/2)+1:
 		ihigh = math.floor(nf/2)+1
 	
-	DATA_FX = np.fft.fft(DATA,nf,0)
-	DATA_FX = np.zeros(DATA_FX.shape)
+	data_FX = np.fft.fft(data, nf, axis=0)
+	data_FX_f = np.zeros(data_FX.shape).astype('complex')
 	
-	nw = math.floor(ntraces/2)
+	nw = int(math.floor(ntraces/2))
 
+	print("		Loop through frequencies \n")
+	i=1
 	for k in range(ilow,ihigh+1):
-		tmp = DATA_FX[k-1,:].conj().transpose()
+		rend = len(range(ilow,ihigh+1))
+		prcnt = 100*i/rend
+		print("		%i %% done" % (prcnt), end="\r")
+		sys.stdout.flush()
+
+		tmp = data_FX[k-1,:].transpose()
 		
-	for j in range(10):
-		tmp_out = ssa(tmp,nw,p,0)
-		tmp = tmp_out
-	
-	for k in range(nf/2+2, nf+1):
-		DATA_FX_f[k,:] = DATA_FX_f[nf-k+2,:].conj()
+		for j in range(10):
+			tmp_out = ssa(tmp,nw,p,0)[0]
+			tmp = tmp_out
+
+		data_FX_f[k-1,:] = tmp_out
+		i+=1
+
+	for k in range(nf/2+2, nf):
+		data_FX_f[k-1,:] = data_FX_f[nf-k+1,:].conj()
 		
-	DATA_f = np.fft.ifft(DATA_FX_f, axis=0).real
-	DATA_f = DATA_f[0:nt,:]
+	data_f = np.fft.ifft(data_FX_f, axis=0)
+	data_f = data_f[0:nt,:].real
 	
-	return DATA_f
+	return data_f
 
 def average_anti_diag(A):
 	"""
@@ -229,7 +241,7 @@ def average_anti_diag(A):
 
  	N = m+n-1
 
- 	s = np.zeros(N)
+ 	s = np.zeros(N).astype('complex')
 
  	for i in range(N):
 		a = max(1,(i+1)-m+1)

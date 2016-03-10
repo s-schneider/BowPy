@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import scipy as sp
 import scipy.signal as signal
+import scipy.io as sio
 
 import os
 import datetime
@@ -43,8 +44,8 @@ cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
 attach_network_to_traces(stuni, invuni[0])
 attach_coordinates_to_traces(stuni, invuni, cat[0])
 delta = epidist2nparray(epidist(invuni, cat[0]))
-stuni_al = alignon(stuni.copy(), invuni, cat[0], phase='PP', maxtimewindow=350)
-
+#stuni_al = alignon(stuni.copy(), invuni, cat[0], phase='PP', maxtimewindow=350)
+stuni_al=stuni.copy()
 stuni_al.remove(stuni_al[1])
 stuni_al.remove(stuni_al[7])
 stuni_al.remove(stuni_al[8])
