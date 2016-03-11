@@ -628,6 +628,9 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 	returns: 
 	:param bin_data: partial stacked data of the array in no_of_bins uniform distributed stacks
 	:type bin_data: array
+
+	Author: S. Schneider, 2016
+	Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
 	"""
 
 	st_tmp = st.copy()
@@ -765,6 +768,9 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 				inv = obspy.read_inventory("../data/synthetics_uniform/SUNEW_inv.xml")
 				cat = obspy.read_events("../data/synthetics_random/SRNEW_cat.xml")
 				vespagram = vespagram(stream, inv, cat[0], 3., 12., 0.1, power=4., plot='contour')
+
+	Author: S. Schneider, 2016
+	Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
 	"""
 
 	# Prepare and convert objects.
