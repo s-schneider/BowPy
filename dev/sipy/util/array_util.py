@@ -13,6 +13,7 @@ import warnings
 import obspy
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 #from mpl_toolkits.basemap import Basemap
 from matplotlib.ticker import MaxNLocator
 
@@ -20,7 +21,7 @@ from obspy import UTCDateTime, Stream, Inventory
 from obspy.core.event.event import Event
 from obspy.core.inventory.network import Network
 from obspy.core import AttribDict
-from obspy.geodetics.base import locations2degrees, gps2DistAzimuth, \
+from obspy.geodetics.base import locations2degrees, gps2dist_azimuth, \
    kilometer2degrees
 from obspy.taup import TauPyModel
 from obspy.taup import getTravelTimes
@@ -234,13 +235,15 @@ def aperture(inventory):
         for j in range(len(lats)):
             if lats[i] == lats[j]:
                 continue
-            distances.append(gps2DistAzimuth(lats[i],lngs[i],
+            distances.append(gps2dist_azimuth(lats[i],lngs[i],
                 lats[j],lngs[j])[0] / 1000.0)
     return max(distances)
 
 def find_closest_station(inventory, latitude, longitude,
                          absolute_height_in_km=0.0):
     """
+	If Station has latitude value of 0 check again!
+
     Calculates closest station to a given latitude, longitude and absolute_height_in_km
     param latitude: latitude of interest, in degrees
     type latitude: float
@@ -259,7 +262,7 @@ def find_closest_station(inventory, latitude, longitude,
     z = absolute_height_in_km
 
     for i in range(len(lats)):
-        distance = np.sqrt( ((gps2DistAzimuth(lats[i], lngs[i], x, y)[0]) / 1000.0) ** 2  + ( np.abs( np.abs(z) - np.abs(hgt[i]))) ** 2 )
+        distance = np.sqrt( ((gps2dist_azimuth(lats[i], lngs[i], x, y)[0]) / 1000.0) ** 2  + ( np.abs( np.abs(z) - np.abs(hgt[i]))) ** 2 )
         if min_distance is None or distance < min_distance:
             min_distance = distance
             min_distance_station = inventory[0][i].code
@@ -489,8 +492,6 @@ def shift2ref(array, tref, tshift, mtw=None, method='normal'):
 
 	trace=array.copy()
 	# if mtw is set 
-	
-
 	try:
 		tmin = tref - int(mtw/2.)
 		tmax = tref + int(mtw/2.)
@@ -565,27 +566,26 @@ def stack(data, order=None):
 	"""
 
 	i, j = data.shape
-	x = np.zeros(j)
-
+	vNth = 0
 	# if order is not None	
 	try:
  		order = float(order)
-		for trace in data:
-			sgnps = np.sign(x)
-			sgnst = np.sign(trace)
-			x = sgnps * (abs(x)**(1./order)) + \
-				sgnst *(abs(trace)**(1./order))
+		
+		datasgn = np.sign(data)
+		dataNth = abs(data)**(1./order)
+		for i,trNth in enumerate(dataNth):
+			vNth = vNth + datasgn[i] * trNth
 
-		sgn = np.sign(x)
-		x = sgn * ( ( abs(x) / data.shape[0] ) ** order)
+		vsgn = np.sign(vNth)
+		v = vsgn * abs(vNth)**order		
 
 	except TypeError:
 
 		for trace in data:
-			x = x + trace
-		x = x / data.shape[0]
+			v = v + trace
+		v = v / data.shape[0]
 
-	return x
+	return v
 
 
 def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
@@ -718,6 +718,159 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 					bin_data[i] = stack(stack_arr, order)
 
 	return bin_data
+
+def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, markphases=['ttall']):
+	"""
+	Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
+	and if set a plot.
+
+	:param st: Stream
+	:type st: obspy.core.stream.Stream
+
+	:param inv: inventory
+	:type inv: obspy.station.inventory.Inventory
+
+	:param event: Event
+	:type event: obspy.core.event.Event
+
+	:param slomin: Minimum of slowness range.
+	:type slomin: int, float
+	
+	:param slomax: Maximum of slowness range.
+	:type slomax: int, float
+	
+	:param slostep: Slowness stepsize.
+	:type slostep: int
+	
+	:param power: Order of Nth-root stack, if None, just a linear stack is performed.
+	:type power: float
+	
+	:param plot: If True, a figure is plottet with all theoretical arrivals, if set to 'contour'
+				 a contour-plot is created.
+	:type plot: bool or string.
+	
+	:param markphases: Which phases should be marked, default is 'ttall', to mark all possible.
+	:type markphases: list
+
+
+	returns:
+
+	:param vespa: The calculated Vespagram
+	:type vespa: numpy.ndarray
+
+	example:	import obspy
+				from sipy.util.array_util import vespagram
+
+				stream = obspy.read("../data/synthetics_uniform/SUNEW.QHD")
+				inv = obspy.read_inventory("../data/synthetics_uniform/SUNEW_inv.xml")
+				cat = obspy.read_events("../data/synthetics_random/SRNEW_cat.xml")
+				vespagram = vespagram(stream, inv, cat[0], 3., 12., 0.1, power=4., plot='contour')
+	"""
+
+	# Prepare and convert objects.
+	st = stream.copy()
+	data = stream2array(st, normalize=True)
+	yinfo = epidist2nparray(epidist(inv, event, st))
+	dx = (yinfo.max() - yinfo.min() + 1) / yinfo.size
+	dsample = st[0].stats.delta
+	Nsample = st[0].stats.npts
+
+	# Prepare slownessrange, and allocate space in memory.
+	uN = (slomax - slomin) / slostep
+	urange = np.linspace(slomin, slomax, uN)
+	vespa = np.zeros( (uN, data.shape[1]) )
+	shift_data_tmp = np.zeros(data.shape)
+	
+	center = geometrical_center(inv)
+	
+	cstat =  find_closest_station(inv, center['latitude'], center['longitude'])
+	
+	for i, trace in enumerate(st):
+		if trace.stats.station in [cstat]:
+			sref=i
+	
+	# Loop over all slownesses.
+	for i, u in enumerate(urange):		
+		for j,trace in enumerate(data):
+			if j > sref:
+				tshift = abs(sref-j) * dx * u
+				sshift = int(tshift / dsample)
+				shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, sshift, method='FFT')
+			elif j < sref:
+				tshift = abs(sref-j) * dx * u
+				sshift = int(tshift / dsample)
+				shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, -sshift, method='FFT')
+			elif j == sref:
+				shift_data_tmp[j,:] = trace
+		
+		vespa[i,:] = stack(shift_data_tmp, order=power)
+
+	vespa = vespa/vespa.max()		
+
+				
+
+
+	# Plotting routine
+	if plot:
+		RE = 6371.0
+		REdeg = kilometer2degrees(RE)
+		origin = event.origins[0]['time']
+		depth = event.origins[0]['depth']/1000.
+		m = TauPyModel('ak135')
+		yinfo = st[sref].stats.distance
+		arrival =  m.get_travel_times(depth, yinfo, phase_list=markphases)
+		
+		try:
+			plt.title(r'Vespagram of power %i in range from %i to %i $\frac{s}{deg}$' %(power, slomin, slomax), fontsize=15 )
+		except:
+			plt.title(r'Linear vespagram in range from %i to %i $\frac{s}{deg}$' %(slomin, slomax), fontsize=15 )
+		taxis = np.arange(data.shape[1]) * dsample
+		
+		# Do the contour plot of the Vespagram.
+		if plot in ['contour', 'Contour']:
+			plt.xlabel(r'Time in s', fontsize=15)
+			plt.ylabel(r'Ray parameter in $\frac{deg}{s}$', fontsize=15)
+			plt.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()), origin='lower')
+
+			for phase in arrival:
+				t = phase.time
+				phase_time = origin + t - st[sref].stats.starttime
+				Phase_npt = int(phase_time/st[sref].stats.delta)
+				tPhase = Phase_npt * st[sref].stats.delta
+				name = phase.name
+				sloPhase = phase.ray_param_sec_degree
+				if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
+					continue
+				plt.plot(tPhase, sloPhase, 'x')
+				plt.annotate('%s' % name, xy=(tPhase,sloPhase))
+
+			plt.colorbar()
+
+		# Plot all the traces of the Vespagram.
+		else:
+			plt.ylim(urange[0]-0.5, urange[urange.size-1]+0.5)
+			plt.xticks(np.arange(taxis[0], taxis[taxis.size-1], 100))
+			plt.xlabel(r'Time in s')
+			plt.ylabel(r'Ray parameter in $\frac{deg}{s}$')
+			for i, trace in enumerate(vespa):
+				plt.plot(taxis, trace+ urange[i], color='black')
+
+			for phase in arrival:
+				t = phase.time
+				phase_time = origin + t - st[sref].stats.starttime
+				Phase_npt = int(phase_time/st[sref].stats.delta)
+				tPhase = Phase_npt * st[sref].stats.delta
+				name = phase.name
+				sloPhase = phase.ray_param_sec_degree
+				if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
+					continue
+				plt.plot(tPhase, sloPhase, 'x')
+				plt.annotate('%s' % name, xy=(tPhase+1,sloPhase))
+
+		plt.show()
+
+	return vespa
+
 
 def gaps_fill_zeros(stream, inv, event):
 	"""

@@ -54,7 +54,7 @@ stgap = read_st("../data/synthetics_uniform/SUGAP.QHD")
 
 stuni_al = alignon(stuni.copy(), invuni, cat[0], phase='PP', maxtimewindow=350)
 stuni_al=stuni.copy()
-st = ns.copy()
+st = stuni_al.copy()
 
 fkdata = fktrafo(stuni_al, invuni, cat[0])
 
@@ -246,7 +246,7 @@ with open( qstfile, "w") as fh:
 			print(name)
 			x.append(ins.Receiver(latitude="0", longitude=str(slon), network="LA", station=name ))
 			latdiff = gps2dist_azimuth(0.1,0,0.1,slon)[0]/1000.
-			fh.write("%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, lon, latdiff))
+			fh.write("%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))
 			k+=1	
 	else:
 		for i, slon in enumerate(randrange):

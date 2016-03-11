@@ -303,6 +303,11 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 	ArrayData = stream2array(st_tmp, normalize=True)
 	fkData = np.fft.fft2(ArrayData)
 
+	
+	if ArrayData.shape[1] > 300:
+		msg="Data sample to big, no sufficient memory!"
+	raise MemoryError(msg)
+
 	# Calculate mask-function W.
 	print("Calculating slope distribution...\n")
 	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick)
