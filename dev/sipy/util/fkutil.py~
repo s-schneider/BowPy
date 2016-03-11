@@ -88,10 +88,12 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 		depth = event.origins[0]['depth']/1000.
 		isinv = True
 		isevent = True
-
+	yold=0
 	for j, trace in enumerate(data):
-		y_dist = st[j].stats.distance
-		
+		try:
+			y_dist = st[j].stats.distance
+		except:
+			y_dist = yold + 1
 		if markphase and isinv and isevent:
 			origin = event.origins[0]['time']
 			m = TauPyModel('ak135')
@@ -114,8 +116,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 
 		elif markphase and not isinv and not isevent:
 			msg='Markphase needs Inventory and Event Information, not found.'
-			raise IOError(msg)
-
+			raise IOError(msg)		
+		
 		else:
 
 			if yinfo:
@@ -132,8 +134,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 				plt.gca().yaxis.set_major_locator(plt.NullLocator())
 				plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
 				plt.plot(t_axis,zoom*trace+ spacing*j, color='black')			
-
-
+		
+		yold = y_dist
 	plt.show()
 
 def plot_data(data, zoom=1, y_dist=1, bins=None):
@@ -544,14 +546,14 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0,
 		print("%i %% done" % prcnt, end="\r")
 		sys.stdout.flush()	
 
-	MDconv = sp.signal.convolve(MD, sp.signal.boxcar(int(abs(pmin-pmax)/3)),mode=1)
+	MDconv = sp.signal.convolve(MD, sp.signal.boxcar(int(abs(pmin-pmax)/2)),mode=1)
 	peaks_first = find_peaks(MDconv, srange, peakpick='All', mindist=0.3)
 
 	# Calculate envelope of the picked peaks, and pick the 
 	# peaks of the envelope.
 	peak_env = obsfilter.envelope( peaks_first[1] )
 	
-	peaks = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean() + delta_threshold )		
+	peaks = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean() + delta_threshold)		
 	
 	return MD, srange, peaks
 
@@ -723,7 +725,7 @@ def cg_solver(A,b,niter,x0=None):
 	:param:
 	:type:
 	"""
-	print("Using CG-method: \n \nInitiating matrices \n \n")
+	print("--- Using CG-method --- \n \nInitiating matrices... \n \n")
 	
 	if not x0.any():
 		x = np.zeros(A.shape[1])
@@ -735,14 +737,14 @@ def cg_solver(A,b,niter,x0=None):
 	p = np.zeros(A.shape[1])
 	q = np.zeros(A.shape[1])
 
-	s = b - np.dot(A,x)
-	r = np.dot( A.conj().transpose(), b - np.dot(A, x) )
+	s = b - np.dot(A,x).real
+	r = np.dot( A.conj().transpose(), b - np.dot(A, x).real )
 	p = r.copy()
-	q = np.dot(A, p)
+	q = np.dot(A, p).real
 	
 	print("Starting iterations. \n \n")
 	for k in range(niter):
-		print("Currently in iteration %i" % int(k+1), end="\r")
+		#print("Currently in iteration %i" % int(k+1), end="\r")
 		sys.stdout.flush()
 
 		alpha = np.dot(r,r) / np.dot(q,q)
@@ -750,11 +752,15 @@ def cg_solver(A,b,niter,x0=None):
 		s = s - alpha * q
 	
 		r_old = r.copy()
-		r = np.dot(A.conj().transpose(),s)
+		r = np.dot(A.conj().transpose(),s).real
 		
 		beta = np.dot(r,r) / np.dot(r_old, r_old)
 		p = r + beta * p
-		q = np.dot(A, p)
+		q = np.dot(A, p).real
+		misfit = np.linalg.norm( np.dot(A, x).real - b, 2)
+		print("Misfit after %i iterations is : %f \n" % (int(k+1), misfit) )
 	
-	return x
+	mnorm = np.linalg.norm(x, 2)
+	
+	return x, misfit, mnorm
 

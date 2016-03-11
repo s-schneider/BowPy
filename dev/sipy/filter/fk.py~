@@ -251,10 +251,8 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 				 For de-noising problems T = I (identity matrix)
 			mu := Trade-off parameter between misfit and model norm
 
-	Minimizing is done via a method of conjugate gradients, de-noising (1-2 iterations), reconstruction(8-10) iterations.
-								scipy.optimize
-								scipy.optimize.fmin_cg
 
+	Minimizing is done via a method of conjugate gradients, de-noising (1-2 iterations), reconstruction(8-10) iterations.
 	T FHmtx2D Yw Dv will be formed to one matrix A, so at the end the equation has the form:
 			
 							|   A    |		  | dv |
@@ -274,8 +272,6 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 				import sipy
 				
 				stream = read_st("../data/synthetics_uniform/SUNEW.QHD")
-
-				event = cat[0]
 
 				#Example around PP.
 				stream_org = st.copy()
@@ -300,42 +296,47 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 
 	# Prepare data.
 	st_tmp = st.copy()
-	ArrayData = stream2array(st_tmp, normalize=True)
-	fkData = np.fft.fft2(ArrayData)
+	ArrayData= stream2array(st_tmp, normalize=True)
+	ADT = ArrayData.copy().tranpose()
 
-	
-	if ArrayData.shape[1] > 300:
+	fkData = np.fft.fft2(ArrayData)
+	fkDT = fkData.transpose()
+
+	# Implement automatic method, to cut into N 300 npts samples.
+	# Iterate over those.
+	if ADT.shape[1] > 300:
 		msg="Data sample to big, no sufficient memory!"
-	raise MemoryError(msg)
+		raise MemoryError(msg)
 
 	# Calculate mask-function W.
 	print("Calculating slope distribution...\n")
 	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick)
 	print("Creating mask function...\n")
-	W = makeMask(fkData, peaks[0][0:3])
+	W = makeMask(fkData, peaks[0][::2])
 
 	# Initialize arrays for cost-function.
-	dv = ArrayData.reshape(1, ArrayData.size)
-	Dv = fkData.reshape(1, fkData.size)
-	Y = W.reshape(1,W.size)
+	dv = ArrayData.reshape(1, ArrayData.size)[0]
+	Dv = fkData.reshape(1, fkData.size)[0]
+	Y = W.reshape(1,W.size)[0]
 
 	T = np.ones((ArrayData.shape[0], ArrayData.shape[1]))
 	for i,trace in enumerate(ArrayData):
 		if sum(trace) == 0.:
 			T[i] = 0.
-	T = T.reshape(1, T.size)
+	T = T.reshape(1, T.size)[0]
 
-	Ts = sparse.diags(T[0])
-	Yw = sparse.diags(Y[0])
+	Ts = sparse.diags(T)
+	Yw = sparse.diags(Y)
 	
 	# Create sparse-matrix with iFFT operations.	
 	print("Creating iFFT2 operator as a %ix%i matrix ...\n" %(fkData.shape[0]*fkData.shape[1], fkData.shape[0]*fkData.shape[1]))	
 
 	FH = create_iFFT2mtx(fkData.shape[0], fkData.shape[1]) 
-	
-	# Create model matrix Afinal and data vector dfinal.
-	print("Creating final  %ix%i matrix A ...\n" %(2*FH.shape[0], FH.shape[1]))	
+	print("done\n")
 
+	# Create model matrix Afinal and data vector dfinal.
+	print("Creating sparse %ix%i matrix A ...\n" %(2*FH.shape[0], FH.shape[1]))	
+	
 	A =  Ts.dot(FH.dot(Yw))	
 	tmp = sparse.lil_matrix((2*A.shape[0], A.shape[1]), dtype='complex')
 	tmpeye = sparse.lil_matrix(sparse.eye(A.shape[0]))
@@ -352,15 +353,19 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 		prcnt = (50*(i+1) / float(A.shape[0])) + 50
 		print("%i %% done" % prcnt, end="\r")
 		sys.stdout.flush()	
-	
+	print("done\n")
+
+	print("Creating final Matrix A and column-wise-ordered data-vector dv")
 	Af = tmp.copy()
 	tmp = None
 	dvf = sparse.lil_matrix(np.array(np.append(dv, np.zeros(dv.size))))
-	
-	print("Starting reconstruction...\n")
-	st_reconstructed = cg_solver(Af.toarray(), dvf.toarray()[0], maxiter, Dv[0])
+	print("done\n")
 
-	return st_reconstructed
+	print("Starting reconstruction...\n")
+		
+	st_reconstructed, misfit, mnorm  = cg_solver(Af.toarray(), dvf.toarray()[0], maxiter, Dv)
+
+	return st_reconstructed, misfit, mnorm
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
 	"""
