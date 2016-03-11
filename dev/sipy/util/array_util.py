@@ -719,7 +719,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 
 	return bin_data
 
-def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, markphases=['ttall']):
+def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, markphases=['ttall', 'P^410P', 'P^660P']):
 	"""
 	Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
 	and if set a plot.
@@ -749,7 +749,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 				 a contour-plot is created.
 	:type plot: bool or string.
 	
-	:param markphases: Which phases should be marked, default is 'ttall', to mark all possible.
+	:param markphases: Which phases should be marked, default is 'ttall' + precursors, to mark all possible.
 	:type markphases: list
 
 
@@ -788,7 +788,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	for i, trace in enumerate(st):
 		if trace.stats.station in [cstat]:
 			sref=i
-	
+
 	# Loop over all slownesses.
 	for i, u in enumerate(urange):		
 		for j,trace in enumerate(data):
