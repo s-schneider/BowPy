@@ -315,10 +315,13 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 	W = makeMask(fkData, peaks[0][::2])
 
 	# Initialize arrays for cost-function.
-	dv = ADT.reshape(1, ADT.size)[0]
-	Dv = fkDT.reshape(1, fkDT.size)[0]
-	Y = W.reshape(1,W.size)[0]
+	dv = ADT.transpose().reshape(1, ADT.size)[0]
+	Dv = fkDT.transpose().reshape(1, fkDT.size)[0]
+	
+	"""	
+	Y = W.transpose().reshape(1,W.size)[0]
 
+	
 	T = np.ones((ArrayData.shape[0], ArrayData.shape[1]))
 	for i,trace in enumerate(ArrayData):
 		if sum(trace) == 0.:
@@ -327,7 +330,7 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 
 	Ts = sparse.diags(T)
 	Yw = sparse.diags(Y)
-	
+	"""
 	# Create sparse-matrix with iFFT operations.	
 	print("Creating iFFT2 operator as a %ix%i matrix ...\n" %(fkDT.shape[0]*fkDT.shape[1], fkDT.shape[0]*fkDT.shape[1]))	
 

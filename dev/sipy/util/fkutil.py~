@@ -88,6 +88,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 		depth = event.origins[0]['depth']/1000.
 		isinv = True
 		isevent = True
+	
+
 	yold=0
 	for j, trace in enumerate(data):
 		try:
@@ -136,6 +138,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 				plt.plot(t_axis,zoom*trace+ spacing*j, color='black')			
 		
 		yold = y_dist
+	plt.draw()
 	plt.show()
 
 def plot_data(data, zoom=1, y_dist=1, bins=None):
@@ -152,7 +155,6 @@ def plot_data(data, zoom=1, y_dist=1, bins=None):
 					or import epidist-list via epidist
 	type y_dist:	int or list
 	"""
-
 	for i, trace in enumerate(data):
 		if isinstance(y_dist,int):
 			plt.plot(zoom*trace+ y_dist*i, color='black')
@@ -162,7 +164,7 @@ def plot_data(data, zoom=1, y_dist=1, bins=None):
 		print('plotting bins')
 		for j in range(bins.size):
 			plt.plot( (0, data[0].size), (bins[j],bins[j]), color='red' )
-
+	plt.draw()
 	plt.show()
 
 

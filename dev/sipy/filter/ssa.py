@@ -53,6 +53,7 @@ def ssa(d,nw,p,ssa_flag):
 
 		plt.plot(d/d.max())
 		plt.plot(dp/dp.max()+3)
+		plt.draw()
 		plt.show()
 
 	  Based on: 

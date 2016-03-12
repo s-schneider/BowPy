@@ -628,6 +628,9 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 	returns: 
 	:param bin_data: partial stacked data of the array in no_of_bins uniform distributed stacks
 	:type bin_data: array
+
+	Author: S. Schneider, 2016
+	Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
 	"""
 
 	st_tmp = st.copy()
@@ -765,6 +768,9 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 				inv = obspy.read_inventory("../data/synthetics_uniform/SUNEW_inv.xml")
 				cat = obspy.read_events("../data/synthetics_random/SRNEW_cat.xml")
 				vespagram = vespagram(stream, inv, cat[0], 3., 12., 0.1, power=4., plot='contour')
+
+	Author: S. Schneider, 2016
+	Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
 	"""
 
 	# Prepare and convert objects.
@@ -866,7 +872,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 					continue
 				plt.plot(tPhase, sloPhase, 'x')
 				plt.annotate('%s' % name, xy=(tPhase+1,sloPhase))
-
+		plt.draw()
 		plt.show()
 
 	return vespa
@@ -967,7 +973,7 @@ def plot(inventory, projection="local"):
         x, y = bmap(geo["longitude"], geo["latitude"])
         bmap.scatter(x, y, marker="x", c="green", s=40, zorder=20)
         plt.text(x, y, "Geometrical Center", color="green")
-
+		plt.draw()
         plt.show()
 
 
@@ -1024,6 +1030,7 @@ def plot_transfer_function(stream, inventory, sx=(-10, 10), sy=(-10, 10), sls=0.
     ax.set_ylabel('slowness [s/deg]')
     ax.set_ylim(slx[0], slx[-1])
     ax.set_xlim(sly[0], sly[-1])
+	plt.draw()
     plt.show()
 
 
@@ -1063,5 +1070,6 @@ def plot_gcp(slat, slon, qlat, qlon, plat, plon, savefigure=None):
     if savefigure:
         plt.savefig('plot_gcp.png', format="png", dpi=900)
     else:
+		plt.draw()
         plt.show()
 

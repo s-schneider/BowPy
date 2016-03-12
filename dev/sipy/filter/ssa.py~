@@ -191,8 +191,9 @@ def fx_ssa(data,dt,p,flow,fhigh):
 
 	print("		Loop through frequencies \n")
 	i=1
+	rend = len(range(ilow,ihigh+1))
 	for k in range(ilow,ihigh+1):
-		rend = len(range(ilow,ihigh+1))
+		
 		prcnt = 100*i/rend
 		print("		%i %% done" % (prcnt), end="\r")
 		sys.stdout.flush()

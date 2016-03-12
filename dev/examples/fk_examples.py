@@ -467,3 +467,16 @@ freq = np.fft.fftfreq(len(y), d)
 
 
 
+#### PLOTTING ROUTINE FOR REFRESHING ###
+
+fig = plt.figure()
+
+for i in range(1):
+	plt.clf()
+	plt.plot()
+	fig.canvas.draw()
+
+plt.draw()
+plt.show()
+
+

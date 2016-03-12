@@ -54,7 +54,7 @@ stgap = read_st("../data/synthetics_uniform/SUGAP.QHD")
 
 stuni_al = alignon(stuni.copy(), invuni, cat[0], phase='PP', maxtimewindow=350)
 stuni_al=stuni.copy()
-st = ns.copy()
+st = stuni_al.copy()
 
 fkdata = fktrafo(stuni_al, invuni, cat[0])
 

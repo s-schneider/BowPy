@@ -300,7 +300,7 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 	ADT = ArrayData.copy().tranpose()
 
 	fkData = np.fft.fft2(ArrayData)
-	fkDT = fkData.transpose()
+	fkDT = fkData.copy().transpose()
 
 	# Implement automatic method, to cut into N 300 npts samples.
 	# Iterate over those.
@@ -315,23 +315,23 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 	W = makeMask(fkData, peaks[0][::2])
 
 	# Initialize arrays for cost-function.
-	dv = ArrayData.reshape(1, ArrayData.size)[0]
-	Dv = fkData.reshape(1, fkData.size)[0]
-	Y = W.reshape(1,W.size)[0]
+	dv = ADT.transpose().reshape(1, ADT.size)[0]
+	Dv = fkDT.transpose().reshape(1, fkDT.size)[0]
+	Y = W.transpose().reshape(1,W.size)[0]
 
 	T = np.ones((ArrayData.shape[0], ArrayData.shape[1]))
 	for i,trace in enumerate(ArrayData):
 		if sum(trace) == 0.:
 			T[i] = 0.
-	T = T.reshape(1, T.size)[0]
+	T = T.tranpose().reshape(1, T.size)[0]
 
 	Ts = sparse.diags(T)
 	Yw = sparse.diags(Y)
 	
 	# Create sparse-matrix with iFFT operations.	
-	print("Creating iFFT2 operator as a %ix%i matrix ...\n" %(fkData.shape[0]*fkData.shape[1], fkData.shape[0]*fkData.shape[1]))	
+	print("Creating iFFT2 operator as a %ix%i matrix ...\n" %(fkDT.shape[0]*fkDT.shape[1], fkDT.shape[0]*fkDT.shape[1]))	
 
-	FH = create_iFFT2mtx(fkData.shape[0], fkData.shape[1]) 
+	FH = create_iFFT2mtx(fkDT.shape[0], fkDT.shape[1]) 
 	print("done\n")
 
 	# Create model matrix Afinal and data vector dfinal.
