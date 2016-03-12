@@ -297,14 +297,14 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 	# Prepare data.
 	st_tmp = st.copy()
 	ArrayData= stream2array(st_tmp, normalize=True)
-	ADT = ArrayData.copy().tranpose()
+	ADT = ArrayData.copy().transpose()
 
 	fkData = np.fft.fft2(ArrayData)
-	fkDT = fkData.copy().transpose()
+	fkDT = np.fft.fft2(ADT)
 
 	# Implement automatic method, to cut into N 300 npts samples.
 	# Iterate over those.
-	if ADT.shape[1] > 300:
+	if ADT.shape[0] > 300:
 		msg="Data sample to big, no sufficient memory!"
 		raise MemoryError(msg)
 
@@ -312,30 +312,31 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 	print("Calculating slope distribution...\n")
 	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick)
 	print("Creating mask function...\n")
-	W = makeMask(fkData, peaks[0][::2])
+	W = makeMask(fkData, peaks[0])
+	
+	# To keep the order it would be better to transpose W to WT
+	# but for creation of Y, WT has to be transposed again,
+	# so this step can be skipped.
+	Y = W.reshape(1,W.size)[0]
 
 	# Initialize arrays for cost-function.
 	dv = ADT.transpose().reshape(1, ADT.size)[0]
 	Dv = fkDT.transpose().reshape(1, fkDT.size)[0]
 	
-	"""	
-	Y = W.transpose().reshape(1,W.size)[0]
-
-	
 	T = np.ones((ArrayData.shape[0], ArrayData.shape[1]))
 	for i,trace in enumerate(ArrayData):
 		if sum(trace) == 0.:
 			T[i] = 0.
-	T = T.tranpose().reshape(1, T.size)[0]
+	T = T.reshape(1, T.size)[0]
 
 	Ts = sparse.diags(T)
 	Yw = sparse.diags(Y)
-	"""
+
 	# Create sparse-matrix with iFFT operations.	
 	print("Creating iFFT2 operator as a %ix%i matrix ...\n" %(fkDT.shape[0]*fkDT.shape[1], fkDT.shape[0]*fkDT.shape[1]))	
 
 	FH = create_iFFT2mtx(fkDT.shape[0], fkDT.shape[1]) 
-	print("done\n")
+	print("... finished\n")
 
 	# Create model matrix Afinal and data vector dfinal.
 	print("Creating sparse %ix%i matrix A ...\n" %(2*FH.shape[0], FH.shape[1]))	
@@ -356,13 +357,13 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 		prcnt = (50*(i+1) / float(A.shape[0])) + 50
 		print("%i %% done" % prcnt, end="\r")
 		sys.stdout.flush()	
-	print("done\n")
+	print("... finished\n")
 
-	print("Creating final Matrix A and column-wise-ordered data-vector dv")
+	print("Creating final Matrix A and column-wise-ordered data-vector dv ...\n")
 	Af = tmp.copy()
 	tmp = None
 	dvf = sparse.lil_matrix(np.array(np.append(dv, np.zeros(dv.size))))
-	print("done\n")
+	print("... finished\n")
 
 	print("Starting reconstruction...\n")
 		

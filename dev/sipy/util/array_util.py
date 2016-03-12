@@ -973,7 +973,7 @@ def plot(inventory, projection="local"):
         x, y = bmap(geo["longitude"], geo["latitude"])
         bmap.scatter(x, y, marker="x", c="green", s=40, zorder=20)
         plt.text(x, y, "Geometrical Center", color="green")
-		plt.draw()
+        plt.draw()
         plt.show()
 
 
@@ -1030,7 +1030,7 @@ def plot_transfer_function(stream, inventory, sx=(-10, 10), sy=(-10, 10), sls=0.
     ax.set_ylabel('slowness [s/deg]')
     ax.set_ylim(slx[0], slx[-1])
     ax.set_xlim(sly[0], sly[-1])
-	plt.draw()
+    plt.draw()
     plt.show()
 
 
@@ -1070,6 +1070,6 @@ def plot_gcp(slat, slon, qlat, qlon, plat, plon, savefigure=None):
     if savefigure:
         plt.savefig('plot_gcp.png', format="png", dpi=900)
     else:
-		plt.draw()
+        plt.draw()
         plt.show()
 

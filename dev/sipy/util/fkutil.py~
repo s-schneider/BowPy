@@ -383,7 +383,7 @@ def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, ytick
 		plt.imshow(abs(data), aspect='auto')
 
 	plt.show()		
-	
+	print("Calculate area inside chosen polygon\n")
 	try:
 		vertices = (poly.get_path().vertices)
 		vert_tmp = []
@@ -695,6 +695,7 @@ def create_iFFT2mtx(nx, ny):
 
 		prcnt = (50*(i+1) / float(ny)) + 50
 		print("%i %% done" % prcnt, end="\r")
+		print(" \n")
 		sys.stdout.flush()	
 		
 	sparse_iDFT2 = tmp.tocsc()

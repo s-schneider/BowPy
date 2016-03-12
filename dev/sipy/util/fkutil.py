@@ -695,6 +695,7 @@ def create_iFFT2mtx(nx, ny):
 
 		prcnt = (50*(i+1) / float(ny)) + 50
 		print("%i %% done" % prcnt, end="\r")
+		print("100 %% done \n")
 		sys.stdout.flush()	
 		
 	sparse_iDFT2 = tmp.tocsc()
