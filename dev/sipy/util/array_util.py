@@ -45,43 +45,65 @@ def __coordinate_values(inventory):
     return lats, lngs, hgt
 
 def get_coords(inventory, returntype="dict"):
-    """
-    Get the coordinates of the stations in the inventory, independently of the channels,
-    better use for arrays, than the channel-dependent core.inventory.inventory.Inventory.get_coordinates() .
-    returns the variable coords with entries: elevation (in km), latitude and longitude.
-    :param inventory: Inventory to get the coordinates from
-    :type inventory: obspy.core.inventory.inventory.Inventory
+	"""
+	Get the coordinates of the stations in the inventory, independently of the channels,
+	better use for arrays, than the channel-dependent core.inventory.inventory.Inventory.get_coordinates() .
+	returns the variable coords with entries: elevation (in km), latitude and longitude.
+	:param inventory: Inventory to get the coordinates from
+	:type inventory: obspy.core.inventory.inventory.Inventory
 
-    :param coords: dictionary with stations of the inventory and its elevation (in km), latitude and longitude
-    :type coords: dict
+	:param coords: dictionary with stations of the inventory and its elevation (in km), latitude and longitude
+	:type coords: dict
 
-    :param return: type of desired return
-    :type return: dictionary or numpy.array
+	:param return: type of desired return
+	:type return: dictionary or numpy.array
 
-    """
-    if returntype == "dict":
-        coords = {}
-        for network in inventory:
-            for station in network:
-                coords["%s.%s" % (network.code, station.code)] = \
-                    {"latitude": station.latitude,
-                     "longitude": station.longitude,
-                     "elevation": float(station.elevation) / 1000.0,
+	"""
+	if isinstance(inventory, Inventory):
+		if returntype == "dict":
+			coords = {}
+			for network in inventory:
+				for station in network:
+					coords["%s.%s" % (network.code, station.code)] = \
+						{"latitude": station.latitude,
+						 "longitude": station.longitude,
+						 "elevation": float(station.elevation) / 1000.0,
+						 "epidist" : None}
+
+		if returntype == "array":
+			nstats = len(inventory[0].stations)
+			coords = np.empty((nstats, 3))
+			if len(inventory.networks) == 1:
+				i=0
+				for network in inventory:
+					for station in network:
+						coords[i,0] = station.latitude
+						coords[i,1] = station.longitude
+						coords[i,2] = float(station.elevation) / 1000.0
+						i += 1
+
+	elif isinstance(inventory, Network):
+		if returntype == "dict":
+			coords = {}
+			for station in inventory:
+				coords["%s.%s" % (inventory.code, station.code)] = \
+					{"latitude": station.latitude,
+					 "longitude": station.longitude,
+					 "elevation": float(station.elevation) / 1000.0,
 					 "epidist" : None}
 
-    if returntype == "array":
-        nstats = len(inventory[0].stations)
-        coords = np.empty((nstats, 3))
-        if len(inventory.networks) == 1:
-            i=0
-            for network in inventory:
-                for station in network:
-                    coords[i,0] = station.latitude
-                    coords[i,1] = station.longitude
-                    coords[i,2] = float(station.elevation) / 1000.0
-                    i += 1
+		if returntype == "array":
+			nstats = len(inventory[0].stations)
+			coords = np.empty((nstats, 3))
+			if len(inventory) == 1:
+				i=0
+				for station in inventory:
+					coords[i,0] = station.latitude
+					coords[i,1] = station.longitude
+					coords[i,2] = float(station.elevation) / 1000.0
+					i += 1		
 
-    return coords
+	return coords
 
 def trace2array(trace):
 	tx = trace.copy()

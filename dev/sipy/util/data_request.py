@@ -11,85 +11,134 @@ from obspy.taup import TauPyModel
 from sipy.util.array_util import center_of_gravity, plot_gcp
 
 def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ", minlat=None,
-                 maxlat=None,minlon=None,maxlon=None, mind=None, maxd=None, 
-                 lat=None, lon=None, minrad=None, maxrad=None, azimuth=None, radialsearch=False, savefile=False):
+                 maxlat=None,minlon=None,maxlon=None, mindepth=None, maxdepth=None, 
+                 radialcenterlat=None, radialcenterlon=None, minrad=None, maxrad=None, 
+                 azimuth=None, radialsearch=False, savefile=False):
+    """
+    Searches in a given Database for seismic data. Restrictions in terms of starttime, endtime, network etc can be made.
 
+    :param client_name: Name of desired fdsn client, for a list of all clients see: 
+                        https://docs.obspy.org/tutorial/code_snippets/retrieving_data_from_datacenters.html
+    :type  client_name:  string
+
+    :param start, end: starttime, endtime
+    :type : UTCDateTime
+
+    :param minmag: Minimum magnitude of event
+    :type  minmag: float
+
+    :param net: Network code for which to search data for
+    :type  net: string
+
+    :param scode: Station code for which to search data for
+    :type  scode: string
+
+    :param channels: Used channels of stations 
+    :type  channels: string
+
+    :param minlat, maxlat, minlon, maxlon: Coordinate-window of interest
+    :type : float
+
+    :param mindepth, maxdepth: depth information of event in km
+    :type : float
+
+    :param radialcenterlat, radialcenterlon: Centercoordinates of a radialsearch, if radialsearch=True
+    :type : float
+
+    :param minrad, maxrad: Minimum and maximum radii for radialsearch
+    :type : float
+
+    :param azimuth: Desired azimuth of event, station couples in deg
+    :type  azimuth: float
+
+    :param radialsearch: Sets radialsearch on or off
+    :type  radialsearch: bool
+
+    :param savefile: if True, Stream, Inventory and Catalog will be saved local, default directory is the current.
+    :type  savefile: bool.
+
+
+    returns
+
+    :param: data as a list of tuples in form (Stream, Inventory, Catalog)
+    :type: list
+
+    ### Example ###
+
+    from obspy import UTCDateTime
+    dl="IRIS"
+    start = UTCDateTime("2011-01-01T00:00:00")
+    end= UTCDateTime("2011-12-31T23:59:59")
+    minmag=9.0
+    nw="TA"
+    stats="*"
+
+    data = data_request(client_name = dl, start = start, end = end, minmag = minmag, net = nw, scode = stats)
+
+    """
+
+    data =[]
+    stream = Stream()
     client = Client(client_name)
 
+    try:
+        if radialsearch:
+        	catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, maxdepth=maxdepth, mindepth=mindepth, latitude=radialcenterlat, longitude=radialcenterlon, minradius=minrad, maxradius=maxrad)
+        else:
+            catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, maxdepth=maxdepth, mindepth=mindepth)
+    except:
+        print("No events found for given parameters.")
+        return
 
-    if radialsearch:
-    	catalog = client.get_events(starttime=start, endtime = end,
-                            		minmagnitude = minmag, maxdepth=maxd, mindepth=mind,
-                            		latitude=lat, longitude=lon, minradius = minrad, maxradius = maxrad)
-    else:
-    	catalog = client.get_events(starttime=start, endtime = end,
-                            minmagnitude = minmag, maxdepth=maxd, mindepth=mind)	                         
-
-    inventory = []
-    st = []
-    event = []
-    origin = []
-    slat = []
-    slon = []
-    elat = []
-    elon = []
-    depth = []
-    epidist = []
-    tstart = []
-    tend = []
-
+    print(catalog)
     m = TauPyModel(model="ak135")
-    Plist = ["P"]
-    for i in range(len(catalog)):
-        event.append(catalog[i])
-        origin.append(event[i].origins)
-        station_stime = UTCDateTime(origin[i][0].time - 3600*24)
-        station_etime = UTCDateTime(origin[i][0].time + 3600*24)
-        inventory.append(client.get_stations(network=net, station=scode, level="station", 
-                            starttime=station_stime, endtime=station_etime, 
-                            minlatitude=minlat, maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon))
+    Plist = ["P", "Pdiff"]
+    for event in catalog:
+        origin_t = event.origins[0].time
+        station_stime = UTCDateTime(origin_t - 3600*24)
+        station_etime = UTCDateTime(origin_t + 3600*24)
+        try:
+            inventory = client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime, minlatitude=minlat, maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
+        except:
+            print("No Inventory found for given parameters")
+            return
 
-        cog=center_of_gravity(inventory[i])
-        slat.append(cog['latitude'])
-        slon.append(cog['longitude'])
-        elat.append(origin[i][0].latitude)
-        elon.append(origin[i][0].longitude)
-        depth.append(origin[i][0].depth/1000)
-        epidist.append(locations2degrees(slat[i],slon[i],elat[i],elon[i]))
-        arrivaltime = m.get_travel_times(source_depth_in_km=depth[i],distance_in_degree=epidist[i],
-                                            phase_list=Plist)
-        P_arrival_time = arrivaltime[0]
-        Ptime = P_arrival_time.time
-        tstart.append(UTCDateTime(origin[i][0].time + Ptime - 3 * 60))
-        tend.append(UTCDateTime(origin[i][0].time + Ptime + 10 * 60))
+        for network in inventory:
+            cog=center_of_gravity(network)
+            slat = cog['latitude']
+            slon = cog['longitude']
+            elat = event.origins[0].latitude
+            elon = event.origins[0].longitude
+            depth = event.origins[0].depth/1000.
+            epidist = locations2degrees(slat,slon,elat,elon)
+            arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist,
+                                                phase_list=Plist)
+            P_arrival_time = arrivaltime[0]
+            Ptime = P_arrival_time.time
+            tstart = UTCDateTime(event.origins[0].time + Ptime - 3 * 60)
+            tend = UTCDateTime(event.origins[0].time + Ptime + 10 * 60)
 
-        network = inventory[i]
-        stations = []
-        stations_str = ""
-        for station in network[0]:
-            stations.append(station.code)
-        stations_str = ','.join(map(str,stations))
-        location = "*"
-        st.append(client.get_waveforms(network[0].code, stations_str, location, channels,
-                                  tstart[i], tend[i]))
+            for station in network:
+                try:
+                    streamreq = client.get_waveforms(network.code, station.code, '*', channels,
+                                      tstart, tend)
+                    print("Downloaded data for station %s ... \n" % station.code )
+                    stream += streamreq
+                except:
+                    print("No data for station %s ... \n" % station.code )
+                    continue
+
         if savefile:
-                 stname = str(event[i].origins[0].time).split('.')[0] + ".MSEED"
+                 stname = str(origin_t).split('.')[0] + ".MSEED"
                  invname = stname + "_inv.xml"
                  catname = stname + "_cat.xml"
                  st[i].write(stname, format="MSEED")
                  inventory[i].write(invname, format="STATIONXML")
                  catalog[i].write(catname, format="QUAKEML")
-    return(st, inventory, catalog)
+        
 
-"""
-Example
-dl="IRIS"
-starttime = UTCDateTime("2011-01-01T00:00:00")
-endtime = UTCDateTime("2011-12-31T23:59:59")
-minmag=9.0
-nw="TA"
-stats="*"
+        stream_inv_event = (stream, inventory, event)
+        data.append(stream_inv_event)
 
-st, inv, cat  = data_request(client_name = dl, start = s, end = e, minmag = mm, net = nw, scode = stats, savefile=True)
-"""
+    return(data)
 
