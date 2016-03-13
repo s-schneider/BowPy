@@ -6,20 +6,23 @@ from matplotlib.lines import Line2D
 import numpy as np
 import scipy.spatial as spatial
 
-"""
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
-scat = ax.plot(x, y)
-DataCursor(scat, x, y)
-plt.show()
-"""
 def fmt(x, y):
     return 'x: {x:0.2f}\ny: {y:0.2f}'.format(x = x, y = y)
 
 class DataCursor(object):
     # http://stackoverflow.com/a/4674445/190597
     """A simple data cursor widget that displays the x,y location of a
-    matplotlib artist when it is selected."""
+    matplotlib artist when it is selected.
+    Example:
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    scat = ax.plot(x, y)
+    DataCursor(scat, x, y)
+    plt.show()
+
+
+    """
     def __init__(self, artists, x = [], y = [], tolerance = 5, offsets = (-20, 20),
                  formatter = fmt, display_all = False):
         """Create the data cursor and connect it to the relevant figure.
@@ -88,23 +91,22 @@ class DataCursor(object):
             event.canvas.draw()
             
 
-
-
-
-
-"""
-x=[1,2,3,4,5]
-y=[6,7,8,9,10]
-
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
-ax.plot(x, y)
-cursor = FollowDotCursor(ax, x, y)
-plt.show()
-"""
-
 class FollowDotCursor(object):
-    """Display the x,y location of the nearest data point."""
+    """
+    Display the x,y location of the nearest data point.
+
+    Example:
+
+    x=[1,2,3,4,5]
+    y=[6,7,8,9,10]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    ax.plot(x, y)
+    cursor = FollowDotCursor(ax, x, y)
+    plt.show()
+
+    """
     def __init__(self, ax, x, y, tolerance=5, formatter=fmt, offsets=(-20, 20)):
         try:
             x = np.asarray(x, dtype='float')
@@ -168,4 +170,126 @@ class FollowDotCursor(object):
         except IndexError:
             # IndexError: index out of bounds
             return self._points[0]
+
+def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, yticks=None):
+    """
+    Interactive function to pick a polygon out of a figure and receive the vertices of it.
+    :param data:
+    :type:
+    
+    :param no_of_vert: number of vertices, default 4, 
+    :type no_of_vert: int
+    """
+    from sipy.util.polygon_interactor import PolygonInteractor
+    from matplotlib.patches import Polygon
+    
+    no_of_vert = int(no_of_vert)
+    # Define shape of polygon.
+    try:
+        x, y = xticks.max(), yticks.max() 
+        xmin= x/3.
+        xmax= x*2./3.
+        ymin= y/3.
+        ymax= y*2./3.
+
+    except AttributeError:
+        y,x = data.shape
+        xmin= x/3.
+        xmax= x*2./3.
+        ymin= y/3.
+        ymax= y*2./3.
+
+    xs = []
+    for i in range(no_of_vert):
+        if i >= no_of_vert/2:
+            xs.append(xmax)
+        else:
+            xs.append(xmin)
+
+    ys = np.linspace(ymin, ymax, no_of_vert/2)
+    ys = np.append(ys,ys[::-1]).tolist()
+
+    poly = Polygon(list(zip(xs, ys)), animated=True, closed=False, fill=False)
+    
+    # Add polygon to figure.
+    fig, ax = plt.subplots()
+    ax.add_patch(poly)
+    p = PolygonInteractor(ax, poly)
+    plt.title("Pick polygon, close figure to save vertices")
+    plt.xlabel(xlabel, fontsize=15)
+    plt.ylabel(ylabel, fontsize=15)
+
+    try:
+        plt.imshow(abs(data), aspect='auto', extent=(xticks.min(), xticks.max(), yticks.min(), yticks.max()))
+    except AttributeError:
+        plt.imshow(abs(data), aspect='auto')
+
+    plt.show()      
+    print("Calculate area inside chosen polygon\n")
+    try:
+        vertices = (poly.get_path().vertices)
+        vert_tmp = []
+        xticks.sort()
+        yticks.sort()
+        for fkvertex in vertices:
+            vert_tmp.append([np.abs(xticks-fkvertex[0]).argmin(), np.abs(yticks[::-1]-fkvertex[1]).argmin()])
+        vertices = np.array(vert_tmp)   
+        
+    except AttributeError:
+        vertices = (poly.get_path().vertices).astype('int')
+
+    indicies = convert_polygon_to_flat_index(data, vertices)
+    return indicies
+
+
+def convert_polygon_to_flat_index(data, vertices):
+    """
+    Converts points insde of a polygon defined by its vertices, taken of an imshow plot of data,to 
+    flat-indicies. Does NOT include the border of the polygon.
+    
+    :param data: speaks for itself
+    :type data: numpy.ndarray
+
+    :param vertices: also...
+    :type vertices: numpy.ndarray
+    
+    """
+
+    # check if points are inside polygon. Be careful with the indicies, np and mpl
+    # handle them exactly opposed.
+    polygon = mplPath.Path(vertices)
+    arr = []
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            if polygon.contains_point([j,i]):
+                arr.append([j,i])
+    arr = map(list, zip(*arr))
+
+    flat_index= np.ravel_multi_index(arr, data.conj().transpose().shape).astype('int').tolist()
+
+    return(flat_index)  
+
+def pick_data(x, y, xlabel, ylabel, title):
+        
+    fig, ax1 = plt.subplots(1, 1)
+    ax1.set_title(title)
+    ax1.set_ylabel(ylabel)
+    ax1.set_xlabel(xlabel)
+    line, = ax1.plot(x, y , picker=5)  # 5 points tolerance
+    
+    global PickByHand
+    PickByHand = []
+    def onpick1(event):
+        if isinstance(event.artist, Line2D):
+            thisline = event.artist
+            xdata = thisline.get_xdata()
+            ydata = thisline.get_ydata()
+            ind = event.ind
+            pick = zip(np.take(xdata, ind), np.take(ydata, ind))
+            print('onpick1 line:', zip(np.take(xdata, ind), np.take(ydata, ind)) )
+            PickByHand.append(pick)
+
+    fig.canvas.mpl_connect('pick_event', onpick1)
+    plt.show()
+    return PickByHand
 

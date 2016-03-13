@@ -17,9 +17,10 @@ from scipy import sparse
 from scipy.optimize import fmin_cg
 
 from sipy.util.array_util import array2stream, stream2array, epidist2nparray, epidist
-from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon,\
+from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array,\
 							find_peaks, slope_distribution, makeMask, create_iFFT2mtx, cg_solver
 from sipy.util.base import nextpow2
+from sipy.util.picker import get_polygon
 
 def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', phase=None, polygon=12, normalize=True, SSA=False):
 	"""

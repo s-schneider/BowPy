@@ -45,7 +45,7 @@ plt.show()
 
 
 # Pick Phase here!
-indicies = fku.get_polygon(R, no_of_vert=8, xlabel=r'$\tau$', ylabel='p')
+indicies = sipy.util.picker.get_polygon(R, no_of_vert=8, xlabel=r'$\tau$', ylabel='p')
 
 
 

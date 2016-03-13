@@ -4,9 +4,11 @@ import numpy as np
 from numpy import dot
 import math
 from math import pi
+
 import scipy as sp
 from scipy import sparse
-from sipy.util.fkutil import nextpow2
+from sipy.util.base import nextpow2
+from sipy.util.picker import get_polygon
 from sipy.util.array_util import stream2array, epidist, epidist2nparray
 
 from obspy import Stream, Inventory
@@ -42,7 +44,7 @@ def radon_filter(st, inv, event, p, weights, line_model, inversion_model, hyperp
 	st_input = st.copy()
 	
 	R, t, epi = radon_inverse(st_input, inv, event, p, weights, line_model, inversion_model, hyperparameters)
-
+	indicies = get_polygon(R, no_of_vert=8, xlabel=r'$\tau$', ylabel='p')
 	Rpick=np.zeros(R.shape)
 	Rpick.conj().transpose().flat[ indicies ]=1
 	Rpick=R*Rpick
