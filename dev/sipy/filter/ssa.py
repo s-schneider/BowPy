@@ -50,11 +50,14 @@ def ssa(d,nw,p,ssa_flag):
 		r = rand['r']
 		d = (cos(2*pi*0.01*np.linspace(1,200,200)) + 0.5*r[:,0])
 		dp, sing, R = ssa(d,100,2,0)
-
+		
+		
 		plt.plot(d/d.max())
 		plt.plot(dp/dp.max()+3)
+		plt.ion()
 		plt.draw()
 		plt.show()
+		plt.ioff()
 
 	  Based on: 
 

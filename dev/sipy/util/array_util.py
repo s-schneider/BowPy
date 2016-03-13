@@ -6,6 +6,7 @@ import ctypes as C
 import numpy
 import numpy as np
 import math
+import fractions
 import scipy as sp
 from scipy.integrate import cumtrapz
 import warnings
@@ -872,13 +873,15 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 					continue
 				plt.plot(tPhase, sloPhase, 'x')
 				plt.annotate('%s' % name, xy=(tPhase+1,sloPhase))
+		plt.ion()
 		plt.draw()
 		plt.show()
+		plt.ioff()
 
 	return vespa
 
 
-def gaps_fill_zeros(stream, inv, event):
+def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 	"""
 	Fills the gaps inbetween irregular distributed traces 
 	in Stream with zero-padded Traces for further work.
@@ -908,13 +911,13 @@ def gaps_fill_zeros(stream, inv, event):
 	# Define new grid for y-axis.
 	grd_min = yinfo.min()
 	grd_max = yinfo.max()
-	grd_delta = 0.
 	
+	decimal_res = float(decimal_res)
 	# Find biggest value for y-ticks.
-	while grd_delta == 0.:
-		grd_delta = round( np.diff(yinfo).min() * (10.**d) ) / (10.**d)
-		d += 1.
-
+	mind = int(round(np.diff(yinfo).min() * decimal_res))
+	maxd = int(round(np.diff(yinfo).max() * decimal_res))
+	grd_delta = fractions.gcd(mind, maxd)/decimal_res
+	
 	N=(grd_max - grd_min)/grd_delta + 1
 	
 	grd = np.linspace(grd_min, grd_max, N) 
@@ -973,9 +976,10 @@ def plot(inventory, projection="local"):
         x, y = bmap(geo["longitude"], geo["latitude"])
         bmap.scatter(x, y, marker="x", c="green", s=40, zorder=20)
         plt.text(x, y, "Geometrical Center", color="green")
+        plt.ion()
         plt.draw()
         plt.show()
-
+        plt.ioff()
 
 
 
@@ -1030,12 +1034,13 @@ def plot_transfer_function(stream, inventory, sx=(-10, 10), sy=(-10, 10), sls=0.
     ax.set_ylabel('slowness [s/deg]')
     ax.set_ylim(slx[0], slx[-1])
     ax.set_xlim(sly[0], sly[-1])
+    plt.ion()
     plt.draw()
     plt.show()
-
+    plt.ioff()
 
 def plot_gcp(slat, slon, qlat, qlon, plat, plon, savefigure=None):
-    
+
     global m
     # lon_0 is central longitude of projection, lat_0 the central latitude.
     # resolution = 'c' means use crude resolution coastlines, 'l' means low, 'h' high etc.
@@ -1068,8 +1073,10 @@ def plot_gcp(slat, slon, qlat, qlon, plat, plon, savefigure=None):
     plt.title("")
     
     if savefigure:
+		
         plt.savefig('plot_gcp.png', format="png", dpi=900)
     else:
+        plt.ion()
         plt.draw()
         plt.show()
-
+        plt.ioff()

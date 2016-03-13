@@ -125,3 +125,10 @@ def nextpow2(i):
 		n *= 2
 		count+=1
 	return count
+
+def LCM(a,b):
+	"""
+	Calculates the least common multiple of two values
+	"""
+	import fractions
+	return abs(a * b) / fractions.gcd(a,b) if a and b else 0

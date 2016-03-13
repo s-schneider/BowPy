@@ -9,6 +9,10 @@ import matplotlib
 #matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.path as mplPath
+from matplotlib.lines import Line2D
+from matplotlib.patches import Rectangle
+from matplotlib.text import Text
+from matplotlib.image import AxesImage
 
 import obspy
 import obspy.signal.filter as obsfilter
@@ -23,6 +27,10 @@ import datetime
 import scipy as sp
 import scipy.signal as signal
 from scipy import sparse
+
+
+
+
 
 """
 A collection of useful functions for handling the fk_filter and seismic data.
@@ -40,7 +48,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, clr='black'):
 	"""
 	Alpha Version!
 	
@@ -89,7 +97,6 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 		isinv = True
 		isevent = True
 	
-
 	yold=0
 	for j, trace in enumerate(data):
 		try:
@@ -107,13 +114,13 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 			if yinfo:
 				plt.ylabel("Distance in deg")
 				plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-				plt.plot(t_axis,zoom*trace+ y_dist, color='black')
+				plt.plot(t_axis,zoom*trace+ y_dist, color=clr)
 				plt.plot( (Phase,Phase),(-1+y_dist,1+y_dist), color='red' )			
 			else:
 				plt.ylabel("No. of trace")
 				plt.gca().yaxis.set_major_locator(plt.NullLocator())
 				plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-				plt.plot(t_axis,zoom*trace+ spacing*j, color='black')
+				plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)
 				plt.plot( (Phase,Phase),(-1+spacing*j,1+spacing*j), color='red' )
 
 		elif markphase and not isinv and not isevent:
@@ -126,7 +133,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 				try:
 					plt.ylabel("Distance in deg")
 					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-					plt.plot(t_axis,zoom*trace+ y_dist, color='black')
+					plt.plot(t_axis,zoom*trace+ y_dist, color=clr)
 			
 				except:
 					msg='Oops, something not found.'
@@ -135,13 +142,15 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None):
 				plt.ylabel("No. of trace")
 				plt.gca().yaxis.set_major_locator(plt.NullLocator())
 				plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-				plt.plot(t_axis,zoom*trace+ spacing*j, color='black')			
+				plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)			
 		
 		yold = y_dist
+	plt.ion()
 	plt.draw()
 	plt.show()
+	plt.ioff()
 
-def plot_data(data, zoom=1, y_dist=1, bins=None):
+def plot_data(data, zoom=1, y_dist=1, bins=None, clr='black'):
 	"""
 	Alpha Version!
 	Time axis has no time-ticks --> Working on right now
@@ -157,16 +166,17 @@ def plot_data(data, zoom=1, y_dist=1, bins=None):
 	"""
 	for i, trace in enumerate(data):
 		if isinstance(y_dist,int):
-			plt.plot(zoom*trace+ y_dist*i, color='black')
+			plt.plot(zoom*trace+ y_dist*i, color=clr)
 		if isinstance(y_dist,list) or isinstance(y_dist,numpy.ndarray):
-			plt.plot(zoom*trace+ y_dist[i], color='black')
+			plt.plot(zoom*trace+ y_dist[i], color=clr)
 	if isinstance(bins,numpy.ndarray):
 		print('plotting bins')
 		for j in range(bins.size):
 			plt.plot( (0, data[0].size), (bins[j],bins[j]), color='red' )
+	plt.ion()
 	plt.draw()
 	plt.show()
-
+	plt.ioff()
 
 def plot_fft(x, logscale=False, fftshift=False):
 	"""
@@ -427,6 +437,29 @@ def convert_polygon_to_flat_index(data, vertices):
 
 	return(flat_index)	
 
+def pick_data(x, y, xlabel, ylabel, title):
+		
+	fig, ax1 = plt.subplots(1, 1)
+	ax1.set_title(title)
+	ax1.set_ylabel(ylabel)
+	ax1.set_xlabel(xlabel)
+	line, = ax1.plot(x, y , picker=5)  # 5 points tolerance
+	
+	global PickByHand
+	PickByHand = []
+	def onpick1(event):
+		if isinstance(event.artist, Line2D):
+			thisline = event.artist
+			xdata = thisline.get_xdata()
+			ydata = thisline.get_ydata()
+			ind = event.ind
+			pick = zip(np.take(xdata, ind), np.take(ydata, ind))
+			print('onpick1 line:', zip(np.take(xdata, ind), np.take(ydata, ind)) )
+			PickByHand.append(pick)
+
+	fig.canvas.mpl_connect('pick_event', onpick1)
+	plt.show()
+	return PickByHand
 
 def makeMask(fkdata,slope):
 	"""
@@ -475,7 +508,7 @@ def makeMask(fkdata,slope):
 
 	return W
 
-def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0, mindist=0):
+def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0, mindist=0, smoothing=1, interactive=False):
 	"""
 	Generates a distribution of slopes in a range given in prange.
 	Needs fkdata as input. 
@@ -510,6 +543,16 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0,
 	:type peakpick: int or float
 	
 	:param delta_threshold: Value to lower manually 
+	:type delta_threshold: int
+
+	:param mindist: minimum distance between two peaks
+	:type mindist: float or int
+
+	:param smoothing: Parameter to smooth distribution
+	:type smoothing: float
+	
+	:param interactive: If True, picking by hand is enabled.
+	:type interactive: boolean
 
 	returns:
 
@@ -548,14 +591,27 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0,
 		print("%i %% done" % prcnt, end="\r")
 		sys.stdout.flush()	
 
-	MDconv = sp.signal.convolve(MD, sp.signal.boxcar(int(abs(pmin-pmax)/2)),mode=1)
-	peaks_first = find_peaks(MDconv, srange, peakpick='All', mindist=0.3)
+	if interactive:
+		
+		peaks = pick_data(srange, MD, 'Slope in fk-domain', 'Magnitude of slope', 'Magnitude-Distribution')
+		for j,pairs in enumerate(peaks):
+			if len(pairs) > 1:
+				maxm = 0
+				for i, item in enumerate(pairs):
+					if item[1] > maxm:
+						maxm = item[1]
+						idx = i
+				peaks[j] = [(pairs[idx][0], maxm)]
+		peaks = np.array(peaks).reshape(len(peaks), 2)
+	else:
+		MDconv = sp.signal.convolve(MD, sp.signal.boxcar(int(abs(pmin-pmax))*smoothing),mode=1)
+		peaks_first = find_peaks(MDconv, srange, peakpick='All', mindist=0.3)
+		peaks_first[1] = peaks_first[1]/peaks_first.max()*MD.max()
 
-	# Calculate envelope of the picked peaks, and pick the 
-	# peaks of the envelope.
-	peak_env = obsfilter.envelope( peaks_first[1] )
-	
-	peaks = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean() + delta_threshold)		
+		# Calculate envelope of the picked peaks, and pick the 
+		# peaks of the envelope.
+		peak_env = obsfilter.envelope( peaks_first[1] )
+		peaks = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean() + delta_threshold)		
 	
 	return MD, srange, peaks
 
@@ -695,9 +751,9 @@ def create_iFFT2mtx(nx, ny):
 
 		prcnt = (50*(i+1) / float(ny)) + 50
 		print("%i %% done" % prcnt, end="\r")
-		print(" \n")
 		sys.stdout.flush()	
-		
+
+	print("100 %% done \n")
 	sparse_iDFT2 = tmp.tocsc()
 	
 	# Calculate matrix dot-product iDFT2 * iDFT1
@@ -766,4 +822,3 @@ def cg_solver(A,b,niter,x0=None):
 	mnorm = np.linalg.norm(x, 2)
 	
 	return x, misfit, mnorm
-

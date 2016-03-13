@@ -49,7 +49,7 @@ attach_network_to_traces(stuni, invuni[0])
 attach_coordinates_to_traces(stuni, invuni, cat[0])
 delta = epidist2nparray(epidist(invuni, cat[0]))
 
-stgap = read_st("../data/synthetics_uniform/SUGAP.QHD")
+stgap = read_st("../data/synthetics_uniform/SUGAPTRUNC.QHD")
 
 
 stuni_al = alignon(stuni.copy(), invuni, cat[0], phase='PP', maxtimewindow=350)

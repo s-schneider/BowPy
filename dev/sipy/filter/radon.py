@@ -143,7 +143,7 @@ def radon_inverse(st, inv, event, p, weights, line_model, inversion_model, hyper
 		return(R)
 
 	#Exit if improper hyperparameters are entered.
-	if inversion_model == "L1" or inversion_model == "Cauchy":
+	if inversion_model in ["L1", "Cauchy"]:
 		if not len(hyperparameters == 2):
 			print("Improper number of trade-off parameters\n")
 			R=0
@@ -155,7 +155,7 @@ def radon_inverse(st, inv, event, p, weights, line_model, inversion_model, hyper
 			return(R)
 
 	#Preallocate space in memory.
-	R=np.zeros((ip,it)) #ok<NASGU>
+	R=np.zeros((ip,it)) 
 	Rfft=np.zeros((ip,iF)) + 0j
 	A=np.zeros((iDelta,ip)) + 0j
 	Tshift=np.zeros((iDelta,ip)) + 0j

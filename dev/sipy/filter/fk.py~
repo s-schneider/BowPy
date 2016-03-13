@@ -359,7 +359,7 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 		sys.stdout.flush()	
 	print("... finished\n")
 
-	print("Creating final Matrix A and column-wise-ordered data-vector dv...\n")
+	print("Creating final Matrix A and column-wise-ordered data-vector dv ...\n")
 	Af = tmp.copy()
 	tmp = None
 	dvf = sparse.lil_matrix(np.array(np.append(dv, np.zeros(dv.size))))
