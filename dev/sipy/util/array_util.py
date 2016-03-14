@@ -401,7 +401,7 @@ def find_equisets(numbers):
 	return
 
 
-def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
+def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal', taup_model='ak135'):
 	"""
 	Aligns traces on a given phase and truncates the starts to the latest beginning and the ends
 	to the earliest end.
@@ -420,7 +420,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=None, shiftmethod='norm
 
 	:param maxtimewindow: Maximum timewindow in seconds, symmetrical around theoretical phase arrival time, 
 						  in which to pick the maximum amplitude.
-	:type maxtimewindow: int or float
+	:type maxtimewindow: int
 	
 	:param taup_model: model used by TauPyModel to calculate arrivals, default is ak135
 	:type taup_model: str
@@ -515,7 +515,7 @@ def shift2ref(array, tref, tshift, mtw=None, method='normal'):
 
 	trace=array.copy()
 	# if mtw is set 
-	try:
+	if mtw != 0:
 		tmin = tref - int(mtw/2.)
 		tmax = tref + int(mtw/2.)
 		stmax = trace[tref]
@@ -526,7 +526,7 @@ def shift2ref(array, tref, tshift, mtw=None, method='normal'):
 					mtw_index = k
 		shift_value = tref - mtw_index
 
-	except:
+	else:
 		shift_value = tref - tshift
 
 	if method in ("normal", "Normal"):

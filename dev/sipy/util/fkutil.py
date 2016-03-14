@@ -45,29 +45,38 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, clr='black'):
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=None, clr='black'):
 	"""
 	Alpha Version!
 	
 	Needs inventory and event of catalog for yinfo using
 
 	param st: 	stream
-	type st:	obspy.core.stream.Stream
+	type  st:	obspy.core.stream.Stream
 
-	param inv:	inventory
-	type inv:
+	param inv: inventory
+	type  inv:
 
-	param event:	event of the seismogram
-	type event:
+	param event: event of the seismogram
+	type  event:
 
 	param zoom: zoom factor of the traces
-	type zoom:	float
+	type  zoom:	float
 
 	param yinfo:	Plotting with y info as distance of traces
-	type yinfo:		bool
+	type  yinfo:		bool
 
-	param markphase: Phase, that should be marked in the plot, default is "None"
-	type markphase: string
+	param markphase: Phases, that should be marked in the plot, default is "None"
+	type  markphase: list
+
+	param norm: Depiction of traces; unprocessed or normalized. Normalization options are:
+				all - normalized on biggest value of all traces
+				trace - each trace is normalized on its biggest value
+	type  norm: string or bool
+
+	param clr: Color of plot
+	type  clr: string
+
 	"""
 
 	#check for Data input
@@ -76,7 +85,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, clr='bla
 		raise TypeError(msg)
 
 	t_axis = np.linspace(0,st[0].stats.delta * st[0].stats.npts, st[0].stats.npts)
-	data = stream2array(st, normalize=True)
+	data = stream2array(st)
 	
 	spacing=2.
 
@@ -95,7 +104,17 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, clr='bla
 		isevent = True
 	
 	yold=0
+
+	# Normalize Data, if set to 'all'
+	if norm in ['all']:
+		data = data/data.max()
+
 	for j, trace in enumerate(data):
+
+		# Normalize trace, if set to 'trace'
+		if norm in ['trace']:
+			trace = trace/trace.max()
+
 		try:
 			y_dist = st[j].stats.distance
 		except:
@@ -103,22 +122,37 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, clr='bla
 		if markphase and isinv and isevent:
 			origin = event.origins[0]['time']
 			m = TauPyModel('ak135')
-			t = m.get_travel_times(depth, y_dist, phase_list=[markphase])[0].time
-			phase_time = origin + t - st[j].stats.starttime
-			Phase_npt = int(phase_time/st[j].stats.delta)
-			Phase = Phase_npt * st[j].stats.delta
-	
+			arrivals = m.get_travel_times(depth, y_dist, phase_list=markphase)
+			timetable = [ [], [] ] #np.zeros((2, len(arrivals))).tolist()
+			for k, phase in enumerate(arrivals):
+				phase_name = phase.name
+				t = phase.time
+				phase_time = origin + t - st[j].stats.starttime
+				Phase_npt = int(phase_time/st[j].stats.delta)
+				Phase = Phase_npt * st[j].stats.delta
+
+				if Phase < t_axis.min() or Phase > t_axis.max():
+					continue	
+				else:	
+					timetable[0].append(phase_name)
+					timetable[1].append(Phase)
+				
+
 			if yinfo:
 				plt.ylabel("Distance in deg")
 				plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
 				plt.plot(t_axis,zoom*trace+ y_dist, color=clr)
-				plt.plot( (Phase,Phase),(-1+y_dist,1+y_dist), color='red' )			
+				plt.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color='red' )
+				for time, key in enumerate(timetable[0]):
+					plt.annotate('%s' % key, xy=(timetable[1][time],y_dist))
 			else:
 				plt.ylabel("No. of trace")
 				plt.gca().yaxis.set_major_locator(plt.NullLocator())
 				plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
 				plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)
-				plt.plot( (Phase,Phase),(-1+spacing*j,1+spacing*j), color='red' )
+				plt.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color='red' )
+				for time, key in enumerate(timetable[0]):
+					plt.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
 
 		elif markphase and not isinv and not isevent:
 			msg='Markphase needs Inventory and Event Information, not found.'
