@@ -105,15 +105,6 @@ def get_coords(inventory, returntype="dict"):
 
 	return coords
 
-def trace2array(trace):
-	tx = trace.copy()
-	x = np.zeros(tx.size)
-	for index, data in tx.data:
-		x[index] = data
-
-	return x 
-
-
 def stream2array(stream, normalize=False):
 	sx = stream.copy()
 	x = np.zeros((len(sx), len(sx[0].data)))
@@ -494,7 +485,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 	return st_align
 
 
-def shift2ref(array, tref, tshift, mtw=None, method='normal'):
+def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 	"""
 	Shifts the trace in array to the order of tref - tshift. If mtw is given, tshift
 	will be calculated depdending on the maximum amplitude of array in the give
@@ -590,6 +581,7 @@ def stack(data, order=None):
 
 	i, j = data.shape
 	vNth = 0
+	v = 0
 	# if order is not None	
 	try:
  		order = float(order)
@@ -603,7 +595,6 @@ def stack(data, order=None):
 		v = vsgn * abs(vNth)**order		
 
 	except TypeError:
-
 		for trace in data:
 			v = v + trace
 		v = v / data.shape[0]

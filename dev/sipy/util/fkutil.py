@@ -15,11 +15,11 @@ import obspy.signal.filter as obsfilter
 from obspy.geodetics import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy.taup import TauPyModel
 from obspy.core.event.event import Event
-from obspy import Stream, Inventory
+from obspy import Stream, Trace, Inventory
 
 from sipy.util.base import nextpow2
 from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces, stream2array
-from sipy.util.picker import pick_data
+from sipy.util.picker import pick_data, FollowDotCursor
 import datetime
 import scipy as sp
 import scipy.signal as signal
@@ -80,106 +80,166 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 	"""
 
 	#check for Data input
-	if not isinstance(st, obspy.core.stream.Stream):
-		msg = "Wrong data input, must be obspy.core.stream.Stream"
-		raise TypeError(msg)
-
-	t_axis = np.linspace(0,st[0].stats.delta * st[0].stats.npts, st[0].stats.npts)
-	data = stream2array(st)
+	if not isinstance(st, Stream):
+		if not isinstance(st, Trace):
+			msg = "Wrong data input, must be Stream or Trace"
+			raise TypeError(msg)
 	
-	spacing=2.
+	if isinstance(st, Stream):
 
-	# Set axis information and bools.
-	plt.xlabel("Time in s")
-	isinv = False
-	isevent = False
+		t_axis = np.linspace(0,st[0].stats.delta * st[0].stats.npts, st[0].stats.npts)
+		data = stream2array(st)
+		
+		spacing=2.
 
-	if isinstance(inv, Inventory) and isinstance(event,Event):
-		# Calculates y-axis info using epidistance information of the stream.
-		# Check if there is a network entry
-		attach_network_to_traces(st,inv[0])
-		attach_coordinates_to_traces(st, inv, event)
-		depth = event.origins[0]['depth']/1000.
-		isinv = True
-		isevent = True
-	
-	yold=0
+		# Set axis information and bools.
+		plt.xlabel("Time in s")
+		isinv = False
+		isevent = False
 
-	# Normalize Data, if set to 'all'
-	if norm in ['all']:
-		data = data/data.max()
+		if isinstance(inv, Inventory) and isinstance(event,Event):
+			# Calculates y-axis info using epidistance information of the stream.
+			# Check if there is a network entry
+			attach_network_to_traces(st,inv[0])
+			attach_coordinates_to_traces(st, inv, event)
+			depth = event.origins[0]['depth']/1000.
+			isinv = True
+			isevent = True
 
-	for j, trace in enumerate(data):
+		yold=0
+		
+		# Normalize Data, if set to 'all'
+		if norm in ['all']:
+			data = data/data.max()
+		for j, trace in enumerate(data):
 
-		# Normalize trace, if set to 'trace'
-		if norm in ['trace']:
-			trace = trace/trace.max()
+			# Normalize trace, if set to 'trace'
+			if norm in ['trace']:
+				trace = trace/trace.max()
 
+			try:
+				y_dist = st[j].stats.distance
+			except:
+				y_dist = yold + 1
+			if markphase and isinv and isevent:
+				origin = event.origins[0]['time']
+				m = TauPyModel('ak135')
+				arrivals = m.get_travel_times(depth, y_dist, phase_list=markphase)
+				timetable = [ [], [] ]
+				for k, phase in enumerate(arrivals):
+					phase_name = phase.name
+					t = phase.time
+					phase_time = origin + t - st[j].stats.starttime
+					Phase_npt = int(phase_time/st[j].stats.delta)
+					Phase = Phase_npt * st[j].stats.delta
+
+					if Phase < t_axis.min() or Phase > t_axis.max():
+						continue	
+					else:	
+						timetable[0].append(phase_name)
+						timetable[1].append(Phase)
+					
+
+				if yinfo:
+					plt.ylabel("Distance in deg")
+					plt.xlabel("Time in s")
+					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
+					plt.plot(t_axis,zoom*trace+ y_dist, color=clr)
+					plt.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color='red' )
+					for time, key in enumerate(timetable[0]):
+						plt.annotate('%s' % key, xy=(timetable[1][time],y_dist))
+				else:
+					plt.ylabel("No. of trace")
+					plt.xlabel("Time in s")
+					plt.gca().yaxis.set_major_locator(plt.NullLocator())
+					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
+					plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)
+					plt.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color='red' )
+					for time, key in enumerate(timetable[0]):
+						plt.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
+
+			elif markphase and not isinv and not isevent:
+				msg='Markphase needs Inventory and Event Information, not found.'
+				raise IOError(msg)		
+			
+			else:
+
+				if yinfo:
+					try:
+						plt.ylabel("Distance in deg")
+						plt.xlabel("Time in s")
+						plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
+						plt.plot(t_axis,zoom*trace+ y_dist, color=clr)
+				
+					except:
+						msg='Oops, something not found.'
+						raise IOError(msg)
+				else:
+					plt.ylabel("No. of trace")
+					plt.xlabel("Time in s")
+					plt.gca().yaxis.set_major_locator(plt.NullLocator())
+					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
+					plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)			
+			
+			yold = y_dist
+		plt.ion()
+		plt.draw()
+		plt.show()
+		plt.ioff()
+
+	elif isinstance(st, Trace):
+
+		t_axis = np.linspace(0,st.stats.delta * st.stats.npts, st.stats.npts)
+		data = st.data.copy()
+
+		if norm in ['all', 'All', 'trace', 'Trace']:
+			data = data/data.max()
 		try:
-			y_dist = st[j].stats.distance
+			y_dist = st.stats.distance
 		except:
-			y_dist = yold + 1
-		if markphase and isinv and isevent:
+			print("No distance information attached to trace!")
+			return
+
+		if markphase:
 			origin = event.origins[0]['time']
+			depth = event.origins[0]['depth']/1000.
 			m = TauPyModel('ak135')
 			arrivals = m.get_travel_times(depth, y_dist, phase_list=markphase)
-			timetable = [ [], [] ] #np.zeros((2, len(arrivals))).tolist()
+			timetable = [ [], [] ]
 			for k, phase in enumerate(arrivals):
 				phase_name = phase.name
 				t = phase.time
-				phase_time = origin + t - st[j].stats.starttime
-				Phase_npt = int(phase_time/st[j].stats.delta)
-				Phase = Phase_npt * st[j].stats.delta
+				phase_time = origin + t - st.stats.starttime
+				Phase_npt = int(phase_time/st.stats.delta)
+				Phase = Phase_npt * st.stats.delta
 
 				if Phase < t_axis.min() or Phase > t_axis.max():
 					continue	
 				else:	
 					timetable[0].append(phase_name)
 					timetable[1].append(Phase)
-				
 
-			if yinfo:
-				plt.ylabel("Distance in deg")
-				plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-				plt.plot(t_axis,zoom*trace+ y_dist, color=clr)
-				plt.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color='red' )
-				for time, key in enumerate(timetable[0]):
-					plt.annotate('%s' % key, xy=(timetable[1][time],y_dist))
-			else:
-				plt.ylabel("No. of trace")
-				plt.gca().yaxis.set_major_locator(plt.NullLocator())
-				plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-				plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)
-				plt.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color='red' )
-				for time, key in enumerate(timetable[0]):
-					plt.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
-
-		elif markphase and not isinv and not isevent:
-			msg='Markphase needs Inventory and Event Information, not found.'
-			raise IOError(msg)		
-		
+			plt.ylabel("Amplitude")
+			plt.xlabel("Time in s")
+			title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
+			plt.title(title)
+			plt.gca().yaxis.set_major_locator(plt.NullLocator())
+			plt.plot(t_axis,zoom*data, color=clr)
+			plt.plot( (timetable[1],timetable[1]),(-0.5,0.5), color='red' )
+			for time, key in enumerate(timetable[0]):
+				plt.annotate('%s' % key, xy=(timetable[1][time]+5,0.55))
 		else:
+			plt.ylabel("Amplitude")
+			plt.xlabel("Time in s")
+			title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
+			plt.title(title)
+			plt.gca().yaxis.set_major_locator(plt.NullLocator())
+			plt.plot(t_axis, zoom*data, color=clr)
 
-			if yinfo:
-				try:
-					plt.ylabel("Distance in deg")
-					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-					plt.plot(t_axis,zoom*trace+ y_dist, color=clr)
-			
-				except:
-					msg='Oops, something not found.'
-					raise IOError(msg)
-			else:
-				plt.ylabel("No. of trace")
-				plt.gca().yaxis.set_major_locator(plt.NullLocator())
-				plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-				plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)			
-		
-		yold = y_dist
-	plt.ion()
-	plt.draw()
-	plt.show()
-	plt.ioff()
+		plt.ion()
+		plt.draw()
+		plt.show()
+		plt.ioff()
 
 def plot_data(data, zoom=1, y_dist=1, bins=None, clr='black'):
 	"""
