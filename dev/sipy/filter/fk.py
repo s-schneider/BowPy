@@ -236,10 +236,11 @@ def fktrafo(stream, inv, event, normalize=True):
 	
 	return fkdata
 
-def fk_reconstruct(st, mu=5e-2, solver="iterative", maxiter=8):
+def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, method='denoise', solver="iterative",  mu=5e-2):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
+	If all traces are avaiable it is a useful method to de-noise the data.
 	Uses the following cost function to minimize:
 
 			J = ||dv - T FHmtx2D Yw Dv ||^{2}_{2} + mu^2 ||Dv||^{2}_{2}
@@ -253,20 +254,41 @@ def fk_reconstruct(st, mu=5e-2, solver="iterative", maxiter=8):
 			mu := Trade-off parameter between misfit and model norm
 
 
-	Minimizing is done via a method of conjugate gradients, de-noising (1-2 iterations), reconstruction(8-10) iterations.
-	T FHmtx2D Yw Dv will be formed to one matrix A, so at the end the equation has the form:
+	Minimizing is done via a method of the LSMR solver, de-noising (1-2 iterations), reconstruction(8-10) iterations.
+	T FHmtx2D Yw Dv will be formed to one matrix A, so at the end the equation system that will be solved has the form:
 			
 							|   A    |		  | dv |
 							|    	 | * Dv = |    |
 							| mu * I |		  | 0  |
 
-							  Afinal		  dfinal
 
-	:param:
+	:param st: Stream with missing traces, to be reconstructed or complete stream to be de-noised
+	:type  st: obspy.core.stream.Stream
+
+	:param slopes: Range of slopes to investigate for mask-function
+	:type  slopes: list
+
+	:param deltaslope: stepsize inbetween slopes.
+	:type  deltaslope: float
+
+	:param slopepicking: If True peaks of slopedistribution can be picked by hand.
+	:type  slopepicking: bool
+
+	:param method: Desired fk-method, options are 'denoise' and 'interpolate'
+	:type  method: string
+
+	:param solver: Solver used for method. Options are 'lsqr' and 'iterative'.
+				   If method is 'denoise' only the iterative solver is used.
+	:type  solver: string
+	
+	:param mu:	Damping parameter for the solver
+	:type  mu:	float
 
 	returns:
 
-	:param: 
+	:param st_rec: Stream with reconstructed signals on the missing traces
+	:type  st_rec: obspy.core.stream.Stream
+
 
 	Example:
 				from obspy import read as read_st
@@ -282,7 +304,7 @@ def fk_reconstruct(st, mu=5e-2, solver="iterative", maxiter=8):
 					ArrayData[i,:]=trace[400:700]
 				stream = sipy.util.array_util.array2stream(ArrayData, stream_org)
 	
-				dssa = sipy.filter.fk.fk_reconstruct(stream, mu=5e-2, maxiter=8)
+				dssa = sipy.filter.fk.fk_reconstruct(stream, mu=5e-2, method='interpolate')
 				
 				stream_ssa = sipy.util.array_util.array2stream(dssa, stream)
 
@@ -292,9 +314,6 @@ def fk_reconstruct(st, mu=5e-2, solver="iterative", maxiter=8):
 	Reference:	Mostafa Naghizadeh, Seismic data interpolation and de-noising in the frequency-wavenumber
 				domain, 2012, GEOPHYSICS
 	"""
-	peakpick = None
-	deltaslope = 0.05
-	slopes = [-10,15]
 
 	# Prepare data.
 	st_tmp = st.copy()
@@ -312,7 +331,7 @@ def fk_reconstruct(st, mu=5e-2, solver="iterative", maxiter=8):
 
 	# Calculate mask-function W.
 	print("Calculating slope distribution...\n")
-	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick)
+	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, interactive=slopepicking)
 	print("Creating mask function...\n")
 	W = makeMask(fkData, peaks[0])
 	
@@ -345,10 +364,16 @@ def fk_reconstruct(st, mu=5e-2, solver="iterative", maxiter=8):
 	A =  Ts.dot(FH.dot(Yw))
 	print("Starting reconstruction...\n")
 
-	if solver in ("lsqr", "leastsquares"):
+	if method in ("denoise"):
+			maxiter = 2
+	if method in ("interpolate"):
+			maxiter = 10
+
+	if solver in ("lsqr", "leastsquares") and not method in ("interpolate"):
 		print(" ...using least-squares solver...\n")
-		x = sparse.linalg.lsqr(A, dv, mu)
-	elif solver in ("ilsmr", "iterative"):
+		Dv_rec = sparse.linalg.lsqr(A, dv, mu)
+
+	elif solver in ("ilsmr", "iterative") or method in ("interpolate"):
 		print(" ...using iterative LSMR solver...\n")
 		x = sparse.linalg.lsmr(A,dv,mu, maxiter=maxiter)
 		print("istop = %i \n" % x[1])
@@ -358,11 +383,16 @@ def fk_reconstruct(st, mu=5e-2, solver="iterative", maxiter=8):
 		print("Condition number = %f \n" % x[5])
 		print("Norm of Dv = %f \n" % x[6]) 
 		Dv_rec = x[0]/x[0].max()
+	else:
+		print("No solver or method specified.")
+		return
+
+	data_rec = np.fft.ifft2(Dv_rec.reshape(fkData.shape))
+	data_rec = (data_rec/data_rec.max()).real
 	
-	st_rec = np.fft.ifft2(Dv_rec.reshape(fkData.shape))
-	st_rec = (st_rec/st_rec.max()).real
+	st_rec = array2stream(data_rec, st)
 	
-	return dv, Dv, Dv_rec, st_rec
+	return st_rec
 
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
