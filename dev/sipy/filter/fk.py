@@ -16,7 +16,7 @@ import scipy.signal as signal
 from scipy import sparse
 from scipy.optimize import fmin_cg
 
-from sipy.util.array_util import array2stream, stream2array, epidist2nparray, epidist
+from sipy.util.array_util import array2stream, stream2array, epidist2nparray, attach_epidist2coords
 from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array,\
 							find_peaks, slope_distribution, makeMask, create_iFFT2mtx, cg_solver
 from sipy.util.base import nextpow2

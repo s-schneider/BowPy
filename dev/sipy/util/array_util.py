@@ -283,7 +283,7 @@ def find_closest_station(inventory, latitude, longitude,
     return min_distance_station
 
 
-def epidist(inventory, event, stream=None):
+def attach_epidist2coords(inventory, event, stream=None):
 	"""
 	Receives the epicentral distance of the station-source couple given in inventory - event and adds them to Array_Coords. 
 	If called with stream, it uses just the coordinates of the used stations in stream.
@@ -293,7 +293,6 @@ def epidist(inventory, event, stream=None):
 
 	param event:
 	type event:
-
 
 	param stream:
 	type stream:
@@ -367,7 +366,7 @@ def isuniform(inv, event, stream=None, tolerance=0.5):
 	returns: True or False
 	"""
 
-	distances = epidist2nparray( epidist(inv,event,stream) )
+	distances = epidist2nparray( attach_epidist2coords(inv,event,stream) )
 	delta_distances = np.diff(distances)	
 	L = distances.max() - distances.min()
 	ideal_delta = L / (distances.size - 1)
@@ -790,8 +789,16 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	# Prepare and convert objects.
 	st = stream.copy()
 	data = stream2array(st, normalize=True)
-	yinfo = epidist2nparray(epidist(inv, event, st))
-	dx = (yinfo.max() - yinfo.min() + 1) / yinfo.size
+
+	attach_network_to_traces(st, inv[0])
+	attach_coordinates_to_traces(st, inv, event)
+
+	epidist = np.zeros(data.shape[0])
+	for i,trace in enumerate(st):
+		epidist[i]=trace.stats.distance
+	epidist.sort()
+
+	dx = (epidist.max() - epidist.min() + 1) / epidist.size
 	dsample = st[0].stats.delta
 	Nsample = st[0].stats.npts
 
@@ -837,8 +844,8 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 		origin = event.origins[0]['time']
 		depth = event.origins[0]['depth']/1000.
 		m = TauPyModel('ak135')
-		yinfo = st[sref].stats.distance
-		arrival =  m.get_travel_times(depth, yinfo, phase_list=markphases)
+		dist = st[sref].stats.distance
+		arrival =  m.get_travel_times(depth, dist, phase_list=markphases)
 		
 		try:
 			plt.title(r'Vespagram of power %i in range from %i to %i $\frac{s}{deg}$' %(power, slomin, slomax), fontsize=15 )

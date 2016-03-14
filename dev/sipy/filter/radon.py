@@ -9,7 +9,7 @@ import scipy as sp
 from scipy import sparse
 from sipy.util.base import nextpow2
 from sipy.util.picker import get_polygon
-from sipy.util.array_util import stream2array, epidist, epidist2nparray
+from sipy.util.array_util import stream2array, attach_epidist2coords, epidist2nparray
 
 from obspy import Stream, Inventory
 from obspy.core.event.event import Event
