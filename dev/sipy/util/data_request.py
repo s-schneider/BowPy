@@ -8,7 +8,7 @@ import numpy as np
 from obspy.geodetics import locations2degrees
 from obspy.taup import TauPyModel
 
-from sipy.util.array_util import center_of_gravity, plot_gcp
+from sipy.util.array_util import center_of_gravity, plot_gcp, attach_network_to_traces
 
 def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ", minlat=None,
                  maxlat=None,minlon=None,maxlon=None, mindepth=None, maxdepth=None, 
@@ -16,6 +16,8 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
                  azimuth=None, radialsearch=False, savefile=False):
     """
     Searches in a given Database for seismic data. Restrictions in terms of starttime, endtime, network etc can be made.
+    If data is found it returns a stream variable, with the waveforms, an inventory with all station and network information
+    and a catalog with the event information.
 
     :param client_name: Name of desired fdsn client, for a list of all clients see: 
                         https://docs.obspy.org/tutorial/code_snippets/retrieving_data_from_datacenters.html
@@ -60,8 +62,8 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 
     returns
 
-    :param: data as a list of tuples in form (Stream, Inventory, Catalog)
-    :type: list
+    :param: Stream, Inventory, Catalog
+    :type: obspy 
 
     ### Example ###
 
@@ -73,7 +75,7 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
     nw="TA"
     stats="*"
 
-    data = data_request(client_name = dl, start = start, end = end, minmag = minmag, net = nw, scode = stats)
+    st, inv, cat = data_request(client_name = dl, start = start, end = end, minmag = minmag, net = nw, scode = stats)
 
     """
 
@@ -127,18 +129,16 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
                 except:
                     print("No data for station %s ... \n" % station.code )
                     continue
+            attach_network_to_traces(stream, network)
 
-        if savefile:
-                 stname = str(origin_t).split('.')[0] + ".MSEED"
-                 invname = stname + "_inv.xml"
-                 catname = stname + "_cat.xml"
-                 st[i].write(stname, format="MSEED")
-                 inventory[i].write(invname, format="STATIONXML")
-                 catalog[i].write(catname, format="QUAKEML")
-        
+    if savefile:
+             stname = str(origin_t).split('.')[0] + ".MSEED"
+             invname = stname + "_inv.xml"
+             catname = stname + "_cat.xml"
+             stream.write(stname, format="MSEED")
+             inventory.write(invname, format="STATIONXML")
+             catalog.write(catname, format="QUAKEML")
 
-        stream_inv_event = (stream, inventory, event)
-        data.append(stream_inv_event)
 
-    return(data)
+    return(stream, inventory, catalog)
 
