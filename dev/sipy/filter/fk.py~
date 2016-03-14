@@ -16,10 +16,11 @@ import scipy.signal as signal
 from scipy import sparse
 from scipy.optimize import fmin_cg
 
-from sipy.util.array_util import array2stream, stream2array, epidist2nparray, epidist
-from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array, get_polygon,\
-							find_peaks, slope_distribution, makeMask, create_iFFT2mtx, cg_solver
+from sipy.util.array_util import array2stream, stream2array, epidist2nparray, attach_epidist2coords
+from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array,\
+							find_peaks, slope_distribution, makeMask, create_iFFT2mtx, cg_solver, lstsqs
 from sipy.util.base import nextpow2
+from sipy.util.picker import get_polygon
 
 def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', phase=None, polygon=12, normalize=True, SSA=False):
 	"""
@@ -235,7 +236,7 @@ def fktrafo(stream, inv, event, normalize=True):
 	
 	return fkdata
 
-def fk_reconstruct(st, mu=5e-2, maxiter=8):
+def fk_reconstruct(st, mu=5e-2, solver="iterative", maxiter=8):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
@@ -338,38 +339,30 @@ def fk_reconstruct(st, mu=5e-2, maxiter=8):
 	FH = create_iFFT2mtx(fkDT.shape[0], fkDT.shape[1]) 
 	print("... finished\n")
 
-	# Create model matrix Afinal and data vector dfinal.
-	print("Creating sparse %ix%i matrix A ...\n" %(2*FH.shape[0], FH.shape[1]))	
-	
-	A =  Ts.dot(FH.dot(Yw))	
-	tmp = sparse.lil_matrix((2*A.shape[0], A.shape[1]), dtype='complex')
-	tmpeye = sparse.lil_matrix(sparse.eye(A.shape[0]))
-	for i, trace in enumerate(A):
-		tmp[i,:]=trace
-
-		prcnt = 50*(i+1) / float(A.shape[0])
-		print("%i %% done" % prcnt, end="\r")
-		sys.stdout.flush()	
-
-	for i, trace in enumerate(tmpeye):
-		tmp[i+A.shape[0],:] = trace
-
-		prcnt = (50*(i+1) / float(A.shape[0])) + 50
-		print("%i %% done" % prcnt, end="\r")
-		sys.stdout.flush()	
-	print("... finished\n")
-
-	print("Creating final Matrix A and column-wise-ordered data-vector dv ...\n")
-	Af = tmp.copy()
-	tmp = None
-	dvf = sparse.lil_matrix(np.array(np.append(dv, np.zeros(dv.size))))
-	print("... finished\n")
-
+	# Create model matrix A.
+	print("Creating sparse %ix%i matrix A ...\n" %(FH.shape[0], FH.shape[1]))	
+	A =  Ts.dot(FH.dot(Yw))
 	print("Starting reconstruction...\n")
-		
-	st_reconstructed, misfit, mnorm  = cg_solver(Af.toarray(), dvf.toarray()[0], maxiter, Dv)
 
-	return st_reconstructed, misfit, mnorm
+	if solver in ("lsqr", "leastsquares"):
+		print(" ...using least-squares solver...\n")
+		x = sparse.linalg.lsqr(A, dv, mu)
+	elif solver in ("ilsmr", "iterative"):
+		print(" ...using iterative LSMR solver...\n")
+		x = sparse.linalg.lsmr(A,dv,mu, maxiter=maxiter)
+		print("istop = %i \n" % x[1])
+		print("Used iterations = %i \n" % x[2])
+		print("Misfit = %f \n " % x[3])
+		print("Modelnorm = %f \n" % x[4])
+		print("Condition number = %f \n" % x[5])
+		print("Norm of Dv = %f \n" % x[6]) 
+		Dv_rec = x[0]/x[0].max()
+	
+	st_rec = np.fft.ifft2(Dv_rec.reshape(fkData.shape))
+	st_rec = (st_rec/st_rec.max()).real
+	
+	return dv, Dv, Dv_rec, st_rec
+
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
 	"""

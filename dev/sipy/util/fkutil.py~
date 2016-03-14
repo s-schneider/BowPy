@@ -9,20 +9,17 @@ import matplotlib
 #matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.path as mplPath
-from matplotlib.lines import Line2D
-from matplotlib.patches import Rectangle
-from matplotlib.text import Text
-from matplotlib.image import AxesImage
 
 import obspy
 import obspy.signal.filter as obsfilter
 from obspy.geodetics import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy.taup import TauPyModel
 from obspy.core.event.event import Event
-from obspy import Stream, Inventory
+from obspy import Stream, Trace, Inventory
 
 from sipy.util.base import nextpow2
 from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces, stream2array
+from sipy.util.picker import pick_data, FollowDotCursor
 import datetime
 import scipy as sp
 import scipy.signal as signal
@@ -48,107 +45,201 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, clr='black'):
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=None, clr='black'):
 	"""
 	Alpha Version!
 	
 	Needs inventory and event of catalog for yinfo using
 
 	param st: 	stream
-	type st:	obspy.core.stream.Stream
+	type  st:	obspy.core.stream.Stream
 
-	param inv:	inventory
-	type inv:
+	param inv: inventory
+	type  inv:
 
-	param event:	event of the seismogram
-	type event:
+	param event: event of the seismogram
+	type  event:
 
 	param zoom: zoom factor of the traces
-	type zoom:	float
+	type  zoom:	float
 
 	param yinfo:	Plotting with y info as distance of traces
-	type yinfo:		bool
+	type  yinfo:		bool
 
-	param markphase: Phase, that should be marked in the plot, default is "None"
-	type markphase: string
+	param markphase: Phases, that should be marked in the plot, default is "None"
+	type  markphase: list
+
+	param norm: Depiction of traces; unprocessed or normalized. Normalization options are:
+				all - normalized on biggest value of all traces
+				trace - each trace is normalized on its biggest value
+	type  norm: string or bool
+
+	param clr: Color of plot
+	type  clr: string
+
 	"""
 
 	#check for Data input
-	if not isinstance(st, obspy.core.stream.Stream):
-		msg = "Wrong data input, must be obspy.core.stream.Stream"
-		raise TypeError(msg)
-
-	t_axis = np.linspace(0,st[0].stats.delta * st[0].stats.npts, st[0].stats.npts)
-	data = stream2array(st, normalize=True)
+	if not isinstance(st, Stream):
+		if not isinstance(st, Trace):
+			msg = "Wrong data input, must be Stream or Trace"
+			raise TypeError(msg)
 	
-	spacing=2.
+	if isinstance(st, Stream):
 
-	# Set axis information and bools.
-	plt.xlabel("Time in s")
-	isinv = False
-	isevent = False
-
-	if isinstance(inv, Inventory) and isinstance(event,Event):
-		# Calculates y-axis info using epidistance information of the stream.
-		# Check if there is a network entry
-		attach_network_to_traces(st,inv[0])
-		attach_coordinates_to_traces(st, inv, event)
-		depth = event.origins[0]['depth']/1000.
-		isinv = True
-		isevent = True
-	
-	yold=0
-	for j, trace in enumerate(data):
-		try:
-			y_dist = st[j].stats.distance
-		except:
-			y_dist = yold + 1
-		if markphase and isinv and isevent:
-			origin = event.origins[0]['time']
-			m = TauPyModel('ak135')
-			t = m.get_travel_times(depth, y_dist, phase_list=[markphase])[0].time
-			phase_time = origin + t - st[j].stats.starttime
-			Phase_npt = int(phase_time/st[j].stats.delta)
-			Phase = Phase_npt * st[j].stats.delta
-	
-			if yinfo:
-				plt.ylabel("Distance in deg")
-				plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-				plt.plot(t_axis,zoom*trace+ y_dist, color=clr)
-				plt.plot( (Phase,Phase),(-1+y_dist,1+y_dist), color='red' )			
-			else:
-				plt.ylabel("No. of trace")
-				plt.gca().yaxis.set_major_locator(plt.NullLocator())
-				plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-				plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)
-				plt.plot( (Phase,Phase),(-1+spacing*j,1+spacing*j), color='red' )
-
-		elif markphase and not isinv and not isevent:
-			msg='Markphase needs Inventory and Event Information, not found.'
-			raise IOError(msg)		
+		t_axis = np.linspace(0,st[0].stats.delta * st[0].stats.npts, st[0].stats.npts)
+		data = stream2array(st)
 		
-		else:
+		spacing=2.
 
-			if yinfo:
-				try:
+		# Set axis information and bools.
+		plt.xlabel("Time in s")
+		isinv = False
+		isevent = False
+
+		if isinstance(inv, Inventory) and isinstance(event,Event):
+			# Calculates y-axis info using epidistance information of the stream.
+			# Check if there is a network entry
+			attach_network_to_traces(st,inv[0])
+			attach_coordinates_to_traces(st, inv, event)
+			depth = event.origins[0]['depth']/1000.
+			isinv = True
+			isevent = True
+
+		yold=0
+		
+		# Normalize Data, if set to 'all'
+		if norm in ['all']:
+			data = data/data.max()
+		for j, trace in enumerate(data):
+
+			# Normalize trace, if set to 'trace'
+			if norm in ['trace']:
+				trace = trace/trace.max()
+
+			try:
+				y_dist = st[j].stats.distance
+			except:
+				y_dist = yold + 1
+			if markphase and isinv and isevent:
+				origin = event.origins[0]['time']
+				m = TauPyModel('ak135')
+				arrivals = m.get_travel_times(depth, y_dist, phase_list=markphase)
+				timetable = [ [], [] ]
+				for k, phase in enumerate(arrivals):
+					phase_name = phase.name
+					t = phase.time
+					phase_time = origin + t - st[j].stats.starttime
+					Phase_npt = int(phase_time/st[j].stats.delta)
+					Phase = Phase_npt * st[j].stats.delta
+
+					if Phase < t_axis.min() or Phase > t_axis.max():
+						continue	
+					else:	
+						timetable[0].append(phase_name)
+						timetable[1].append(Phase)
+					
+
+				if yinfo:
 					plt.ylabel("Distance in deg")
+					plt.xlabel("Time in s")
 					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
 					plt.plot(t_axis,zoom*trace+ y_dist, color=clr)
+					plt.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color='red' )
+					for time, key in enumerate(timetable[0]):
+						plt.annotate('%s' % key, xy=(timetable[1][time],y_dist))
+				else:
+					plt.ylabel("No. of trace")
+					plt.xlabel("Time in s")
+					plt.gca().yaxis.set_major_locator(plt.NullLocator())
+					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
+					plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)
+					plt.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color='red' )
+					for time, key in enumerate(timetable[0]):
+						plt.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
+
+			elif markphase and not isinv and not isevent:
+				msg='Markphase needs Inventory and Event Information, not found.'
+				raise IOError(msg)		
 			
-				except:
-					msg='Oops, something not found.'
-					raise IOError(msg)
 			else:
-				plt.ylabel("No. of trace")
-				plt.gca().yaxis.set_major_locator(plt.NullLocator())
-				plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-				plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)			
-		
-		yold = y_dist
-	plt.ion()
-	plt.draw()
-	plt.show()
-	plt.ioff()
+
+				if yinfo:
+					try:
+						plt.ylabel("Distance in deg")
+						plt.xlabel("Time in s")
+						plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
+						plt.plot(t_axis,zoom*trace+ y_dist, color=clr)
+				
+					except:
+						msg='Oops, something not found.'
+						raise IOError(msg)
+				else:
+					plt.ylabel("No. of trace")
+					plt.xlabel("Time in s")
+					plt.gca().yaxis.set_major_locator(plt.NullLocator())
+					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
+					plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)			
+			
+			yold = y_dist
+		plt.ion()
+		plt.draw()
+		plt.show()
+		plt.ioff()
+
+	elif isinstance(st, Trace):
+
+		t_axis = np.linspace(0,st.stats.delta * st.stats.npts, st.stats.npts)
+		data = st.data.copy()
+
+		if norm in ['all', 'All', 'trace', 'Trace']:
+			data = data/data.max()
+		try:
+			y_dist = st.stats.distance
+		except:
+			print("No distance information attached to trace!")
+			return
+
+		if markphase:
+			origin = event.origins[0]['time']
+			depth = event.origins[0]['depth']/1000.
+			m = TauPyModel('ak135')
+			arrivals = m.get_travel_times(depth, y_dist, phase_list=markphase)
+			timetable = [ [], [] ]
+			for k, phase in enumerate(arrivals):
+				phase_name = phase.name
+				t = phase.time
+				phase_time = origin + t - st.stats.starttime
+				Phase_npt = int(phase_time/st.stats.delta)
+				Phase = Phase_npt * st.stats.delta
+
+				if Phase < t_axis.min() or Phase > t_axis.max():
+					continue	
+				else:	
+					timetable[0].append(phase_name)
+					timetable[1].append(Phase)
+
+			plt.ylabel("Amplitude")
+			plt.xlabel("Time in s")
+			title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
+			plt.title(title)
+			plt.gca().yaxis.set_major_locator(plt.NullLocator())
+			plt.plot(t_axis,zoom*data, color=clr)
+			plt.plot( (timetable[1],timetable[1]),(-0.5,0.5), color='red' )
+			for time, key in enumerate(timetable[0]):
+				plt.annotate('%s' % key, xy=(timetable[1][time]+5,0.55))
+		else:
+			plt.ylabel("Amplitude")
+			plt.xlabel("Time in s")
+			title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
+			plt.title(title)
+			plt.gca().yaxis.set_major_locator(plt.NullLocator())
+			plt.plot(t_axis, zoom*data, color=clr)
+
+		plt.ion()
+		plt.draw()
+		plt.show()
+		plt.ioff()
 
 def plot_data(data, zoom=1, y_dist=1, bins=None, clr='black'):
 	"""
@@ -339,128 +430,6 @@ def shift_array(array, shift_value=0, y_dist=False):
 			array_shift[i] = np.roll(array[i], -shift_value*i)
 	return(array_shift)
 
-def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, yticks=None):
-	"""
-	Interactive function to pick a polygon out of a figure and receive the vertices of it.
-	:param data:
-	:type:
-	
-	:param no_of_vert: number of vertices, default 4, 
-	:type no_of_vert: int
-	"""
-	from sipy.util.polygon_interactor import PolygonInteractor
-	from matplotlib.patches import Polygon
-	
-	no_of_vert = int(no_of_vert)
-	# Define shape of polygon.
-	try:
-		x, y = xticks.max(), yticks.max() 
-		xmin= x/3.
-		xmax= x*2./3.
-		ymin= y/3.
-		ymax= y*2./3.
-
-	except AttributeError:
-		y,x = data.shape
-		xmin= x/3.
-		xmax= x*2./3.
-		ymin= y/3.
-		ymax= y*2./3.
-
-	xs = []
-	for i in range(no_of_vert):
-		if i >= no_of_vert/2:
-			xs.append(xmax)
-		else:
-			xs.append(xmin)
-
-	ys = np.linspace(ymin, ymax, no_of_vert/2)
-	ys = np.append(ys,ys[::-1]).tolist()
-
-	poly = Polygon(list(zip(xs, ys)), animated=True, closed=False, fill=False)
-	
-	# Add polygon to figure.
-	fig, ax = plt.subplots()
-	ax.add_patch(poly)
-	p = PolygonInteractor(ax, poly)
-	plt.title("Pick polygon, close figure to save vertices")
-	plt.xlabel(xlabel, fontsize=15)
-	plt.ylabel(ylabel, fontsize=15)
-
-	try:
-		plt.imshow(abs(data), aspect='auto', extent=(xticks.min(), xticks.max(), yticks.min(), yticks.max()))
-	except AttributeError:
-		plt.imshow(abs(data), aspect='auto')
-
-	plt.show()		
-	print("Calculate area inside chosen polygon\n")
-	try:
-		vertices = (poly.get_path().vertices)
-		vert_tmp = []
-		xticks.sort()
-		yticks.sort()
-		for fkvertex in vertices:
-			vert_tmp.append([np.abs(xticks-fkvertex[0]).argmin(), np.abs(yticks[::-1]-fkvertex[1]).argmin()])
-		vertices = np.array(vert_tmp)	
-		
-	except AttributeError:
-		vertices = (poly.get_path().vertices).astype('int')
-
-	indicies = convert_polygon_to_flat_index(data, vertices)
-	return indicies
-
-
-def convert_polygon_to_flat_index(data, vertices):
-	"""
-	Converts points insde of a polygon defined by its vertices, taken of an imshow plot of data,to 
-	flat-indicies. Does NOT include the border of the polygon.
-	
-	:param data: speaks for itself
-	:type data: numpy.ndarray
-
-	:param vertices: also...
-	:type vertices: numpy.ndarray
-	
-	"""
-
-	# check if points are inside polygon. Be careful with the indicies, np and mpl
-	# handle them exactly opposed.
-	polygon = mplPath.Path(vertices)
-	arr = []
-	for i in range(data.shape[0]):
-		for j in range(data.shape[1]):
-			if polygon.contains_point([j,i]):
-				arr.append([j,i])
-	arr = map(list, zip(*arr))
-
-	flat_index= np.ravel_multi_index(arr, data.conj().transpose().shape).astype('int').tolist()
-
-	return(flat_index)	
-
-def pick_data(x, y, xlabel, ylabel, title):
-		
-	fig, ax1 = plt.subplots(1, 1)
-	ax1.set_title(title)
-	ax1.set_ylabel(ylabel)
-	ax1.set_xlabel(xlabel)
-	line, = ax1.plot(x, y , picker=5)  # 5 points tolerance
-	
-	global PickByHand
-	PickByHand = []
-	def onpick1(event):
-		if isinstance(event.artist, Line2D):
-			thisline = event.artist
-			xdata = thisline.get_xdata()
-			ydata = thisline.get_ydata()
-			ind = event.ind
-			pick = zip(np.take(xdata, ind), np.take(ydata, ind))
-			print('onpick1 line:', zip(np.take(xdata, ind), np.take(ydata, ind)) )
-			PickByHand.append(pick)
-
-	fig.canvas.mpl_connect('pick_event', onpick1)
-	plt.show()
-	return PickByHand
-
 def makeMask(fkdata,slope):
 	"""
 	This function creates a Mask-array in shape of the original fkdata,
@@ -603,6 +572,7 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0,
 						idx = i
 				peaks[j] = [(pairs[idx][0], maxm)]
 		peaks = np.array(peaks).reshape(len(peaks), 2)
+
 	else:
 		MDconv = sp.signal.convolve(MD, sp.signal.boxcar(int(abs(pmin-pmax))*smoothing),mode=1)
 		peaks_first = find_peaks(MDconv, srange, peakpick='All', mindist=0.3)
@@ -822,3 +792,22 @@ def cg_solver(A,b,niter,x0=None):
 	mnorm = np.linalg.norm(x, 2)
 	
 	return x, misfit, mnorm
+
+def lstsqs(A,b,mu=0):
+
+	print("Calculating AhA")
+	Ah = A.conjugate().transpose()
+	AhA= Ah.dot(A)
+	
+	print("Calculating I")
+	I = sparse.identity(A.shape[0])
+	
+	tmp = AhA + mu*I
+	tmp.inverse()
+	
+	print("Calculating x")
+	x = tmp.dot(Ah.dot(b))
+	print("..finished")
+	return x
+
+	

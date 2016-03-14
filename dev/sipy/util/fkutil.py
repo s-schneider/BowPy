@@ -792,3 +792,22 @@ def cg_solver(A,b,niter,x0=None):
 	mnorm = np.linalg.norm(x, 2)
 	
 	return x, misfit, mnorm
+
+def lstsqs(A,b,mu=0):
+
+	print("Calculating AhA")
+	Ah = A.conjugate().transpose()
+	AhA= Ah.dot(A)
+	
+	print("Calculating I")
+	I = sparse.identity(A.shape[0])
+	
+	tmp = AhA + mu*I
+	tmpI = sparse.linalg.inv(tmp)
+	
+	print("Calculating x")
+	x = tmpI.dot(Ah.dot(b))
+	print("..finished")
+	return x
+
+	

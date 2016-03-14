@@ -217,6 +217,46 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 				trace.stats.distance = value["distance"]
 				trace.stats.depth = value["depth"]
 
+def attach_epidist2coords(inventory, event, stream=None):
+	"""
+	Receives the epicentral distance of the station-source couple given in inventory - event and adds them to Array_Coords. 
+	If called with stream, it uses just the coordinates of the used stations in stream.
+
+	param inventory: 
+	type inventory:
+
+	param event:
+	type event:
+
+	param stream:
+	type stream:
+	"""
+	inv = inventory
+	Array_Coords = get_coords(inv)
+
+	eventlat = event.origins[0].latitude
+	eventlon = event.origins[0].longitude
+
+	try:
+		
+		attach_network_to_traces(stream, inv[0])
+		attach_coordinates_to_traces(stream, inv, event)
+		for trace in stream:
+			scode = trace.meta.network + "." + trace.meta.station
+			Array_Coords[scode]["epidist"] =  trace.meta.distance
+
+	except:
+
+		for network in inv:
+			for station in network:
+				scode = network.code + "." + station.code
+				lat1 = Array_Coords[scode]["latitude"]
+				lat2 = Array_Coords[scode]["longitude"]
+				# calculate epidist in km
+				# adds an epidist entry to the Array_coords dictionary 
+				Array_Coords[scode]["epidist"] = locations2degrees( lat1, lat2, eventlat, eventlon )
+
+	return(Array_Coords)
 
 def center_of_gravity(inventory):
     lats, lngs, hgts = __coordinate_values(inventory)
@@ -281,48 +321,6 @@ def find_closest_station(inventory, latitude, longitude,
             min_distance = distance
             min_distance_station = inventory[0][i].code
     return min_distance_station
-
-
-def attach_epidist2coords(inventory, event, stream=None):
-	"""
-	Receives the epicentral distance of the station-source couple given in inventory - event and adds them to Array_Coords. 
-	If called with stream, it uses just the coordinates of the used stations in stream.
-
-	param inventory: 
-	type inventory:
-
-	param event:
-	type event:
-
-	param stream:
-	type stream:
-	"""
-	inv = inventory
-	Array_Coords = get_coords(inv)
-
-	eventlat = event.origins[0].latitude
-	eventlon = event.origins[0].longitude
-
-	try:
-		
-		attach_network_to_traces(stream, inv[0])
-		attach_coordinates_to_traces(stream, inv, event)
-		for trace in stream:
-			scode = trace.meta.network + "." + trace.meta.station
-			Array_Coords[scode]["epidist"] =  trace.meta.distance
-
-	except:
-
-		for network in inv:
-			for station in network:
-				scode = network.code + "." + station.code
-				lat1 = Array_Coords[scode]["latitude"]
-				lat2 = Array_Coords[scode]["longitude"]
-				# calculate epidist in km
-				# adds an epidist entry to the Array_coords dictionary 
-				Array_Coords[scode]["epidist"] = locations2degrees( lat1, lat2, eventlat, eventlon )
-
-	return(Array_Coords)
 
 def epidist2list(Array_Coords):
 	"""

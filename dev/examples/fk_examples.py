@@ -39,15 +39,17 @@ alignon, partial_stack, gaps_fill_zeros, vespagram
 from sipy.util.picker import get_polygon
 
 
-stuni = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUNEW.QHD")
+#stuni = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUNEW.QHD")
+stuni = read_st("../data/synthetics_uniform/SUNEW.QHD")
 stuni.normalize()
-invuni = read_inv("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUNEW_inv.xml")
-cat = read_cat("/Users/Simon/dev/FK-Filter/data/synthetics_random/SRNEW_cat.xml")
-attach_network_to_traces(stuni, invuni[0])
-attach_coordinates_to_traces(stuni, invuni, cat[0])
+#invuni = read_inv("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUNEW_inv.xml")
+invuni = read_inv("../data/synthetics_uniform/SUNEW_inv.xml")
+#cat = read_cat("/Users/Simon/dev/FK-Filter/data/synthetics_random/SRNEW_cat.xml")
+cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
 
-stgap = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUGAPTRUNC.QHD")
 
+#stgap = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUGAPTRUNC.QHD")
+stgap = read_st("../data/synthetics_uniform/SUGAPTRUNC.QHD")
 
 
 stuni_al = alignon(stuni.copy(), invuni, cat[0], phase='PP', maxtimewindow=350)
