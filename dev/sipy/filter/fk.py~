@@ -236,7 +236,7 @@ def fktrafo(stream, inv, event, normalize=True):
 	
 	return fkdata
 
-def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, method='denoise', solver="iterative",  mu=5e-2):
+def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, method='denoise', solver="iterative",  mu=5e-2, fulloutput=False):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
@@ -246,8 +246,8 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, met
 			J = ||dv - T FHmtx2D Yw Dv ||^{2}_{2} + mu^2 ||Dv||^{2}_{2}
 			
 			J := Cost function
-			dv:= Column-wise-ordered long vector of the 2D signal d
-			DV:= Column-wise-ordered long vector of the	f-k-spectrum
+			dv:= Column-wise-ordered long vector of the 2D signal d (columns: t-domain, rows: x-domain)
+			DV:= Column-wise-ordered long vector of the	f-k-spectrum D ( columns: f-domain, rows: k-domain)
 			Yw := Diagonal matrix built from the column-wise-ordered long vector of Mask
 			T := Sampling matrix which maps the fully sampled desired seismic data to the available samples.
 				 For de-noising problems T = I (identity matrix)
@@ -284,11 +284,33 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, met
 	:param mu:	Damping parameter for the solver
 	:type  mu:	float
 
-	returns:
+	:param Fulloutput: If True, the function additionally outputs FH, dv, Dv, Ts and Yw
+	:type  Fulloutput: bool
+
+	######  returns:
+
+	:param st_rec: Stream with reconstructed signals on the missing traces
+	:type  st_rec: obspy.core.stream.Stream
+	
+	### if fulloutput=True
 
 	:param st_rec: Stream with reconstructed signals on the missing traces
 	:type  st_rec: obspy.core.stream.Stream
 
+	:param FH: 2DiFFT-matrix for column-wise ordered longvector of the f-k spectrum
+	:type  FH: scipy.sparse.csc.csc_matrix
+
+	:param dv: Column-wise ordered longvector of the t-x data
+	:type  dv: numpy.ndarray
+	
+	:param Dv: Column-wise ordered longvector of the f-k spectrum of dv
+	:type  Dv: numpy.ndarray
+
+	:param Ts: Sampling-matrix, which maps desired to available data
+	:type  Ts: scipy.sparse.dia.dia_matrix
+
+	:param Yw: Diagonal matrix constructed of the column-wise ordered longvector of the mask-matrix
+	:type  Yw: scipy.sparse.dia.dia_matrix
 
 	Example:
 				from obspy import read as read_st
@@ -392,9 +414,11 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, met
 	#data_rec = (data_rec/data_rec.max()).real
 	
 	st_rec = array2stream(data_rec, st)
-	
-	return st_rec, FH, dv, Dv, Ts, Yw
 
+	if fulloutput:
+		return st_rec, FH, dv, Dv, Ts, Yw
+	else:
+		return st_rec
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
 	"""

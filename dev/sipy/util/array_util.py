@@ -204,9 +204,6 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 	# Attach the information to the traces.
 	for trace in stream:
 		try:
-			if trace.stats.processing in ('empty'):
-				continue
-		except:
 			station = ".".join(trace.id.split(".")[:2])
 			value = coords[station]
 			trace.stats.coordinates = AttribDict()
@@ -216,6 +213,8 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 			if event:
 				trace.stats.distance = value["distance"]
 				trace.stats.depth = value["depth"]
+		except:
+			continue
 
 def attach_epidist2coords(inventory, event, stream=None):
 	"""

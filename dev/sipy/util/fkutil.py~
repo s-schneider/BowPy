@@ -197,8 +197,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 		try:
 			y_dist = st.stats.distance
 		except:
-			print("No distance information attached to trace!")
-			return
+			print("No distance information attached to trace, no phases are calculated!")
+			markphases=False
 
 		if markphase:
 			origin = event.origins[0]['time']
@@ -223,7 +223,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 			plt.xlabel("Time in s")
 			title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
 			plt.title(title)
-			plt.gca().yaxis.set_major_locator(plt.NullLocator())
+			#plt.gca().yaxis.set_major_locator(plt.NullLocator())
 			plt.plot(t_axis,zoom*data, color=clr)
 			plt.plot( (timetable[1],timetable[1]),(-0.5,0.5), color='red' )
 			for time, key in enumerate(timetable[0]):
@@ -233,7 +233,6 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 			plt.xlabel("Time in s")
 			title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
 			plt.title(title)
-			plt.gca().yaxis.set_major_locator(plt.NullLocator())
 			plt.plot(t_axis, zoom*data, color=clr)
 
 		plt.ion()
@@ -724,6 +723,7 @@ def create_iFFT2mtx(nx, ny):
 		sys.stdout.flush()	
 	
 	sparse_iDFT2 = tmp.tocsc()
+	print("\n")
 	print("100 %% done \n")
 
 	# Calculate matrix dot-product iDFT2 * iDFT1 and divide it 
