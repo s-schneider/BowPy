@@ -240,7 +240,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 		plt.show()
 		plt.ioff()
 
-def plot_data(data, zoom=1, y_dist=1, bins=None, clr='black'):
+def plot_data(data, zoom=1, y_dist=1, label=None, clr='black'):
 	"""
 	Alpha Version!
 	Time axis has no time-ticks --> Working on right now
@@ -256,16 +256,19 @@ def plot_data(data, zoom=1, y_dist=1, bins=None, clr='black'):
 	"""
 	for i, trace in enumerate(data):
 		if isinstance(y_dist,int):
-			plt.plot(zoom*trace+ y_dist*i, color=clr)
+			if i == 0:
+				plt.plot(zoom*trace+ y_dist*i, color=clr, label=label)
+			else:
+				plt.plot(zoom*trace+ y_dist*i, color=clr)
 		if isinstance(y_dist,list) or isinstance(y_dist,numpy.ndarray):
-			plt.plot(zoom*trace+ y_dist[i], color=clr)
-	if isinstance(bins,numpy.ndarray):
-		print('plotting bins')
-		for j in range(bins.size):
-			plt.plot( (0, data[0].size), (bins[j],bins[j]), color='red' )
+			if i == 0:
+				plt.plot(zoom*trace+ y_dist[i], color=clr, label=label)
+			else:
+				plt.plot(zoom*trace+ y_dist[i], color=clr)
 	plt.ion()
 	plt.draw()
 	plt.show()
+	plt.legend()
 	plt.ioff()
 
 def plot_fft(x, logscale=False, fftshift=False):
