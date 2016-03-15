@@ -23,8 +23,8 @@ data = sio.loadmat("../data/mtz_radon/data.mat")
 # Define some variables for RT.
 
 t = data['t'][0]
-epi = data['Delta'][0]
-#IDelta = np.array([ epi ])
+IDelta = data['Delta'][0]
+#IDelta = np.array([ epi.copy() ])
 M = data['M']
 indicies_matlab = data['indicies'][0]
 
@@ -45,7 +45,7 @@ plt.show()
 
 
 # Pick Phase here!
-indicies = fku.get_polygon(R, no_of_vert=8, xlabel=r'$\tau$', ylabel='p')
+indicies = sipy.util.picker.get_polygon(R, no_of_vert=8, xlabel=r'$\tau$', ylabel='p')
 
 
 

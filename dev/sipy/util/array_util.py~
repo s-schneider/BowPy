@@ -204,9 +204,6 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 	# Attach the information to the traces.
 	for trace in stream:
 		try:
-			if trace.stats.processing in ('empty'):
-				continue
-		except:
 			station = ".".join(trace.id.split(".")[:2])
 			value = coords[station]
 			trace.stats.coordinates = AttribDict()
@@ -216,6 +213,8 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 			if event:
 				trace.stats.distance = value["distance"]
 				trace.stats.depth = value["depth"]
+		except:
+			continue
 
 def attach_epidist2coords(inventory, event, stream=None):
 	"""
@@ -293,35 +292,40 @@ def aperture(inventory):
                 lats[j],lngs[j])[0] / 1000.0)
     return max(distances)
 
-def find_closest_station(inventory, latitude, longitude,
-                         absolute_height_in_km=0.0):
-    """
+def find_closest_station(inventory, stream, latitude, longitude,
+		                 absolute_height_in_km=0.0):
+	"""
 	If Station has latitude value of 0 check again!
 
-    Calculates closest station to a given latitude, longitude and absolute_height_in_km
-    param latitude: latitude of interest, in degrees
-    type latitude: float
-    param longitude: longitude of interest, in degrees
-    type: float
-    param absolute_height_in_km: altitude of interest in km
-    type: float
-    """
-    min_distance = None
-    min_distance_station = None
+	Calculates closest station of an inventory to a given latitude, longitude and absolute_height_in_km
+	param latitude: latitude of interest, in degrees
+	type latitude: float
+	param longitude: longitude of interest, in degrees
+	type: float
+	param absolute_height_in_km: altitude of interest in km
+	type: float
+	"""
+	used_stations = []
+	for trace in stream:
+		used_stations.append(trace.stats.station)
 
-    lats, lngs, hgt = __coordinate_values(inventory)
-    
-    x = latitude
-    y = longitude
-    z = absolute_height_in_km
+	min_distance = None
+	min_distance_station = None
 
-    for i in range(len(lats)):
-        distance = np.sqrt( ((gps2dist_azimuth(lats[i], lngs[i], x, y)[0]) / 1000.0) ** 2  + ( np.abs( np.abs(z) - np.abs(hgt[i]))) ** 2 )
-        if min_distance is None or distance < min_distance:
-            min_distance = distance
-            min_distance_station = inventory[0][i].code
-    return min_distance_station
+	lats, lngs, hgt = __coordinate_values(inventory)
 
+	x = latitude
+	y = longitude
+	z = absolute_height_in_km
+
+	for i, station in enumerate(inventory[0]):
+		distance = np.sqrt( ((gps2dist_azimuth(lats[i], lngs[i], x, y)[0]) / 1000.0) ** 2  + ( np.abs( np.abs(z) - np.abs(hgt[i]))) ** 2 )
+		if min_distance is None or distance < min_distance:
+			if station.code in used_stations:
+				min_distance = distance
+				min_distance_station = station.code
+	return min_distance_station
+	
 def epidist2list(Array_Coords):
 	"""
 	Returns a list of all epidistances in Array_Coords.
@@ -537,6 +541,45 @@ def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 	
 	return shift_trace, shift_value
 
+def corr_stat(stream, inv, phase):
+	"""
+	Static correction of the negative value of the ray parameter of the phase.
+	"""
+	if not stream[0].stats.distance or not stream[0].stats.depth:
+		print("No event information attached to stream!")
+		return
+	
+	st =stream.copy()
+	data = stream2array(st)
+	data_corr = np.zeros(data.shape)
+	center = geometrical_center(inv)
+	cstat =  find_closest_station(inv, st, center['latitude'], center['longitude'])
+	
+	tmin=0
+	tmax=0
+
+	for trace in stream:
+		if trace.stats.station != cstat:
+			continue
+		depth = trace.stats.depth
+		distance = trace.stats.distance
+		delta = trace.stats.delta
+
+	m = TauPyModel('ak135')
+	arrival = m.get_travel_times(depth, distance, phase_list=[phase])
+	slo = arrival[0].ray_param_sec_degree
+
+	for i, trace in enumerate(data):
+		shift = int( slo*( distance - st[i].stats.distance)/delta)
+		print(shift)
+		data_corr[i,:], shift_index = shift2ref(trace, 0, shift)
+		if shift_index > 0 and shift_index > tmin: tmin = shift_index
+		if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
+	data_corr = truncate(data, tmin, tmax)
+	stream_corr = array2stream(data_corr, st)
+	
+	return stream_corr
+
 def truncate(data, tmin, tmax):
 	"""
 	Truncates the data array on the left to tmin, on the right to right-end  - tmax.
@@ -733,7 +776,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 
 	return bin_data
 
-def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, markphases=['ttall', 'P^410P', 'P^660P']):
+def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, markphases=['ttall', 'P^410P', 'P^660P'], method='FFT'):
 	"""
 	Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
 	and if set a plot.
@@ -765,6 +808,9 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	
 	:param markphases: Which phases should be marked, default is 'ttall' + precursors, to mark all possible.
 	:type markphases: list
+
+	:param method: Shift method, to be used 'FFT' or 'normal'
+	:type  method: string
 
 
 	returns:
@@ -808,23 +854,24 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	
 	center = geometrical_center(inv)
 	
-	cstat =  find_closest_station(inv, center['latitude'], center['longitude'])
+	cstat =  find_closest_station(inv, st, center['latitude'], center['longitude'])
 	
 	for i, trace in enumerate(st):
 		if trace.stats.station in [cstat]:
 			sref=i
 
 	# Loop over all slownesses.
-	for i, u in enumerate(urange):		
+	for i, u in enumerate(urange):
+		print("Currently in slowness %f of %f" % (u, urange.max()))
 		for j,trace in enumerate(data):
 			if j > sref:
 				tshift = abs(sref-j) * dx * u
 				sshift = int(tshift / dsample)
-				shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, sshift, method='FFT')
+				shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, sshift, method=method)
 			elif j < sref:
 				tshift = abs(sref-j) * dx * u
 				sshift = int(tshift / dsample)
-				shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, -sshift, method='FFT')
+				shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, -sshift, method=method)
 			elif j == sref:
 				shift_data_tmp[j,:] = trace
 		

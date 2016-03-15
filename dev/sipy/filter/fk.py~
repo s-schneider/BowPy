@@ -354,7 +354,7 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, met
 	# Calculate mask-function W.
 	print("Calculating slope distribution...\n")
 	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, interactive=slopepicking)
-	print("Creating mask function...\n")
+	print("Creating mask function with %i significant linear events \n" % len(peaks[0])
 	W = makeMask(fkData, peaks[0])
 	
 	# To keep the order it would be better to transpose W to WT

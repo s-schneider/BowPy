@@ -260,11 +260,7 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black'):
 				plt.plot(zoom*trace+ y_dist*i, color=clr, label=label)
 			else:
 				plt.plot(zoom*trace+ y_dist*i, color=clr)
-		if isinstance(y_dist,list) or isinstance(y_dist,numpy.ndarray):
-			if i == 0:
-				plt.plot(zoom*trace+ y_dist[i], color=clr, label=label)
-			else:
-				plt.plot(zoom*trace+ y_dist[i], color=clr)
+
 	plt.ion()
 	plt.draw()
 	plt.show()

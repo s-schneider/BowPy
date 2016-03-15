@@ -10,7 +10,7 @@ import sys
 def ssa_denoise_recon(st, dt,p,flow,fhigh):
 	"""
 	SSA method, that de-noises the data given in stream by a rank reduction of the singular values of the
-	Hankel matrix, created from the data in st and the sampling interval of the traces.
+	Hankel matrix, created from the data in st and the sampling interval of the traces, to p.
 
  	:param st:     Stream of data
 	:type  st:
@@ -35,7 +35,7 @@ def ssa_denoise_recon(st, dt,p,flow,fhigh):
 	flow = 1
 	fhigh = 250
 
-	st_ssa = ssa_denoise
+	st_ssa = ssa_denoise(st, dt, p, flow, fhigh)
 	"""
 	st_tmp = st.copy()
 	
