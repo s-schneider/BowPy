@@ -47,7 +47,7 @@ invuni = read_inv("../data/synthetics_uniform/SUNEW_inv.xml")
 #cat = read_cat("/Users/Simon/dev/FK-Filter/data/synthetics_random/SRNEW_cat.xml")
 cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
 
-
+st = read_st("../data/synthetics_uniform/SUGAP.QHD")
 #stgap = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUGAPTRUNC.QHD")
 stgap = read_st("../data/synthetics_uniform/SUGAPTRUNC.QHD")
 

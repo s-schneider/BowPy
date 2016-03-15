@@ -703,8 +703,8 @@ def create_iFFT2mtx(nx, ny):
 			row += 1
 
 		#Screen feedback.
-		prcnt = 50*(i+1) / float(ny)
-		print("%i %% done" % prcnt, end="\r")
+		prcnt = 50*(i+1) / float(ny) -1
+		if prcnt >=0 : print("%i %% done" % prcnt, end="\r")
 		sys.stdout.flush()	
 
 	# Export tmp to a diagonal sparse matrix.
@@ -719,16 +719,17 @@ def create_iFFT2mtx(nx, ny):
 			tmp[row,indx] = iDFT2[i,:]
 			row += 1
 
-		prcnt = (50*(i+1) / float(ny)) + 50
+		prcnt = (50*(i+1) / float(ny)) + 49
 		print("%i %% done" % prcnt, end="\r")
 		sys.stdout.flush()	
-
-	print("100 %% done \n")
-	sparse_iDFT2 = tmp.tocsc()
 	
-	# Calculate matrix dot-product iDFT2 * iDFT1
-	sparse_iFFT2mtx = sparse_iDFT2.dot(sparse_iDFT1)
+	sparse_iDFT2 = tmp.tocsc()
+	print("100 %% done \n")
 
+	# Calculate matrix dot-product iDFT2 * iDFT1 and divide it 
+	# by the number of all samples (nx * ny)
+	sparse_iFFT2mtx = sparse_iDFT2.dot(sparse_iDFT1)/float(N)
+	
 	return sparse_iFFT2mtx
 
 def cg_solver(A,b,niter,x0=None):

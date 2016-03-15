@@ -325,9 +325,9 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, met
 
 	# Implement automatic method, to cut into N 300 npts samples.
 	# Iterate over those.
-	if ADT.shape[0] > 300:
-		msg="Data sample to big, no sufficient memory!"
-		raise MemoryError(msg)
+	#if ADT.shape[0] > 300:
+	#	msg="Data sample to big, no sufficient memory!"
+	#	raise MemoryError(msg)
 
 	# Calculate mask-function W.
 	print("Calculating slope distribution...\n")
@@ -356,7 +356,7 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, met
 	# Create sparse-matrix with iFFT operations.	
 	print("Creating iFFT2 operator as a %ix%i matrix ...\n" %(fkDT.shape[0]*fkDT.shape[1], fkDT.shape[0]*fkDT.shape[1]))	
 
-	FH = create_iFFT2mtx(fkDT.shape[0], fkDT.shape[1]) 
+	FH = create_iFFT2mtx(fkDT.shape[0], fkDT.shape[1])
 	print("... finished\n")
 
 	# Create model matrix A.
@@ -382,17 +382,18 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, met
 		print("Modelnorm = %f \n" % x[4])
 		print("Condition number = %f \n" % x[5])
 		print("Norm of Dv = %f \n" % x[6]) 
-		Dv_rec = x[0]/x[0].max()
+		Dv_rec = x[0]
 	else:
 		print("No solver or method specified.")
 		return
 
+	print(Dv_rec.max())
 	data_rec = np.fft.ifft2(Dv_rec.reshape(fkData.shape))
-	data_rec = (data_rec/data_rec.max()).real
+	#data_rec = (data_rec/data_rec.max()).real
 	
 	st_rec = array2stream(data_rec, st)
 	
-	return st_rec
+	return st_rec, FH, dv, Dv, Ts, Yw
 
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
