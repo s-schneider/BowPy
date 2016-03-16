@@ -541,6 +541,9 @@ def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 	
 	return shift_trace, shift_value
 
+def vespashift():
+	return
+
 def corr_stat(stream, inv, phase):
 	"""
 	Static correction of the negative value of the ray parameter of the phase.
@@ -846,19 +849,66 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	dsample = st[0].stats.delta
 	Nsample = st[0].stats.npts
 
-	# Prepare slownessrange, and allocate space in memory.
-	uN = (slomax - slomin) / slostep
-	urange = np.linspace(slomin, slomax, uN)
-	vespa = np.zeros( (uN, data.shape[1]) )
-	shift_data_tmp = np.zeros(data.shape)
-	
+	# Find geometrical center station of array.
 	center = geometrical_center(inv)
 	
 	cstat =  find_closest_station(inv, st, center['latitude'], center['longitude'])
 	
 	for i, trace in enumerate(st):
-		if trace.stats.station in [cstat]:
+		if not trace.stats.station in [cstat]:
+			continue
+		else:
 			sref=i
+
+	# Prepare slownessrange, and allocate space in memory.
+	uN = int ((slomax - slomin) / slostep)
+	urange = np.linspace(slomin, slomax, uN)
+	it = data.shape[1]		
+	iF = int(math.pow(2,nextpow2(it)+1)) 
+	dft = np.fft.rfft(data, iF, axis=1)
+
+	"""
+	# Calculate timeshift-table, see shift2ref method "fft" as guide.
+	timeshift_table = np.zeros((data.shape[0], urange.size, dft.shape[1]))
+	for i, uslice in enumerate(timeshift_table):
+		for j, position in enumerate(uslice):
+			if j > sref:
+				tshift = abs(sref-i) * dx * urange[j]
+				sshift = int(tshift / dsample)
+				timeshift_table[i][j] = sshift
+				timeshift_table[i][j][:]= ( -2. * np.pi * sshift / float(iF) ) * np.arange(dft.shape[1])
+
+			elif j < sref:
+				tshift = abs(sref-i) * dx * urange[j]
+				sshift = int(tshift / dsample)	
+				timeshift_table[i][j] = - sshift
+				timeshift_table[i][j][:]= ( 2. * np.pi * sshift / float(iF) ) * np.arange(dft.shape[1])
+
+			elif j == sref:
+				timeshift_table[i][j] = 0
+				timeshift_table[i][j][:]= 0
+
+
+	vespa = np.zeros( (uN, data.shape[1]) )
+
+	# Shifting in FT domain.
+	for i, uslice in enumerate(timeshift_table):
+		fftshift = np.exp((0.+ 1j)*uslice[1])
+		dft[i] = dft[i] * fftshift
+		shiftdata = np.fft.irfft(dft, iF)
+		vespatrace = shiftdata.real.copy()
+		vespatrace.resize(data.shape)
+
+		vespa[i] = stack(vespatrace, power)
+
+
+	return vespa/vespa.max()
+	"""
+	
+	vespa = np.zeros( (uN, data.shape[1]) )
+	shift_data_tmp = np.zeros(data.shape)
+	
+
 
 	# Loop over all slownesses.
 	for i, u in enumerate(urange):
