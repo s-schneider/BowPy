@@ -94,7 +94,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 	ArrayData = stream2array(st_tmp, normalize)
 	
 	ix = ArrayData.shape[0]
-	iK = int(math.pow(2,nextpow2(ix)+1))
+	iK = int(math.pow(2,nextpow2(ix)))
 	
 	try:
 		yinfo = epidist2nparray(epidist(inv, event, st_tmp))
@@ -107,7 +107,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 		k_axis=None
 
 	it = ArrayData.shape[1]
-	iF = int(math.pow(2,nextpow2(it)+1))
+	iF = int(math.pow(2,nextpow2(it)))
 	dt = st_tmp[0].stats.delta
 	f_axis = np.fft.fftfreq(iF,dt)
 
@@ -228,9 +228,9 @@ def fktrafo(stream, inv, event, normalize=True):
 	ArrayData = stream2array(st_tmp, normalize)
 	
 	ix = ArrayData.shape[0]
-	iK = int(math.pow(2,nextpow2(ix)+1))
+	iK = int(math.pow(2,nextpow2(ix)))
 	it = ArrayData.shape[1]
-	iF = int(math.pow(2,nextpow2(it)+1))
+	iF = int(math.pow(2,nextpow2(it)))
 
 	fkdata = np.fft.fft2(ArrayData, s=(iK,iF))
 	

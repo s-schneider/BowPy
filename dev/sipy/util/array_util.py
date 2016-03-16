@@ -526,8 +526,8 @@ def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 	
 	if method in ("FFT", "fft", "Fft", "fFt", "ffT", "FfT"):
 		it = trace.size		
-		iF = int(math.pow(2,nextpow2(it)+1)) 
-		dft = np.fft.rfft(trace, iF)
+		iF = int(math.pow(2,nextpow2(it))) 
+		dft = np.fft.fft(trace, iF)
 
 		arg = -2. * np.pi * shift_value / float(iF)
 		dft_shift = np.zeros(dft.size).astype('complex')
@@ -535,7 +535,7 @@ def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 		for i, ampl in enumerate(dft):
 			dft_shift[i] = ampl * np.complex(np.cos(i * arg), np.sin(i * arg))
 
-		shift_trace = np.fft.irfft(dft_shift, iF)
+		shift_trace = np.fft.ifft(dft_shift, iF)
 		shift_trace = shift_trace[0:it].real			
 	
 	
@@ -864,73 +864,71 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	uN = int ((slomax - slomin) / slostep)
 	urange = np.linspace(slomin, slomax, uN)
 	it = data.shape[1]		
-	iF = int(math.pow(2,nextpow2(it)+1)) 
-	dft = np.fft.rfft(data, iF, axis=1)
+	iF = int(math.pow(2,nextpow2(it))) 
+	dft = np.fft.fft(data, iF, axis=1)
 
-	"""
-	# Calculate timeshift-table, see shift2ref method "fft" as guide.
-	timeshift_table = np.zeros((data.shape[0], urange.size, dft.shape[1]))
-	for i, uslice in enumerate(timeshift_table):
-		for j, position in enumerate(uslice):
-			if j > sref:
-				tshift = abs(sref-i) * dx * urange[j]
-				sshift = int(tshift / dsample)
-				timeshift_table[i][j] = sshift
-				timeshift_table[i][j][:]= ( -2. * np.pi * sshift / float(iF) ) * np.arange(dft.shape[1])
+	if method in ("fft"):
+		# Calculate timeshift-table, see shift2ref method "fft" as guide.
+		timeshift_table = np.zeros((data.shape[0], urange.size, dft.shape[1]))
+		for i, traceshiftvalues in enumerate(timeshift_table):
+			for j, uvalue in enumerate(traceshiftvalues):
+				if i > sref:
+					tshift = abs(sref-i) * dx * urange[j]
+					sshift = int(tshift / dsample)
+					timeshift_table[i][j] = sshift
+					timeshift_table[i][j][:]= ( -2. * np.pi * sshift / float(iF) ) * np.arange(dft.shape[1])
 
-			elif j < sref:
-				tshift = abs(sref-i) * dx * urange[j]
-				sshift = int(tshift / dsample)	
-				timeshift_table[i][j] = - sshift
-				timeshift_table[i][j][:]= ( 2. * np.pi * sshift / float(iF) ) * np.arange(dft.shape[1])
+				elif i < sref:
+					tshift = abs(sref-i) * dx * urange[j]
+					sshift = int(tshift / dsample)	
+					timeshift_table[i][j] = - sshift
+					timeshift_table[i][j][:]= ( 2. * np.pi * sshift / float(iF) ) * np.arange(dft.shape[1])
 
-			elif j == sref:
-				timeshift_table[i][j] = 0
-				timeshift_table[i][j][:]= 0
-
-
-	vespa = np.zeros( (uN, data.shape[1]) )
-
-	# Shifting in FT domain.
-	for i, uslice in enumerate(timeshift_table):
-		fftshift = np.exp((0.+ 1j)*uslice[1])
-		dft[i] = dft[i] * fftshift
-		shiftdata = np.fft.irfft(dft, iF)
-		vespatrace = shiftdata.real.copy()
-		vespatrace.resize(data.shape)
-
-		vespa[i] = stack(vespatrace, power)
+				elif i == sref:
+					timeshift_table[i][j] = 0
+					timeshift_table[i][j][:]= 0
 
 
-	return vespa/vespa.max()
-	"""
+		vespa = np.zeros( (uN, data.shape[1]) )
+
+		# Shifting in FT domain.
+		for k, uslice in enumerate(timeshift_table.transpose(1,0,2)):
+			dftshift = np.zeros(dft.shape).astype('complex')
+			for i, traceshiftvalues in enumerate(uslice):
+				argshift = np.exp((0.+ 1j)*traceshiftvalues)
+				dftshift[i] = dft[i] * argshift
+
+			shiftdata = np.fft.ifft(dftshift, iF)
+			vespatrace = shiftdata.real.copy()
+			# Put it in the right size again.
+			vespatrace = np.delete(vespatrace, np.s_[it:], 1)
+
+			vespa[k] = stack(vespatrace, power)
+
+	if method in ("normal"):
+		vespa = np.zeros( (uN, data.shape[1]) )
+		shift_data_tmp = np.zeros(data.shape)
 	
-	vespa = np.zeros( (uN, data.shape[1]) )
-	shift_data_tmp = np.zeros(data.shape)
-	
 
 
-	# Loop over all slownesses.
-	for i, u in enumerate(urange):
-		print("Currently in slowness %f of %f" % (u, urange.max()))
-		for j,trace in enumerate(data):
-			if j > sref:
-				tshift = abs(sref-j) * dx * u
-				sshift = int(tshift / dsample)
-				shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, sshift, method=method)
-			elif j < sref:
-				tshift = abs(sref-j) * dx * u
-				sshift = int(tshift / dsample)
-				shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, -sshift, method=method)
-			elif j == sref:
-				shift_data_tmp[j,:] = trace
+		# Loop over all slownesses.
+		for i, u in enumerate(urange):
+			print("Currently in slowness %f of %f" % (u, urange.max()))
+			for j,trace in enumerate(data):
+				if j > sref:
+					tshift = abs(sref-j) * dx * u
+					sshift = int(tshift / dsample)
+					shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, sshift, method=method)
+				elif j < sref:
+					tshift = abs(sref-j) * dx * u
+					sshift = int(tshift / dsample)
+					shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, -sshift, method=method)
+				elif j == sref:
+					shift_data_tmp[j,:] = trace
 		
-		vespa[i,:] = stack(shift_data_tmp, order=power)
+			vespa[i,:] = stack(shift_data_tmp, order=power)
 
 	vespa = vespa/vespa.max()		
-
-				
-
 
 	# Plotting routine
 	if plot:

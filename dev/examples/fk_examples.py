@@ -31,6 +31,8 @@ import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
 import sipy.filter.fk as fk
 import sipy.filter.radon as radon
 import sipy.util.fkutil as fku
+
+from sipy.util.data_request import data_request
 from sipy.filter.fk import fk_filter, fktrafo, fk_reconstruct
 from sipy.util.fkutil import  nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx
 from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
