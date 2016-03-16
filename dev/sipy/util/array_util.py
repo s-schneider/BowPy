@@ -478,10 +478,13 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 
 	st_align = array2stream(data_trunc, st)
 
+	# Change startime entry and add alignon entry.
 	for i, trace in enumerate(st_align):
 		if i == iref:
-			continue
-		trace.stats.starttime = trace.stats.starttime - shifttimes[i]	
+			trace.stats.aligned = phase
+		else:
+			trace.stats.starttime = trace.stats.starttime - shifttimes[i]	
+			trace.stats.aligned = phase
 
 	return st_align
 
@@ -841,7 +844,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	epidist = np.zeros(data.shape[0])
 	for i,trace in enumerate(st):
 		epidist[i]=trace.stats.distance
-	epidist.sort()
+	#epidist.sort()
 
 	dx = (epidist.max() - epidist.min() + 1) / epidist.size
 	dsample = st[0].stats.delta
@@ -874,12 +877,12 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 
 			# Station-Loop
 			for i in range(timeshift_table.shape[0]):
-				sshift = int( abs(sref - i) * dx * slo / dsample)
-				if i > sref:
+				sshift = int( abs(epidist[sref]-epidist[i]) * slo / dsample)
+				if epidist[i] > epidist[sref]:
 					timeshift_table[i][j] = np.exp((0.+ 1j) * ( 2. * np.pi * sshift / float(iF) ) * np.arange(dft.shape[1]))
-				elif i < sref:
+				elif epidist[i] < epidist[sref]:
 					timeshift_table[i][j] = np.exp((0.+ 1j) * ( -2. * np.pi * sshift / float(iF) ) * np.arange(dft.shape[1]))
-				elif i == sref:
+				elif epidist[i] == epidist[sref]:
 					timeshift_table[i][j] = 1. # np.exp((0.+ 1j) * 0) = 1.
 				
 		vespa = np.zeros( (uN, data.shape[1]) )
@@ -910,17 +913,14 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 		# Loop over all slownesses.
 		for i, u in enumerate(urange):
 			for j,trace in enumerate(data):
-				if j > sref:
-					tshift = abs(sref-j) * dx * u
-					sshift = int(tshift / dsample)
+				sshift = int( abs(epidist[sref]-epidist[j]) * u / dsample)
+				if epidist[j] > epidist[sref]:
 					shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, sshift, method="normal")
 
-				elif j < sref:
-					tshift = abs(sref-j) * dx * u
-					sshift = int(tshift / dsample)
+				elif epidist[j] < epidist[sref]:
 					shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, -sshift, method="normal")
 
-				elif j == sref:
+				elif epidist[j] == epidist[sref]:
 					shift_data_tmp[j,:] = trace
 				# Positive shift_index indicates positive shift in time and vice versa.	
 				#if shift_index > 0 and shift_index > tmin: tmin = shift_index
@@ -934,6 +934,13 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 
 	# Plotting routine
 	if plot:
+		
+		if st[0].stats.aligned:
+			refphase = st[0].stats.aligned
+		else:
+			refphase = None
+		
+
 		plt.figure()
 		RE = 6371.0
 		REdeg = kilometer2degrees(RE)
@@ -942,17 +949,34 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 		m = TauPyModel('ak135')
 		dist = st[sref].stats.distance
 		arrival =  m.get_travel_times(depth, dist, phase_list=markphases)
-		
+
+
+		# Labels of the plot.
+		# Check if it is a relative plot to an aligned Phase.
 		try:
-			plt.title(r'Vespagram of power %i in range from %i to %i $\frac{s}{deg}$' %(power, slomin, slomax), fontsize=15 )
+			p_ref = m.get_travel_times(depth, dist, [refphase])[0].ray_param_sec_degree
+			
+			plt.ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=12)
+			try:
+				plt.title(r'Relative %ith root Vespagram' %(power), fontsize=12 )
+			except:
+				plt.title(r'Relative linear Vespagram', fontsize=12 )
 		except:
-			plt.title(r'Linear vespagram in range from %i to %i $\frac{s}{deg}$' %(slomin, slomax), fontsize=15 )
+			p_ref = 0
+			plt.ylabel(r'$p$ in $\frac{deg}{s}$')
+			try:
+				plt.title(r'%ith root Vespagram' %(power), fontsize=12 )
+			except:
+				plt.title(r'Linear Vespagram', fontsize=12 )
+		
+		
+
+		
+		plt.xlabel(r'Time in s', fontsize=15)
 		taxis = np.arange(data.shape[1]) * dsample
 		
 		# Do the contour plot of the Vespagram.
 		if plot in ['contour', 'Contour']:
-			plt.xlabel(r'Time in s', fontsize=15)
-			plt.ylabel(r'Ray parameter in $\frac{deg}{s}$', fontsize=15)
 			plt.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()), origin='lower')
 
 			for phase in arrival:
@@ -961,7 +985,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 				Phase_npt = int(phase_time/st[sref].stats.delta)
 				tPhase = Phase_npt * st[sref].stats.delta
 				name = phase.name
-				sloPhase = phase.ray_param_sec_degree
+				sloPhase = phase.ray_param_sec_degree - p_ref
 				if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
 					continue
 				plt.plot(tPhase, sloPhase, 'x')
@@ -973,8 +997,6 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 		else:
 			plt.ylim(urange[0]-0.5, urange[urange.size-1]+0.5)
 			plt.xticks(np.arange(taxis[0], taxis[taxis.size-1], 100))
-			plt.xlabel(r'Time in s')
-			plt.ylabel(r'Ray parameter in $\frac{deg}{s}$')
 			for i, trace in enumerate(vespa):
 				plt.plot(taxis, trace+ urange[i], color='black')
 
@@ -984,7 +1006,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 				Phase_npt = int(phase_time/st[sref].stats.delta)
 				tPhase = Phase_npt * st[sref].stats.delta
 				name = phase.name
-				sloPhase = phase.ray_param_sec_degree
+				sloPhase = phase.ray_param_sec_degree - p_ref
 				if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
 					continue
 				plt.plot(tPhase, sloPhase, 'x')

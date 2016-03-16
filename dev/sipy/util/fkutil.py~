@@ -84,6 +84,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 		if not isinstance(st, Trace):
 			msg = "Wrong data input, must be Stream or Trace"
 			raise TypeError(msg)
+
 	plt.figure()
 
 	if isinstance(st, Stream):
