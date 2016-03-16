@@ -84,9 +84,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 		if not isinstance(st, Trace):
 			msg = "Wrong data input, must be Stream or Trace"
 			raise TypeError(msg)
-	
-	if isinstance(st, Stream):
+	plt.figure()
 
+	if isinstance(st, Stream):
 		t_axis = np.linspace(0,st[0].stats.delta * st[0].stats.npts, st[0].stats.npts)
 		data = stream2array(st)
 		
@@ -254,6 +254,7 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black'):
 					or import epidist-list via epidist
 	type y_dist:	int or list
 	"""
+	plt.figure()
 	for i, trace in enumerate(data):
 		if isinstance(y_dist,int):
 			if i == 0:

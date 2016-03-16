@@ -10,7 +10,7 @@ import fractions
 import scipy as sp
 from scipy.integrate import cumtrapz
 import warnings
-
+import datetime
 import obspy
 
 import matplotlib.pyplot as plt
@@ -541,8 +541,6 @@ def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 	
 	return shift_trace, shift_value
 
-def vespashift():
-	return
 
 def corr_stat(stream, inv, phase):
 	"""
@@ -861,77 +859,82 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 			sref=i
 
 	# Prepare slownessrange, and allocate space in memory.
-	uN = int ((slomax - slomin) / slostep)
+	uN = int ((slomax - slomin) / slostep + 1)
 	urange = np.linspace(slomin, slomax, uN)
 	it = data.shape[1]		
 	iF = int(math.pow(2,nextpow2(it))) 
 	dft = np.fft.fft(data, iF, axis=1)
 
 	if method in ("fft"):
-		# Calculate timeshift-table, see shift2ref method "fft" as guide.
-		timeshift_table = np.zeros((data.shape[0], urange.size, dft.shape[1]))
-		for i, traceshiftvalues in enumerate(timeshift_table):
-			for j, uvalue in enumerate(traceshiftvalues):
+		# Calculate timeshift-table as a tensor, see shift2ref method "fft" as guide.
+		timeshift_table = np.zeros((data.shape[0], urange.size, dft.shape[1])).astype('complex')
+		
+		# Slowness-Loop
+		for j, slo in enumerate(urange):
+
+			# Station-Loop
+			for i in range(timeshift_table.shape[0]):
+				sshift = int( abs(sref - i) * dx * slo / dsample)
 				if i > sref:
-					tshift = abs(sref-i) * dx * urange[j]
-					sshift = int(tshift / dsample)
-					timeshift_table[i][j] = sshift
-					timeshift_table[i][j][:]= ( -2. * np.pi * sshift / float(iF) ) * np.arange(dft.shape[1])
-
+					timeshift_table[i][j] = np.exp((0.+ 1j) * ( 2. * np.pi * sshift / float(iF) ) * np.arange(dft.shape[1]))
 				elif i < sref:
-					tshift = abs(sref-i) * dx * urange[j]
-					sshift = int(tshift / dsample)	
-					timeshift_table[i][j] = - sshift
-					timeshift_table[i][j][:]= ( 2. * np.pi * sshift / float(iF) ) * np.arange(dft.shape[1])
-
+					timeshift_table[i][j] = np.exp((0.+ 1j) * ( -2. * np.pi * sshift / float(iF) ) * np.arange(dft.shape[1]))
 				elif i == sref:
-					timeshift_table[i][j] = 0
-					timeshift_table[i][j][:]= 0
-
-
+					timeshift_table[i][j] = 1. # np.exp((0.+ 1j) * 0) = 1.
+				
 		vespa = np.zeros( (uN, data.shape[1]) )
 
-		# Shifting in FT domain.
-		for k, uslice in enumerate(timeshift_table.transpose(1,0,2)):
+		# Transpose the tensor in right
+		tst =  timeshift_table.transpose(1,0,2)
+		
+		# Slownesses
+		for i, shifttable in enumerate(tst):
 			dftshift = np.zeros(dft.shape).astype('complex')
-			for i, traceshiftvalues in enumerate(uslice):
-				argshift = np.exp((0.+ 1j)*traceshiftvalues)
-				dftshift[i] = dft[i] * argshift
+			dftshift = dft * shifttable
 
 			shiftdata = np.fft.ifft(dftshift, iF)
 			vespatrace = shiftdata.real.copy()
+
 			# Put it in the right size again.
 			vespatrace = np.delete(vespatrace, np.s_[it:], 1)
 
-			vespa[k] = stack(vespatrace, power)
+			vespa[i] = stack(vespatrace, power)
 
 	if method in ("normal"):
 		vespa = np.zeros( (uN, data.shape[1]) )
 		shift_data_tmp = np.zeros(data.shape)
 	
 
-
+		tmin=0
+		tmax=0
 		# Loop over all slownesses.
 		for i, u in enumerate(urange):
-			print("Currently in slowness %f of %f" % (u, urange.max()))
 			for j,trace in enumerate(data):
 				if j > sref:
 					tshift = abs(sref-j) * dx * u
 					sshift = int(tshift / dsample)
-					shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, sshift, method=method)
+					shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, sshift, method="normal")
+
 				elif j < sref:
 					tshift = abs(sref-j) * dx * u
 					sshift = int(tshift / dsample)
-					shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, -sshift, method=method)
+					shift_data_tmp[j,:], shift_index = shift2ref(trace, 0, -sshift, method="normal")
+
 				elif j == sref:
 					shift_data_tmp[j,:] = trace
-		
+				# Positive shift_index indicates positive shift in time and vice versa.	
+				#if shift_index > 0 and shift_index > tmin: tmin = shift_index
+				#if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
+
 			vespa[i,:] = stack(shift_data_tmp, order=power)
+		
+		#vespa = truncate(vespa, tmin, tmax)
 
 	vespa = vespa/vespa.max()		
 
 	# Plotting routine
 	if plot:
+		plt.figure()
 		RE = 6371.0
 		REdeg = kilometer2degrees(RE)
 		origin = event.origins[0]['time']
