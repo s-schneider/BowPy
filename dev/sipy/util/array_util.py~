@@ -1181,7 +1181,8 @@ def plot_transfer_function(stream, inventory, sx=(-10, 10), sy=(-10, 10), sls=0.
 
 def plot_gcp(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefigure=None):
 	"""
-	Documantation follows
+	Documantation follows, still working on. What kind of information would be useful to plot?
+	Have to add a legend.
 	"""
 	model = TauPyModel('ak135')
 	slat = event.origins[0].latitude

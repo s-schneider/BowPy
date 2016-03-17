@@ -1088,7 +1088,7 @@ def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 
 	return equi_stream
 
-def plot(inventory, projection="local"):
+def plot_inv(inventory, projection="local"):
     """
     Function to plot the geometry of the array, 
     including its center of gravity and geometrical center

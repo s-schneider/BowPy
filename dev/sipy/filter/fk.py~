@@ -189,8 +189,15 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', f
 		elif ftype in ("eliminate-polygon"):
 			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
 			if isinstance(event, Event) and isinstance(inv, Inventory):
-				array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-														  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
+				if phase:
+					st_al = alignon(st_tmp, inv, event, phase)
+					ArrayData = stream2array(st_al, normalize)
+					array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+					array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+															  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
+				else:
+					array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+															  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
 			else:
 				msg='For wavenumber calculation inventory and event information is needed, not found.'
 				raise IOError(msg)
@@ -198,7 +205,14 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', f
 		elif ftype in ("extract-polygon"):
 			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
 			if isinstance(event, Event) and isinstance(inv, Inventory):
-				array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+				if phase:
+					st_al = alignon(st_tmp, inv, event, phase)
+					ArrayData = stream2array(st_al, normalize)
+					array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+					array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+														yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
+				else:
+					array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
 														yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
 			else:
 				msg='For wavenumber calculation inventory and event information is needed, not found.'
