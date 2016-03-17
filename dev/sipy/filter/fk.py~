@@ -1,5 +1,6 @@
 from __future__ import absolute_import, print_function
 import obspy
+from obspy import Stream
 from obspy.core.event.event import Event
 from obspy.core.inventory.inventory import Inventory
 
@@ -16,13 +17,13 @@ import scipy.signal as signal
 from scipy import sparse
 from scipy.optimize import fmin_cg
 
-from sipy.util.array_util import array2stream, stream2array, epidist2nparray, attach_epidist2coords
+from sipy.util.array_util import array2stream, stream2array, epidist2nparray, attach_epidist2coords, alignon
 from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array,\
 							find_peaks, slope_distribution, makeMask, create_iFFT2mtx, cg_solver, lstsqs
 from sipy.util.base import nextpow2
 from sipy.util.picker import get_polygon
 
-def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', phase=None, polygon=12, normalize=True, SSA=False):
+def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', fshape=['spike'], phase=None, polygon=12, normalize=True, SSA=False):
 	"""
 	Import stream, the function applies an 2D FFT, removes a certain window around the
 	desired phase to surpress a slownessvalue corresponding to a wavenumber and applies an 2d iFFT.
@@ -47,22 +48,39 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 	type trafo: string
 
 	param ftype: type of method, default is 'eliminate-polygon', possible inputs are:
-				 eliminate
-				 extract
+				 -eliminate
+				 -extract
 				
 				 if trafo is set to FK, also:
-				 eliminate-polygon
-				 extract-polygon
+				 -eliminate-polygon
+				 -extract-polygon
 
 	type ftype: string
 
+	param fshape: fshape[0] describes the shape of the fk-filter in case of ftype is 'eliminate' or 'extract'. Possible inputs are:
+				 -spike (default)
+				 -boxcar
+				 -taper
+				 -butterworth
+
+				  fshape[1] is an additional attribute to the shape of taper and butterworth, for:
+				 -taper: fshape[1] = slope of sides
+				 -butterworth: fshape[1] = number of poles
+
+				  fshape[3] describes the length of the filter shape, respectivly wavenumber corner points around k=0,
+				
+				 e.g.: fshape['taper', 2, 4] produces a symmetric taper with slope of side = 2, where the signal is reduced about 50% at k=+-2
+
+
+	type  fshape: list
+
 	param phase: name of the phase to be investigated
-	type phase: string
+	type  phase: string
 
 	param polygon: number of vertices of polygon for fk filter, only needed 
 				   if ftype is set to eliminate-polygon or extract-polygon.
 				   Default is 12.
-	type polygon: int
+	type  polygon: int
 	
 	param normalize: normalize data to 1
 	type normalize: bool
@@ -90,6 +108,15 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 	"""
 
 	# Convert format and prepare Variables.
+
+	# Check for Data type of variables.
+	if not type(st ) == Stream:
+		print( "Wrong input type of stream, must be obspy.core.stream.Stream" )
+		raise TypeError
+
+	if len(fshape) ==  1:
+		fshape = [fshape[0], None, None]
+	
 	st_tmp = st.copy()
 	ArrayData = stream2array(st_tmp, normalize)
 	
@@ -97,7 +124,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 	iK = int(math.pow(2,nextpow2(ix)))
 	
 	try:
-		yinfo = epidist2nparray(epidist(inv, event, st_tmp))
+		yinfo = epidist2nparray(attach_epidist2coords(inv, event, st_tmp))
 		dx = (yinfo.max() - yinfo.min() + 1) / yinfo.size
 		k_axis = np.fft.fftfreq(iK, dx)	
 	except:
@@ -121,21 +148,47 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 	"""
 
 	# 2D f-k Transformation 
+	# Note array_fk has f on the x-axis and k on the y-axis!!!
+	# For interaction the conj.-transposed Array is shown!!!
+
+
 	# Decide when to use SSA to fill the gaps, calc mean distance of each epidist entry
 	# if it differs too much --> SSA
+
 	if trafo == "FK":
-		
-		# Note array_fk has f on the x-axis and k on the y-axis!!!
-		# For interaction the conj.-transposed Array is shown!!! 
-		array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
 
 		if ftype in ("eliminate"):
-			array_filtered_fk = line_set_zero(array_fk)
+			if phase:
+				if not isinstance(event, Event) and not isinstance(inv, Inventory):
+					msg='For alignment on phase calculation inventory and event information is needed, not found.'
+					raise IOError(msg)
+
+				st_al = alignon(st_tmp, inv, event, phase)
+				ArrayData = stream2array(st_al, normalize)
+				array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+				array_filtered_fk = line_set_zero(array_fk, shape=fshape)
+				
+			else:
+				array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+				array_filtered_fk = line_set_zero(array_fk, shape=fshape)
 
 		elif ftype in ("extract"):
-			array_filtered_fk = line_cut(array_fk)				
+			if phase:
+				if not isinstance(event, Event) and not isinstance(inv, Inventory):
+					msg='For alignment on phase calculation inventory and event information is needed, not found.'
+					raise IOError(msg)
+
+				st_al = alignon(st_tmp, inv, event, phase)
+				ArrayData = stream2array(st_al, normalize)
+				array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+				array_filtered_fk = line_cut(array_fk, shape=fshape)
+
+			else:
+				array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+				array_filtered_fk = line_cut(array_fk, shape=fshape)			
 		
 		elif ftype in ("eliminate-polygon"):
+			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
 			if isinstance(event, Event) and isinstance(inv, Inventory):
 				array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
 														  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
@@ -144,6 +197,7 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', p
 				raise IOError(msg)
 
 		elif ftype in ("extract-polygon"):
+			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
 			if isinstance(event, Event) and isinstance(inv, Inventory):
 				array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
 														yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)

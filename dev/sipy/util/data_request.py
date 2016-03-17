@@ -135,14 +135,14 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 				clat = center['latitude']
 				clon = center['longitude']
 				if azimuth:
-					print("Looking for events in the azimuth range of %f to %f", %(azimuth[0], azimuth[1]))
+					print("Looking for events in the azimuth range of %f to %f" % (azimuth[0], azimuth[1]) )
 					center_az = gps2dist_azimuth(clat, clon, elat, elon)[1]
 					if center_az > azimuth[1] and center_az < azimuth[0]: 
 						print("Geometrical center of Array out of azimuth bounds, \ncheking if single stations fit")
 						array_fits = False
 
 				elif baz:
-					print("Looking for events in the back azimuth range of %f to %f", %(baz[0], baz[1]))
+					print("Looking for events in the back azimuth range of %f to %f" %(baz[0], baz[1]))
 					center_baz = gps2dist_azimuth(clat, clon, elat, elon)[2]
 					if center_baz > baz[1] and center_baz < baz[0]: 
 						print("Geometrical center of Array out of back azimuth bounds, \ncheking if single stations fit")

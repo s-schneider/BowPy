@@ -45,7 +45,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=None, clr='black'):
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=None, clr='black', newfigure=True):
 	"""
 	Alpha Version!
 	
@@ -84,8 +84,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 		if not isinstance(st, Trace):
 			msg = "Wrong data input, must be Stream or Trace"
 			raise TypeError(msg)
-
-	plt.figure()
+	if newfigure:
+		plt.figure()
 
 	if isinstance(st, Stream):
 		t_axis = np.linspace(0,st[0].stats.delta * st[0].stats.npts, st[0].stats.npts)
@@ -377,23 +377,95 @@ def kill(data, stat):
 	data = np.delete(data, stat, 0)
 	return(data)
 
-def line_cut(array, stat=0):
+def line_cut(array, shape):
 	"""
-	Sets the array to zero, except for the stat line and the radius values around it.
-	"Cuts" one line out. 
+	Sets the array to zero, except for the 0 line and given features given in shape.
+	"Cuts" one line out + given shape. For detailed information look in sipy.filter.fk.fk_filter
 	"""
+
+	fil=None
+	name = shape[0]
+	kwarg = shape[1] 
+	length = shape[2]
 	new_array = np.zeros(array.shape).astype('complex')
-	new_array[stat] = array[stat]
+	if name in ['spike', 'Spike']:
+		new_array[0] = array[0]
+		return new_array
 
-	return(new_array)
+	elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
+		new_array[0] = array[0]
+		for i in range(length/2 +1)[1:]:
+			new_array[i] = array[i]
+			new_array[new_array.shape[0]-i] = array[new_array.shape[0]-i]			
+		return new_array
 
-def line_set_zero(array, stat=0):
+	elif name in ['butterworth', 'Butterworth'] and isinstance(length, int):
+		fil = create_filter(name, array.shape[0]/2, length/2, kwarg)
+		for i, value in enumerate(array):
+			if i < array.shape[0]/2:			
+				new_array[i] = value * fil[i]
+			elif i >= array.shape[0]/2:
+				index = fil.shape[0] - abs(array.shape[0]/2 - i) -1
+				new_array[i] = value * fil[ index ]
+
+	elif name in ['taper', 'Taper'] and isinstance(length, int):
+		fil = create_filter(name, array.shape[0]/2, length/2, kwarg)
+		for i, value in enumerate(array):
+			if i < array.shape[0]/2:			
+				new_array[i] = value * fil[i]
+			elif i >= array.shape[0]/2:
+				index = fil.shape[0] - abs(array.shape[0]/2 - i) -1
+				new_array[i] = value * fil[ index ]
+
+		
+	return new_array
+
+def line_set_zero(array, shape):
 	"""
-	Sets lines zero in array
+	Sets 0 line zero in array + features given in shape.
+	For detailed information look in sipy.filter.fk.fk_filter
 	"""
+
+
+	fil=None
+	name = shape[0]
+	kwarg = shape[1]
+	length = shape[2]
 	new_array = array
-	new_array[stat] = 0
-	
+
+	if shape[0] in ['spike', 'Spike']:
+		new_array[0] = 0
+		return(new_array)
+
+	elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
+		new_array[0] = 0
+		for i in range(length/2 +1)[1:]:
+			new_array[i] = 0
+			new_array[new_array.shape[0]-i] = 0
+		return(new_array)
+
+	elif name in ['butterworth', 'Butterworth'] and isinstance(length, int):
+		fil = create_filter(name, array.shape[0]/2, length/2, kwarg)
+		fil = -1. * fil + 1.
+
+		for i, value in enumerate(array):
+			if i < array.shape[0]/2:			
+				new_array[i] = value * fil[i]
+			elif i >= array.shape[0]/2:
+				index = fil.shape[0] - abs(array.shape[0]/2 - i) -1
+				new_array[i] = value * fil[ index ]
+
+	elif name in ['taper', 'Taper'] and isinstance(length, int):
+		fil = create_filter(name, array.shape[0]/2, length/2, kwarg)
+		fil = -1. * fil + 1.
+		
+		for i, value in enumerate(array):
+			if i < array.shape[0]/2:			
+				new_array[i] = value * fil[i]
+			elif i >= array.shape[0]/2:
+				index = fil.shape[0] - abs(array.shape[0]/2 - i) -1
+				new_array[i] = value * fil[ index ]
+
 	return(new_array)
 
 def extract_nonzero(array):
@@ -812,4 +884,17 @@ def lstsqs(A,b,mu=0):
 	print("..finished")
 	return x
 
+def create_filter(name, length, cutoff=None, ncorner=None):
+
+	if name in ['butterworth', 'Butterworth']:
+		x = np.linspace(0, length, length+1)
+		y = 1. / (1. + (x/float(cutoff))**(2.*ncorner))
+	
+	if name in ['taper', 'Taper']:
+		x = np.linspace(0, length, length+1)
+		y = (-x+cutoff)*ncorner +0.5
+		y[y>1.] = 1.
+		y[y<0.] = 0.
+
+	return y
 	
