@@ -48,6 +48,9 @@ stuni.normalize()
 invuni = read_inv("../data/synthetics_uniform/SUNEW_inv.xml")
 #cat = read_cat("/Users/Simon/dev/FK-Filter/data/synthetics_random/SRNEW_cat.xml")
 cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
+attach_network_to_traces(stuni, invuni[0])
+attach_coordinates_to_traces(stuni, invuni, cat[0])
+
 
 st = read_st("../data/synthetics_uniform/SUGAP.QHD")
 #stgap = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUGAPTRUNC.QHD")
