@@ -5,15 +5,15 @@ from obspy.clients.fdsn import Client
 from obspy import Stream
 import obspy
 import numpy as np
-from obspy.geodetics import locations2degrees
+from obspy.geodetics import locations2degrees, gps2dist_azimuth
 from obspy.taup import TauPyModel
 
-from sipy.util.array_util import center_of_gravity, plot_gcp, attach_network_to_traces
+from sipy.util.array_util import center_of_gravity, plot_gcp, attach_network_to_traces, geometrical_center
 
 def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ", minlat=None,
                  maxlat=None,minlon=None,maxlon=None, mindepth=None, maxdepth=None, 
                  radialcenterlat=None, radialcenterlon=None, minrad=None, maxrad=None, 
-                 azimuth=None, radialsearch=False, savefile=False):
+                 azimuth=None, baz=False, radialsearch=False, savefile=False):
 	"""
 	Searches in a given Database for seismic data. Restrictions in terms of starttime, endtime, network etc can be made.
 	If data is found it returns a stream variable, with the waveforms, an inventory with all station and network information
@@ -50,8 +50,11 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 	:param minrad, maxrad: Minimum and maximum radii for radialsearch
 	:type : float
 
-	:param azimuth: Desired azimuth of event, station couples in deg
-	:type  azimuth: float
+	:param azimuth: Desired range of azimuths of event, station couples in deg as a list [minimum azimuth, maximum azimuth]
+	:type  azimuth: list
+
+	:param baz: Desired range of back-azimuths of event, station couples in deg as a list [minimum back azimuth, maximum back azimuth]
+	:type  baz: list
 
 	:param radialsearch: Sets radialsearch on or off
 	:type  radialsearch: bool
@@ -85,6 +88,7 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 
 	try:
 		if radialsearch:
+			print("Doing a radial search..")
 			catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, maxdepth=maxdepth, mindepth=mindepth, latitude=radialcenterlat, longitude=radialcenterlon, minradius=minrad, maxradius=maxrad)
 		else:
 			catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, maxdepth=maxdepth, mindepth=mindepth)
@@ -115,6 +119,7 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 			elon = event.origins[0].longitude
 			depth = event.origins[0].depth/1000.
 			epidist = locations2degrees(slat,slon,elat,elon)
+			
 			arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist,
 						                        phase_list=Plist)
 			P_arrival_time = arrivaltime[0]
@@ -124,15 +129,56 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 
 			print("Searching in network %s\n" % network.code)
 
-			for station in network:
-				try:
-					streamreq = client.get_waveforms(network.code, station.code, '*', channels,tstart, tend)
-					print("Downloaded data for station %s ... \n" % station.code )
-					stream += streamreq
-				except:
-					print("No data for station %s ... \n" % station.code )
-					continue
-			attach_network_to_traces(stream, network)
+			array_fits = True
+			if azimuth or baz:
+				center = geometrical_center(inv)
+				clat = center['latitude']
+				clon = center['longitude']
+				if azimuth:
+					print("Looking for events in the azimuth range of %f to %f", %(azimuth[0], azimuth[1]))
+					center_az = gps2dist_azimuth(clat, clon, elat, elon)[1]
+					if center_az > azimuth[1] and center_az < azimuth[0]: 
+						print("Geometrical center of Array out of azimuth bounds, \ncheking if single stations fit")
+						array_fits = False
+
+				elif baz:
+					print("Looking for events in the back azimuth range of %f to %f", %(baz[0], baz[1]))
+					center_baz = gps2dist_azimuth(clat, clon, elat, elon)[2]
+					if center_baz > baz[1] and center_baz < baz[0]: 
+						print("Geometrical center of Array out of back azimuth bounds, \ncheking if single stations fit")
+						array_fits = False
+
+			# If array fits to azimuth/back azimuth or no azimuth/back azimuth is given
+			if array_fits:
+				for station in network:
+					try:
+						streamreq = client.get_waveforms(network.code, station.code, '*', channels,tstart, tend)
+						print("Downloaded data for station %s ... \n" % station.code )
+						stream += streamreq
+					except:
+						print("No data for station %s ... \n" % station.code )
+						continue
+				attach_network_to_traces(stream, network)
+
+			# If not checking each station individually.
+			else:
+				for station in network:
+					fit = False
+					if azimuth:
+						stat_az = gps2dist_azimuth(station.latitude, station.longitude, elat, elon)[1]
+						if stat_az > azimuth[1] and stat_az < azimuth[0]: fit = True
+					elif baz:
+						stat_baz = gps2dist_azimuth(station.latitude, station.longitude, elat, elon)[2]
+						if stat_baz > baz[1] and stat_baz < baz[0]: fit = True
+					if fit:
+						try:
+							streamreq = client.get_waveforms(network.code, station.code, '*', channels,tstart, tend)
+							print("Downloaded data for station %s ... \n" % station.code )
+							stream += streamreq
+						except:
+							print("No data for station %s ... \n" % station.code )
+							continue
+				attach_network_to_traces(stream, network)				
 
 	if savefile:
 		 stname = str(origin_t).split('.')[0] + ".MSEED"
