@@ -15,7 +15,7 @@ import obspy
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-#from mpl_toolkits.basemap import Basemap
+from mpl_toolkits.basemap import Basemap
 from matplotlib.ticker import MaxNLocator
 
 from obspy import UTCDateTime, Stream, Inventory
@@ -391,6 +391,7 @@ def find_equisets(numbers):
 	"""
 	
 	return
+
 
 
 def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal', taup_model='ak135'):
@@ -1177,35 +1178,47 @@ def plot_transfer_function(stream, inventory, sx=(-10, 10), sy=(-10, 10), sls=0.
     plt.show()
     plt.ioff()
 
-def plot_gcp(slat, slon, qlat, qlon, plat, plon, savefigure=None):
+def plot_gcp(depth, slat, slon, rlat, rlon, phases=['ttall', 'P^410P', 'P^660P'], savefigure=None):
+	"""
+	Documantation follows
 
-    global m
+	from obspy.taup.taup_geo import add_geo_to_arrivals
+
+	model = TaupPyModel('ak135')
+	pp = model.get_pierce_points_geo(depth, slat, slon, rlat, rlon, phases)
+	pp = add_geo_to_arrivals(pp, 38, 142, 32, -94, 6372, 0)
+	
+    # global m
     # lon_0 is central longitude of projection, lat_0 the central latitude.
     # resolution = 'c' means use crude resolution coastlines, 'l' means low, 'h' high etc.
     # zorder is the plotting level, 0 is the lowest, 1 = one level higher ...   
-    #m = Basemap(projection='nsper',lon_0=20, lat_0=25,resolution='c')
+    # m = Basemap(projection='nsper',lon_0=20, lat_0=25,resolution='c')
     m = Basemap(projection='kav7',lon_0=-45, resolution='c')   
     qx, qy = m(qlon, qlat)
     sx, sy = m(slon, slat)
     px, py = m(plon, plat)
-    m.drawmapboundary(fill_color='#B4FFFF')
-    m.fillcontinents(color='#00CC00',lake_color='#B4FFFF', zorder=0)
-    #import event coordinates, with symbol (* = Star)
+
+    # import event coordinates, with symbol (* = Star)
     m.scatter(qx, qy, 80, marker='*', color= '#004BCB', zorder=2)
-    #import station coordinates, with symbol (^ = triangle)
+    # import station coordinates, with symbol (^ = triangle)
     m.scatter(sx, sy, 80, marker='^', color='red', zorder=2)
-    #import bouncepoints coord.
+    # import bouncepoints coord.
     m.scatter(px, py, 10, marker='d', color='yellow', zorder=2)
 
+
+    m.drawmapboundary(fill_color='#B4FFFF')
+    m.fillcontinents(color='#00CC00',lake_color='#B4FFFF', zorder=0)
     m.drawcoastlines(zorder=1)
-    #greatcirclepath drawing from station to event
-    #Check if qlat has a length
+
+    # Greatcirclepath drawing from station to event
+    # Check if qlat has a length
     try:
         for i in range(len(qlat)):
             m.drawgreatcircle(qlon[i], qlat[i], slon[i], slat[i], linewidth = 1, color = 'black', zorder=1)
     except TypeError:       
         m.drawgreatcircle(qlon, qlat, slon, slat, linewidth = 1, color = 'black', zorder=1)
-    # draw parallels and meridians.
+    
+	# Draw parallels and meridians.
     m.drawparallels(np.arange(-90.,120.,30.), zorder=1)
     m.drawmeridians(np.arange(0.,420.,60.), zorder=1)
     plt.title("")
@@ -1218,3 +1231,4 @@ def plot_gcp(slat, slon, qlat, qlon, plat, plon, savefigure=None):
         plt.draw()
         plt.show()
         plt.ioff()
+	"""

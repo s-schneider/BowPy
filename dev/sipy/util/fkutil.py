@@ -45,7 +45,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=None, clr='black'):
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=None, clr='black', newfigure=True):
 	"""
 	Alpha Version!
 	
@@ -85,8 +85,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 			msg = "Wrong data input, must be Stream or Trace"
 			raise TypeError(msg)
 
-	plt.figure()
-
+	if newfigure:
+		plt.figure()
+	
 	if isinstance(st, Stream):
 		t_axis = np.linspace(0,st[0].stats.delta * st[0].stats.npts, st[0].stats.npts)
 		data = stream2array(st)
