@@ -42,7 +42,6 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', f
 
 	param trafo: Type of transformation, default is 'FK', possible inputs are:
 				 FK: for f-k transformation via numpy.fft.fft2
-				 FX: for f-x transformation via numpy.fft.fft
 				 LS: for a combination of 1D FFT in time-domain and and Lomb-Scargle
 				     in the space-domain, via numpy.fft.fft and scipy.signal.lombscargle
 	type trafo: string
@@ -210,20 +209,6 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', f
 			raise TypeError
 
 		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF)).real
-
-	# 2D f-x Transformation 
-	elif trafo in ("FX"):
-		array_fx = np.fft.fft(ArrayData, iF)
-		if ftype in ("eliminate"):
-			array_filtered = line_set_zero(array_fx)
-
-		elif ftype in ("extract"):
-			array_filtered = line_cut(array_fx)
-			array_filtered = np.fft.ifft(ArrayData, iF).real
-
-		else:
-			msg = "No type of filter specified"
-			raise TypeError(msg)
 
 	# 2D FFT-LS 
 	# elif trafo in ("LS"):

@@ -1185,7 +1185,7 @@ def plot_gcp(depth, slat, slon, rlat, rlon, phases=['ttall', 'P^410P', 'P^660P']
 
 	model = TaupPyModel('ak135')
 	pp = model.get_pierce_points_geo(depth, slat, slon, rlat, rlon, phases)
-	pp = add_geo_to_arrivals(pp, 38, 142, 32, -94, 6372, 0)
+	pp = add_geo_to_arrivals(pp, slat, slon, rlat, rlon, 6372, 0)
 	
     # global m
     # lon_0 is central longitude of projection, lat_0 the central latitude.
