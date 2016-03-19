@@ -313,6 +313,7 @@ def line_cut(array, shape):
 
 	elif name in ['butterworth', 'Butterworth'] and isinstance(length, int):
 		fil = create_filter(name, array.shape[0]/2, length/2, kwarg)
+		
 		for i, value in enumerate(array):
 			if i < array.shape[0]/2:			
 				new_array[i] = value * fil[i]
@@ -420,7 +421,7 @@ def shift_array(array, shift_value=0, y_dist=False):
 			array_shift[i] = np.roll(array[i], -shift_value*i)
 	return(array_shift)
 
-def makeMask(fkdata,slope):
+def makeMask(fkdata,slope,shape):
 	"""
 	This function creates a Mask-array in shape of the original fkdata,
 	with straight lines (value = 1.) along the angles, given in slope and 0 everywhere else.
@@ -430,6 +431,8 @@ def makeMask(fkdata,slope):
 
 	:param slope:
 
+	:param shape: -boxcar: convolve mask with a boxcar of length of number of slopevalues
+				  -
 
 	Returns 
 
@@ -437,33 +440,56 @@ def makeMask(fkdata,slope):
 	"""
 	M = fkdata.copy()
 	
-	pnorm = 1/2. * ( float(M.shape[0])/float(M.shape[1]) )
+	pnorm = 1/2. * ( float(M.shape[0]+1)/float(M.shape[1]) )
 	
 	prange = slope * pnorm
-
 	Mask = np.zeros(M.shape)
+	maskshape = np.zeros(M.shape)
 	W = np.zeros(M.shape)
+	name = shape[0]
+	arg = shape[1]
+
+	if name in ['butterworth', 'Butterworth', 'taper', 'Taper']:
+		cutoff = slope.size/2
+		if cutoff < 1: cutoff = 1
+		maskshape_tmp = create_filter(name, Mask.shape[0]/2-1, cutoff, arg)
+		maskshape_lh = np.tile(maskshape_tmp, M.shape[1]).reshape(M.shape[1], maskshape_tmp.size).transpose()
+		maskshape_rh = np.flipud(maskshape_lh)
+		maskshape[:maskshape.shape[0]/2,:] = maskshape_lh
+		maskshape[maskshape.shape[0]/2:,:] = maskshape_rh
+		maskshape
 
 	for m in prange:
-		
 		if m == 0.:
 			Mask[0,:] = 1.
 			Mask[1,:] = 1.
 			Mask[Mask.shape[0]-1,:] = 1.
+
 		for f in range(Mask.shape[1]):
 			Mask[:,f] = np.roll(Mask[:,f], int(f*m))
-		Mask[0,:] = 1.
+
+		if name in ['boxcar']:
+			Mask[0,:] = 1.
+		else:
+			Mask = maskshape.copy()
+
 		for f in range(Mask.shape[1]):
 			Mask[:,f] = np.roll(Mask[:,f], -int(f*m))
 
+		W += Mask		
+		Mask = np.zeros(M.shape)
+
 	# Convolving each frequency slice of the mask with a boxcar
 	# of size L. Widens the the maskfunction along k-axis.
-	b = sp.signal.boxcar(slope.size)
-	
-	for i, fslice in enumerate(Mask.conj().transpose()):
-		W[:,i] = sp.signal.convolve(fslice, b, mode=1)
+	if name in ['boxcar']:
+		
+		b = sp.signal.boxcar(slope.size)
+		for i, fslice in enumerate(W.conj().transpose()):
+			W[:,i] = sp.signal.convolve(fslice, b, mode=1)
 
-	W[np.where(W!=0)]=1
+		W[np.where(W!=0)]=1.
+
+	W[np.where(W > 1.)]=1.
 
 	return W
 
@@ -808,11 +834,17 @@ def create_filter(name, length, cutoff=None, ncorner=None):
 		x = np.linspace(0, length, length+1)
 		y = 1. / (1. + (x/float(cutoff))**(2.*ncorner))
 	
-	if name in ['taper', 'Taper']:
+	elif name in ['taper', 'Taper']:
 		x = np.linspace(0, length, length+1)
 		y = (-x+cutoff)*ncorner +0.5
 		y[y>1.] = 1.
 		y[y<0.] = 0.
+		if y.max() < 1:
+			msg='Length of filter and slope of taper do not match'
+			raise ValueError(msg)
+	else:
+		msg='No valid name for filter found.'
+		raise IOError(msg)
 
 	return y
 	

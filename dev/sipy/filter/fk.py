@@ -289,7 +289,7 @@ def fktrafo(stream, inv, event, normalize=True):
 	
 	return fkdata
 
-def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, method='denoise', solver="iterative",  mu=5e-2, fulloutput=False):
+def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, maskshape=['boxcar',None], method='denoise', solver="iterative",  mu=5e-2, fulloutput=False):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
@@ -326,6 +326,20 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, met
 
 	:param slopepicking: If True peaks of slopedistribution can be picked by hand.
 	:type  slopepicking: bool
+
+	:param maskshape: maskshape[0] describes the shape of the lobes of the mask. Possible inputs are:
+				 -boxcar (default)
+				 -taper
+				 -butterworth
+
+				  maskshape[1] is an additional attribute to the shape of taper and butterworth, for:
+				 -taper: maskshape[1] = slope of sides
+				 -butterworth: maskshape[1] = number of poles
+				
+				 e.g.: maskshape['taper', 2] produces a symmetric taper with slope of side = 2.
+
+
+	:type  maskshape: list
 
 	:param method: Desired fk-method, options are 'denoise' and 'interpolate'
 	:type  method: string
@@ -408,7 +422,7 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, met
 	print("Calculating slope distribution...\n")
 	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, interactive=slopepicking)
 	print("Creating mask function with %i significant linear events \n" % len(peaks[0]) )
-	W = makeMask(fkData, peaks[0])
+	W = makeMask(fkData, peaks[0], maskshape)
 	
 	# To keep the order it would be better to transpose W to WT
 	# but for creation of Y, WT has to be transposed again,
