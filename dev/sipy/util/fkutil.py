@@ -312,26 +312,20 @@ def line_cut(array, shape):
 		return new_array
 
 	elif name in ['butterworth', 'Butterworth'] and isinstance(length, int):
-		fil = create_filter(name, array.shape[0]/2, length/2, kwarg)
-		
-		for i, value in enumerate(array):
-			if i < array.shape[0]/2:			
-				new_array[i] = value * fil[i]
-			elif i >= array.shape[0]/2:
-				index = fil.shape[0] - abs(array.shape[0]/2 - i) -1
-				new_array[i] = value * fil[ index ]
+		fil_lh = create_filter(name, array.shape[0]/2, length/2, kwarg)
 
 	elif name in ['taper', 'Taper'] and isinstance(length, int):
 		fil = create_filter(name, array.shape[0]/2, length/2, kwarg)
-		for i, value in enumerate(array):
-			if i < array.shape[0]/2:			
-				new_array[i] = value * fil[i]
-			elif i >= array.shape[0]/2:
-				index = fil.shape[0] - abs(array.shape[0]/2 - i) -1
-				new_array[i] = value * fil[ index ]
 
-		
-	return new_array
+	fil_rh = np.flipud(fil_lh)
+	fil = np.zeros(2*fil_lh.size)
+	fil[:fil.size/2] = fil_lh
+	fil[fil.size/2:] = fil_rh
+
+	new_array = array.transpose() * fil
+	new_array = new_array.transpose()
+
+	return(new_array)
 
 def line_set_zero(array, shape):
 	"""
@@ -364,27 +358,20 @@ def line_set_zero(array, shape):
 		return(new_array)
 
 	elif name in ['butterworth', 'Butterworth'] and isinstance(length, int):
-		fil = create_filter(name, array.shape[0]/2, length/2, kwarg)
-		fil = -1. * fil + 1.
-
-		for i, value in enumerate(array):
-			if i < array.shape[0]/2:			
-				new_array[i] = value * fil[i]
-			elif i >= array.shape[0]/2:
-				index = fil.shape[0] - abs(array.shape[0]/2 - i) -1
-				new_array[i] = value * fil[ index ]
+		fil_lh = create_filter(name, array.shape[0]/2, length/2, kwarg)
+		fil_lh = -1. * fil_lh + 1.
 
 	elif name in ['taper', 'Taper'] and isinstance(length, int):
-		fil = create_filter(name, array.shape[0]/2, length/2, kwarg)
-		fil = -1. * fil + 1.
-		
-		for i, value in enumerate(array):
-			if i < array.shape[0]/2:			
-				new_array[i] = value * fil[i]
-			elif i >= array.shape[0]/2:
-				index = fil.shape[0] - abs(array.shape[0]/2 - i) -1
-				new_array[i] = value * fil[ index ]
+		fil_lh = create_filter(name, array.shape[0]/2, length/2, kwarg)
+		fil_lh = -1. * fil_lh + 1.
 
+	fil_rh = np.flipud(fil_lh)
+	fil = np.zeros(2*fil_lh.size)
+	fil[:fil.size/2] = fil_lh
+	fil[fil.size/2:] = fil_rh
+	
+	new_array = array.transpose() * fil
+	new_array = new_array.transpose()
 	return(new_array)
 
 def extract_nonzero(array):
@@ -831,11 +818,11 @@ def lstsqs(A,b,mu=0):
 def create_filter(name, length, cutoff=None, ncorner=None):
 
 	if name in ['butterworth', 'Butterworth']:
-		x = np.linspace(0, length, length+1)
+		x = np.linspace(0, length, length)
 		y = 1. / (1. + (x/float(cutoff))**(2.*ncorner))
 	
 	elif name in ['taper', 'Taper']:
-		x = np.linspace(0, length, length+1)
+		x = np.linspace(0, length, length)
 		y = (-x+cutoff)*ncorner +0.5
 		y[y>1.] = 1.
 		y[y<0.] = 0.
