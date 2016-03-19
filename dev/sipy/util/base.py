@@ -49,7 +49,36 @@ def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
        
     return(data, t)
 
+def create_ricker(nofs, noft, slope, width=2.):
+	"""
+	Creates noft Traces with a Ricker wavelet
+	:param nofs: No of samples
+	:type  nofs: int
+	
+	:param noft: No of traces
+	:type  noft: int
 
+	:param slope: Indexshift of the traces
+	:type  slope: int
+
+	:param width: Width parameter of Ricker-wavelet, default 2
+	:type  width: float
+	"""
+	data = np.zeros((noft, nofs))	
+
+	delta = int(1. / (slope * float(noft)/float(nofs)))
+	
+	trace = sp.signal.ricker(2*nofs, width)
+	trace = np.roll(trace, trace.argmax() * int(0.9 * nofs))/trace.max()
+	if slope > 0:
+		for i in range(data.shape[0]):
+			data[i] = np.roll(trace, i * delta)[:nofs]	
+	elif slope < 0:
+		for i in range(data.shape[0])[::-1]:
+			data[i] = np.roll(trace, -(data.shape[0]-1-i) * delta)[:nofs]	
+	
+
+	return data
 
 def create_deltasignal(no_of_traces=10, len_of_traces=30000,
                        multiple=False, multipdist=2, no_of_multip=1, slowness=None,

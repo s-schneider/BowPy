@@ -241,7 +241,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 		plt.show()
 		plt.ioff()
 
-def plot_data(data, zoom=1, y_dist=1, label=None, clr='black'):
+def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True):
 	"""
 	Alpha Version!
 	Time axis has no time-ticks --> Working on right now
@@ -255,7 +255,8 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black'):
 					or import epidist-list via epidist
 	type y_dist:	int or list
 	"""
-	plt.figure()
+	if newfigure: plt.figure()
+
 	for i, trace in enumerate(data):
 		if isinstance(y_dist,int):
 			if i == 0:
