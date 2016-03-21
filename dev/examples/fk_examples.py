@@ -31,6 +31,7 @@ import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
 import sipy.filter.fk as fk
 import sipy.filter.radon as radon
 import sipy.util.fkutil as fku
+import sipy.util.base as base
 
 from sipy.util.data_request import data_request
 from sipy.filter.fk import fk_filter, fktrafo, fk_reconstruct
@@ -42,15 +43,19 @@ from sipy.util.picker import get_polygon
 
 
 #stuni = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUNEW.QHD")
-stuni = read_st("../data/synthetics_uniform/SUNEW.QHD")
-stuni.normalize()
+sts = read_st("../data/synthetics_uniform/SUNEW.QHD")
+sts.normalize()
 #invuni = read_inv("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUNEW_inv.xml")
-invuni = read_inv("../data/synthetics_uniform/SUNEW_inv.xml")
+inv = read_inv("../data/synthetics_uniform/SUNEW_inv.xml")
 #cat = read_cat("/Users/Simon/dev/FK-Filter/data/synthetics_random/SRNEW_cat.xml")
 cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
-attach_network_to_traces(stuni, invuni[0])
-attach_coordinates_to_traces(stuni, invuni, cat[0])
+attach_network_to_traces(sts, inv[0])
+attach_coordinates_to_traces(sts, inv, cat[0])
 
+stri = read_st("../data/test_datasets/ricker/SRICKER.QHD")
+stri.normalize()
+attach_network_to_traces(stri, inv[0])
+attach_coordinates_to_traces(stri, inv, cat[0])
 
 st = read_st("../data/synthetics_uniform/SUGAP.QHD")
 #stgap = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUGAPTRUNC.QHD")

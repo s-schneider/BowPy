@@ -122,8 +122,7 @@ def array2stream(ArrayData, st_original=None, network=None):
 	"""
 	param network: Network, of with all the station information
 	type network: obspy.core.inventory.network.Network
-	"""
-	st_tmp = st_original.copy()
+	"""		
 	traces = []
 	
 	for i, trace in enumerate(ArrayData):
@@ -134,8 +133,8 @@ def array2stream(ArrayData, st_original=None, network=None):
 	
 	# Just writes the network information, if possible input original stream
 	
-	if isinstance(st_tmp, Stream):
-		
+	if isinstance(st_original, Stream):
+		st_tmp = st_original.copy()
 		# Checks length of ArrayData and st_original, if needed,
 		# corrects trace.stats.npts value of new generated Stream-object.
 		if ArrayData.shape[1] == len(st_tmp[0]):
