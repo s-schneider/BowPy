@@ -42,6 +42,15 @@ alignon, partial_stack, gaps_fill_zeros, vespagram
 from sipy.util.picker import get_polygon
 
 
+#########3 L-curve
+murange = np.logspace(-8, 3, 50)
+L = np.zeros((3, murange.size))
+for i,muval in enumerate(murange):
+	st_rec, resnorm, solnorm = fk_reconstruct(sr90, slopes=[-3,3],maskshape=['butterworth', 4], slopepicking=False, method=None, mu=muval, tol=1e-12)
+	L[0][i]= muval
+	L[1][i]= resnorm
+	L[2][i]= solnorm
+
 #stuni = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUNEW.QHD")
 sts = read_st("../data/synthetics_uniform/SUNEW.QHD")
 sts.normalize()
@@ -52,7 +61,7 @@ cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
 attach_network_to_traces(sts, inv[0])
 attach_coordinates_to_traces(sts, inv, cat[0])
 
-stri = read_st("../data/test_datasets/ricker/SRICKER.QHD")
+stri = read_st("../data/test_datasets/ricker/SR.QHD")
 stri.normalize()
 attach_network_to_traces(stri, inv[0])
 attach_coordinates_to_traces(stri, inv, cat[0])
@@ -80,7 +89,32 @@ attach_network_to_traces(stran, invran[0])
 attach_coordinates_to_traces(stran, invran, cat[0])
 epiran = epidist2nparray(epidist(invran, cat[0]))
 
+###############
+with open("../data/test_datasets/randnumbers/rand10.txt", 'r') as fh:
+	rand10 = np.array(fh.read().split()).astype('int')
+with open("../data/test_datasets/randnumbers/rand20.txt", 'r') as fh:
+	rand20 = np.array(fh.read().split()).astype('int')
+with open("../data/test_datasets/randnumbers/rand50.txt", 'r') as fh:
+	rand50 = np.array(fh.read().split()).astype('int')
+with open("../data/test_datasets/randnumbers/rand80.txt", 'r') as fh:
+	rand80 = np.array(fh.read().split()).astype('int')
 
+
+randlist = [rand10, rand20, rand50, rand80 ] 
+stlist = [[stri, 'ricker'], [sts, 'instaseis']]
+for streams in (stlist):
+	for values in randlist:
+		stemp =  streams[0].copy()
+		attach_network_to_traces(stemp, inv[0])
+		attach_coordinates_to_traces(stemp, inv, cat[0])
+		for no in values:
+			name = 'SR' + str(int( 100. - len(values)/20.*100.)) +'.QHD'
+			stemp[no].data = np.zeros(300)
+			stemp[no].stats.processing = "empty"
+			stemp.write("../data/test_datasets/%s/%s" % (streams[1],name), format='Q')
+
+
+#############
 
 
 

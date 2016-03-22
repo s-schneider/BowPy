@@ -289,7 +289,7 @@ def fktrafo(stream, inv, event, normalize=True):
 	
 	return fkdata
 
-def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, maskshape=['boxcar',None], method='denoise', solver="iterative",  mu=5e-2, fulloutput=False):
+def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothing=False, dist=0.5,maskshape=['boxcar',None], method='denoise', solver="iterative",  mu=5e-2, tol=1e-12, fulloutput=False):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
@@ -420,10 +420,33 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, mas
 
 	# Calculate mask-function W.
 	print("Calculating slope distribution...\n")
-	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, interactive=slopepicking)
+	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, mindist=dist, smoothing=smoothing, interactive=slopepicking)
+	
+	if fulloutput:
+		plt.figure()
+		plt.plot(prange, M)
+		plt.plot(peaks[0], peaks[1], 'ro')
+		plt.show()
+		kin = raw_input("Use picks? (y/n) \n")
+		if kin in ['y' , 'Y']:
+			print("Using picks, continue \n")
+		elif kin in ['n', 'N']:
+			print("Don't use picks, return to beginning \n")
+			return
+
 	print("Creating mask function with %i significant linear events \n" % len(peaks[0]) )
 	W = makeMask(fkData, peaks[0], maskshape)
-	
+	if fulloutput:
+		plt.figure()
+		plt.imshow(W, aspect='auto', interpolation='none')
+		plt.show()
+		kin = raw_input("Use Mask? (y/n) \n")
+		if kin in ['y' , 'Y']:
+			print("Using Mask, continue \n")
+		elif kin in ['n', 'N']:
+			print("Don't use Mask, return to beginning \n")
+			return
+
 	# To keep the order it would be better to transpose W to WT
 	# but for creation of Y, WT has to be transposed again,
 	# so this step can be skipped.
@@ -453,10 +476,15 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, mas
 	A =  Ts.dot(FH.dot(Yw))
 	print("Starting reconstruction...\n")
 
-	if method in ("denoise"):
-			maxiter = 2
-	if method in ("interpolate"):
-			maxiter = 10
+	if isinstance(method, str):
+		if method in ("denoise"):
+				maxiter = 2
+		elif method in ("interpolate"):
+				maxiter = 10
+	elif isinstance(method, int):
+		maxiter=method
+	else:
+		maxiter=None
 
 	if solver in ("lsqr", "leastsquares") and not method in ("interpolate"):
 		print(" ...using least-squares solver...\n")
@@ -464,7 +492,7 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, mas
 
 	elif solver in ("ilsmr", "iterative") or method in ("interpolate"):
 		print(" ...using iterative LSMR solver...\n")
-		x = sparse.linalg.lsmr(A,dv,mu, maxiter=maxiter)
+		x = sparse.linalg.lsmr(A,dv,mu, atol=tol, btol=tol, maxiter=maxiter)
 		print("istop = %i \n" % x[1])
 		print("Used iterations = %i \n" % x[2])
 		print("Misfit = %f \n " % x[3])
@@ -483,9 +511,9 @@ def fk_reconstruct(st, slopes=[-10,15], deltaslope=0.05, slopepicking=False, mas
 	st_rec = array2stream(data_rec, st)
 
 	if fulloutput:
-		return st_rec, FH, dv, Dv, Ts, Yw
+		return st_rec, FH, dv, Dv, Ts, W
 	else:
-		return st_rec
+		return st_rec, x[3], x[6]
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
 	"""

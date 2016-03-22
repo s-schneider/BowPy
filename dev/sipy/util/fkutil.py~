@@ -241,7 +241,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 		plt.show()
 		plt.ioff()
 
-def plot_data(data, zoom=1, y_dist=1, label=None, clr='black'):
+def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True):
 	"""
 	Alpha Version!
 	Time axis has no time-ticks --> Working on right now
@@ -255,7 +255,8 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black'):
 					or import epidist-list via epidist
 	type y_dist:	int or list
 	"""
-	plt.figure()
+	if newfigure: plt.figure()
+
 	for i, trace in enumerate(data):
 		if isinstance(y_dist,int):
 			if i == 0:
@@ -408,7 +409,7 @@ def shift_array(array, shift_value=0, y_dist=False):
 			array_shift[i] = np.roll(array[i], -shift_value*i)
 	return(array_shift)
 
-def makeMask(fkdata,slope,shape):
+def makeMask(fkdata,slope,shape, rth=0.2):
 	"""
 	This function creates a Mask-array in shape of the original fkdata,
 	with straight lines (value = 1.) along the angles, given in slope and 0 everywhere else.
@@ -420,26 +421,27 @@ def makeMask(fkdata,slope,shape):
 
 	:param shape: -boxcar: convolve mask with a boxcar of length of number of slopevalues
 				  -
-
+	
+	:param rth =  Resamplethreshhold, marks the border between 0 and 1 for the resampling
 	Returns 
 
 	:param W: Mask function W
 	"""
 	M = fkdata.copy()
 	
-	pnorm = 1/2. * ( float(M.shape[0]+1)/float(M.shape[1]) )
+	# Because of resolution issues, upsampling to double size
+	pnorm = 1/2. * ( float(M.shape[0]+1)/float(2. * M.shape[1]) )
 	
 	prange = slope * pnorm
-	Mask = np.zeros(M.shape)
-	maskshape = np.zeros(M.shape)
-	W = np.zeros(M.shape)
+	Mask =  np.zeros((M.shape[0], 2.*M.shape[1]))
+	maskshape = np.zeros((M.shape[0], 2.*M.shape[1]))
+	W = np.zeros((M.shape[0], 2.*M.shape[1]))
 	name = shape[0]
 	arg = shape[1]
-
 	if name in ['butterworth', 'Butterworth', 'taper', 'Taper']:
 		cutoff = slope.size/2
 		if cutoff < 1: cutoff = 1
-		maskshape_tmp = create_filter(name, Mask.shape[0]/2-1, cutoff, arg)
+		maskshape_tmp = create_filter(name, Mask.shape[0]/2, cutoff, arg)
 		maskshape_lh = np.tile(maskshape_tmp, M.shape[1]).reshape(M.shape[1], maskshape_tmp.size).transpose()
 		maskshape_rh = np.flipud(maskshape_lh)
 		maskshape[:maskshape.shape[0]/2,:] = maskshape_lh
@@ -453,7 +455,7 @@ def makeMask(fkdata,slope,shape):
 			Mask[Mask.shape[0]-1,:] = 1.
 
 		for f in range(Mask.shape[1]):
-			Mask[:,f] = np.roll(Mask[:,f], int(f*m))
+			Mask[:,f] = np.roll(Mask[:,f], -int(round(f*m)))
 
 		if name in ['boxcar']:
 			Mask[0,:] = 1.
@@ -461,16 +463,18 @@ def makeMask(fkdata,slope,shape):
 			Mask = maskshape.copy()
 
 		for f in range(Mask.shape[1]):
-			Mask[:,f] = np.roll(Mask[:,f], -int(f*m))
-
+			Mask[:,f] = np.roll(Mask[:,f], int(f*m))
+			
 		W += Mask		
-		Mask = np.zeros(M.shape)
+		Mask =  np.zeros((M.shape[0], 2.*M.shape[1]))
 
 	# Convolving each frequency slice of the mask with a boxcar
 	# of size L. Widens the the maskfunction along k-axis.
 	if name in ['boxcar']:
-		
-		b = sp.signal.boxcar(slope.size)
+		if arg:
+			b = sp.signal.boxcar(arg)
+		else:		
+			b = sp.signal.boxcar(slope.size)
 		for i, fslice in enumerate(W.conj().transpose()):
 			W[:,i] = sp.signal.convolve(fslice, b, mode=1)
 
@@ -478,9 +482,14 @@ def makeMask(fkdata,slope,shape):
 
 	W[np.where(W > 1.)]=1.
 
-	return W
+	# Resample it to original size
+	Wr = sp.signal.resample(W, M.shape[1], axis=1)
+	Wr[ np.where(Wr > rth )] = 1.
+	Wr[ np.where(Wr < rth )] = 0.
 
-def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0, mindist=0, smoothing=1, interactive=False):
+	return Wr
+
+def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0, mindist=0, smoothing=False, interactive=False):
 	"""
 	Generates a distribution of slopes in a range given in prange.
 	Needs fkdata as input. 
@@ -546,9 +555,9 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0,
 	pmin = prange[0]
 	pmax = prange[1]
 	N = abs(pmax - pmin) / pdelta + 1
-	srange = np.linspace(pmin,pmax,N)
 	MD = np.zeros(N)
 	pnorm = 1/2. * ( float(M.shape[0])/float(M.shape[1]) )
+	srange = np.linspace(pmin,pmax,N)/pnorm
 
 	rend = float( len(srange) )
 	for i, delta in enumerate(srange):
@@ -574,18 +583,27 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0,
 						maxm = item[1]
 						idx = i
 				peaks[j] = [(pairs[idx][0], maxm)]
-		peaks = np.array(peaks).reshape(len(peaks), 2)
+		peaks = np.array(peaks).reshape(len(peaks), 2).transpose()
 
 	else:
-		MDconv = sp.signal.convolve(MD, sp.signal.boxcar(int(abs(pmin-pmax))*smoothing),mode=1)
+		if smoothing:
+			blen = int(abs(pmin-pmax))*smoothing
+			if blen < 1 : blen=1
+			MDconv = sp.signal.convolve(MD, sp.signal.boxcar(blen),mode=1)
+		else:
+			MDconv=MD
 		peaks_first = find_peaks(MDconv, srange, peakpick='All', mindist=0.3)
 		peaks_first[1] = peaks_first[1]/peaks_first.max()*MD.max()
 
 		# Calculate envelope of the picked peaks, and pick the 
 		# peaks of the envelope.
 		peak_env = obsfilter.envelope( peaks_first[1] )
-		peaks = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean() + delta_threshold)		
+		peaks_tmp = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean() + delta_threshold)		
 	
+		if peaks_tmp[0].size > 4:
+			peaks = find_peaks( peaks_tmp[1], peaks_tmp[0], 0.5 + delta_threshold)
+		else:
+			peaks = peaks_tmp
 	return MD, srange, peaks
 
 def find_peaks(data, drange=None, peakpick='mod', mindist=0.2):
