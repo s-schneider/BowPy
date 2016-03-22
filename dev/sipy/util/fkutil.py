@@ -483,7 +483,7 @@ def makeMask(fkdata,slope,shape, rth=0.2):
 	W[np.where(W > 1.)]=1.
 
 	# Resample it to original size
-	Wr = sp.signal.resample(W, M.shape[1], axis=1)
+	Wr = np.flipud(sp.signal.resample(W, M.shape[1], axis=1))
 	Wr[ np.where(Wr > rth )] = 1.
 	Wr[ np.where(Wr < rth )] = 0.
 

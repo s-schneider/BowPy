@@ -442,7 +442,7 @@ def makeMask(fkdata,slope,shape, rth=0.2):
 		cutoff = slope.size/2
 		if cutoff < 1: cutoff = 1
 		maskshape_tmp = create_filter(name, Mask.shape[0]/2, cutoff, arg)
-		maskshape_lh = np.tile(maskshape_tmp, M.shape[1]).reshape(M.shape[1], maskshape_tmp.size).transpose()
+		maskshape_lh = np.tile(maskshape_tmp, Mask.shape[1]).reshape(Mask.shape[1], maskshape_tmp.size).transpose()
 		maskshape_rh = np.flipud(maskshape_lh)
 		maskshape[:maskshape.shape[0]/2,:] = maskshape_lh
 		maskshape[maskshape.shape[0]/2:,:] = maskshape_rh
@@ -473,7 +473,8 @@ def makeMask(fkdata,slope,shape, rth=0.2):
 	if name in ['boxcar']:
 		if arg:
 			b = sp.signal.boxcar(arg)
-		else:		
+		else:		y
+
 			b = sp.signal.boxcar(slope.size)
 		for i, fslice in enumerate(W.conj().transpose()):
 			W[:,i] = sp.signal.convolve(fslice, b, mode=1)
@@ -483,7 +484,7 @@ def makeMask(fkdata,slope,shape, rth=0.2):
 	W[np.where(W > 1.)]=1.
 
 	# Resample it to original size
-	Wr = sp.signal.resample(W, M.shape[1], axis=1)
+	Wr = np.flipud(sp.signal.resample(W, M.shape[1], axis=1))
 	Wr[ np.where(Wr > rth )] = 1.
 	Wr[ np.where(Wr < rth )] = 0.
 

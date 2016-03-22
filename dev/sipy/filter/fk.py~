@@ -476,6 +476,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	A =  Ts.dot(FH.dot(Yw))
 	print("Starting reconstruction...\n")
 
+	maxiter=None
 	if isinstance(method, str):
 		if method in ("denoise"):
 				maxiter = 2
@@ -483,14 +484,18 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 				maxiter = 10
 	elif isinstance(method, int):
 		maxiter=method
-	else:
-		maxiter=None
 
-	if solver in ("lsqr", "leastsquares") and not method in ("interpolate"):
-		print(" ...using least-squares solver...\n")
-		Dv_rec = sparse.linalg.lsqr(A, dv, mu)
-
-	elif solver in ("ilsmr", "iterative") or method in ("interpolate"):
+	if solver in ("lsqr", "leastsquares"):
+		print(" ...using iterative least-squares solver...\n")
+		x = sparse.linalg.lsqr(A, dv, mu, atol=tol, btol=tol, iter_lim=maxiter)
+		print("istop = %i \n" % x[1])
+		print("Used iterations = %i \n" % x[2])
+		print("1 Norm = %f \n " % x[3])
+		print("2 Norm = %f \n" % x[4])
+		print("Condition number = %f \n" % x[6])
+		print("Norm of Dv = %f \n" % x[8]) 
+		Dv_rec = x[0]
+	elif solver in ("ilsmr", "iterative"):
 		print(" ...using iterative LSMR solver...\n")
 		x = sparse.linalg.lsmr(A,dv,mu, atol=tol, btol=tol, maxiter=maxiter)
 		print("istop = %i \n" % x[1])
@@ -500,11 +505,18 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 		print("Condition number = %f \n" % x[5])
 		print("Norm of Dv = %f \n" % x[6]) 
 		Dv_rec = x[0]
+	elif solver in ('cgs'):
+		Dv_rec = sparse.linalg.cgs(A, dv, tol=tol, maxiter=maxiter)
+	elif solver in ('cg'):
+		Dv_rec = sparse.linalg.cg(A, dv, x0=Dv, tol=tol, maxiter=maxiter)
+	elif solver in ('bicg'):
+		Dv_rec = sparse.linalg.bicg(A, dv, x0=Dv, tol=tol, maxiter=maxiter)
+	
+
 	else:
 		print("No solver or method specified.")
 		return
 
-	print(Dv_rec.max())
 	data_rec = np.fft.ifft2(Dv_rec.reshape(fkData.shape)).real
 	#data_rec = (data_rec/data_rec.max()).real
 	
@@ -513,7 +525,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	if fulloutput:
 		return st_rec, FH, dv, Dv, Ts, W
 	else:
-		return st_rec, x[3], x[4]
+		return st_rec
 
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
 	"""
