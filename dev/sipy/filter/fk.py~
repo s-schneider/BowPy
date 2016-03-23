@@ -289,7 +289,7 @@ def fktrafo(stream, inv, event, normalize=True):
 	
 	return fkdata
 
-def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothing=False, dist=0.5,maskshape=['boxcar',None], method='denoise', solver="iterative",  mu=5e-2, tol=1e-12, fulloutput=False):
+def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], method='denoise', solver="iterative",  mu=5e-2, tol=1e-12, fulloutput=False):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
@@ -420,7 +420,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 
 	# Calculate mask-function W.
 	print("Calculating slope distribution...\n")
-	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, mindist=dist, smoothing=smoothing, interactive=slopepicking)
+	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, mindist=dist, smoothing=smoothpicks, interactive=slopepicking)
 	
 	if fulloutput:
 		plt.figure()
@@ -451,6 +451,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	# but for creation of Y, WT has to be transposed again,
 	# so this step can be skipped.
 	Y = W.reshape(1,W.size)[0]
+	Yw = sparse.diags(Y)
 
 	# Initialize arrays for cost-function.
 	dv = ADT.transpose().reshape(1, ADT.size)[0]
@@ -463,7 +464,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	T = T.reshape(1, T.size)[0]
 
 	Ts = sparse.diags(T)
-	Yw = sparse.diags(Y)
+	
 
 	# Create sparse-matrix with iFFT operations.	
 	print("Creating iFFT2 operator as a %ix%i matrix ...\n" %(fkDT.shape[0]*fkDT.shape[1], fkDT.shape[0]*fkDT.shape[1]))	
@@ -506,24 +507,24 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 		print("Norm of Dv = %f \n" % x[6]) 
 		Dv_rec = x[0]
 	elif solver in ('cgs'):
-		Dv_rec = sparse.linalg.cgs(A, dv, tol=tol, maxiter=maxiter)
+		x = sparse.linalg.cgs(A, dv, tol=tol, maxiter=maxiter)
+		Dv_rec = x[0]
 	elif solver in ('cg'):
-		Dv_rec = sparse.linalg.cg(A, dv, x0=Dv, tol=tol, maxiter=maxiter)
+		x = sparse.linalg.cg(A, dv, x0=Dv, tol=tol, maxiter=maxiter)
+		Dv_rec = x[0]
 	elif solver in ('bicg'):
-		Dv_rec = sparse.linalg.bicg(A, dv, x0=Dv, tol=tol, maxiter=maxiter)
-	
+		x = sparse.linalg.bicg(A, dv, x0=Dv, tol=tol, maxiter=maxiter)
+		Dv_rec = x[0]
 
 	else:
 		print("No solver or method specified.")
 		return
 
 	data_rec = np.fft.ifft2(Dv_rec.reshape(fkData.shape)).real
-	#data_rec = (data_rec/data_rec.max()).real
-	
 	st_rec = array2stream(data_rec, st)
 
 	if fulloutput:
-		return st_rec, FH, dv, Dv, Ts, W
+		return st_rec, FH, dv, Dv, Ts, Yw
 	else:
 		return st_rec
 
