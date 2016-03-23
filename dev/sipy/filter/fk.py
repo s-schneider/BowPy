@@ -289,7 +289,8 @@ def fktrafo(stream, inv, event, normalize=True):
 	
 	return fkdata
 
-def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], method='denoise', solver="iterative",  mu=5e-2, tol=1e-12, fulloutput=False):
+def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], 
+					method='denoise', solver="iterative",  mu=5e-2, tol=1e-12, fulloutput=False, peakinput=False):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
@@ -327,6 +328,13 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	:param slopepicking: If True peaks of slopedistribution can be picked by hand.
 	:type  slopepicking: bool
 
+	:param smoothpicks: Determines the smoothing of the Slopedistribution, default off. If enabled the distribution ist smoothened by
+						convoluting it with a boxcar of size smoothpicks.
+	:type  smoothpicks: int
+
+	:param dist: Minimum distance inbetween maximum picks.
+	:type  dist: float
+
 	:param maskshape: maskshape[0] describes the shape of the lobes of the mask. Possible inputs are:
 				 -boxcar (default)
 				 -taper
@@ -351,15 +359,21 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	:param mu:	Damping parameter for the solver
 	:type  mu:	float
 
-	:param Fulloutput: If True, the function additionally outputs FH, dv, Dv, Ts and Yw
-	:type  Fulloutput: bool
+	:param tol: Tolerance for solver to abort iteration.
+	:type  tol: float
+
+	:param fulloutput: If True, the function additionally outputs FH, dv, Dv, Ts and Yw
+	:type  fulloutput: bool
+
+	:param peakinput: Chosen peaks of the distribution, insert here if the peaks are not to be meant to recalculated
+	:type  peakinput: np.ndarray
 
 	######  returns:
 
 	:param st_rec: Stream with reconstructed signals on the missing traces
 	:type  st_rec: obspy.core.stream.Stream
 	
-	### if fulloutput=True
+	## if fulloutput=True
 
 	:param st_rec: Stream with reconstructed signals on the missing traces
 	:type  st_rec: obspy.core.stream.Stream
@@ -419,26 +433,29 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	#	raise MemoryError(msg)
 
 	# Calculate mask-function W.
-	print("Calculating slope distribution...\n")
-	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, mindist=dist, smoothing=smoothpicks, interactive=slopepicking)
+	try:	
+		if peakinput.any():
+			peaks = peakinput
+	except:
+		print("Calculating slope distribution...\n")
+		M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, mindist=dist, smoothing=smoothpicks, interactive=slopepicking)
+		if fulloutput:
+			kin = 'n'
+			while kin in ('n', 'N'):
+				plt.figure()
+				plt.title('Magnitude-Distribution')
+				plt.xlabel('Slope in fk-domain')
+				plt.ylabel('Magnitude of slope')
+				plt.plot(prange, M)
+				plt.plot(peaks[0], peaks[1]/peaks[1].max()*M.max(), 'ro')
+				plt.show()
+				kin = raw_input("Use picks? (y/n) \n")
+				if kin in ['y' , 'Y']:
+					print("Using picks, continue \n")
+				elif kin in ['n', 'N']:
+					print("Don't use picks, please re-pick \n")
+					M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, mindist=dist, smoothing=smoothpicks, interactive=True)
 	
-	if fulloutput:
-		kin = 'n'
-		while kin in ('n', 'N'):
-			plt.figure()
-			plt.title('Magnitude-Distribution')
-			plt.xlabel('Slope in fk-domain')
-			plt.ylabel('Magnitude of slope')
-			plt.plot(prange, M)
-			plt.plot(peaks[0], peaks[1]/peaks[1].max()*M.max(), 'ro')
-			plt.show()
-			kin = raw_input("Use picks? (y/n) \n")
-			if kin in ['y' , 'Y']:
-				print("Using picks, continue \n")
-			elif kin in ['n', 'N']:
-				print("Don't use picks, please re-pick \n")
-				M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, mindist=dist, smoothing=smoothpicks, interactive=True)
-
 	print("Creating mask function with %i significant linear events \n" % len(peaks[0]) )
 	W = makeMask(fkData, peaks[0], maskshape)
 	if fulloutput:
@@ -519,14 +536,8 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 		print("Condition number = %f \n" % x[5])
 		print("Norm of Dv = %f \n" % x[6]) 
 		Dv_rec = x[0]
-	elif solver in ('cgs'):
-		x = sparse.linalg.cgs(A, dv, tol=tol, maxiter=maxiter)
-		Dv_rec = x[0]
 	elif solver in ('cg'):
-		x = sparse.linalg.cg(A, dv, x0=Dv, tol=tol, maxiter=maxiter)
-		Dv_rec = x[0]
-	elif solver in ('bicg'):
-		x = sparse.linalg.bicg(A, dv, x0=Dv, tol=tol, maxiter=maxiter)
+		x = sparse.linalg.cg(B, dv, x0=None, tol=tol, maxiter=maxiter)
 		Dv_rec = x[0]
 
 	else:

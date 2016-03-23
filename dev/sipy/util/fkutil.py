@@ -241,7 +241,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 		plt.show()
 		plt.ioff()
 
-def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True):
+def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, savefig=False):
 	"""
 	Alpha Version!
 	Time axis has no time-ticks --> Working on right now
@@ -264,11 +264,14 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True):
 			else:
 				plt.plot(zoom*trace+ y_dist*i, color=clr)
 
-	plt.ion()
-	plt.draw()
-	plt.show()
-	plt.legend()
-	plt.ioff()
+	if savefig:
+		plt.savefig(savefig)
+	else:
+		plt.ion()
+		plt.draw()
+		plt.show()
+		plt.legend()
+		plt.ioff()
 
 def kill(data, stat):
 	"""
@@ -761,7 +764,7 @@ def create_iFFT2mtx(nx, ny):
 	return sparse_iFFT2mtx
 
 
-def cg_solver(A,dv,mu,niter,x0=None):
+def cg_solver(A,dv,niter,x0=None):
 	"""
 	Conjugate gradient solver for Ax = b lstsqs problems, as shown in Tomographic 
 	inversion via the conjugate gradient method, Scales, J. 1987
@@ -805,9 +808,11 @@ def cg_solver(A,dv,mu,niter,x0=None):
 	q = A.dot(p).real
 	
 	print("Starting iterations. \n \n")
-	for k in range(niter):
-		#print("Currently in iteration %i" % int(k+1), end="\r")
-		3sys.stdout.flush()
+
+	cont = True
+	k = 0
+	resnorm = 0.
+	while cont:	
 
 		alpha = np.dot(r.transpose().toarray()[0],r.transpose().toarray()[0]) / np.dot(q.transpose().toarray()[0],q.transpose().toarray()[0])
 		x = x + alpha * p
@@ -820,12 +825,91 @@ def cg_solver(A,dv,mu,niter,x0=None):
 		p = r + beta * p
 		q = A.dot(p).real
 		mcalc = A.dot(x).real - b
+		resnorm_old = resnorm
+		resnorm = np.linalg.norm(mcalc.transpose().toarray(), 2)
+
+		print("Misfit after %i iterations is : %f \n" % (int(k+1), resnorm) )
+		if k == niter: cont=False
+		#if resnorm < 1e-8: cont=False
+		#elif abs(resnorm - resnorm_old) < 1e-8: cont=False
+		k +=1
+
+	solnorm = np.linalg.norm(x.toarray(), 2)
+	
+	return x, resnorm, solnorm
+
+def dcg_solver(A,dv, mu, niter,x0=None):
+	"""
+	Damped conjugate gradient solver for Ax = b lstsqs problems, as shown in Tomographic 
+	inversion via the conjugate gradient method, Scales, J. 1987
+	Expect a mxn Matrix A, a rhs b and an optional startvalue x0
+	
+	:param A:
+	:type A:
+	
+	:param dv:
+	:type dv:
+
+	:param x0:
+	:type x0:
+
+	:param niter:
+	:type niter:
+
+	returns
+
+	:param:
+	:type:
+	"""
+	print("--- Using dCG-method --- \n \nInitiating matrices... \n \n")
+
+	R = A.conjugate().transpose().dot(A)
+	D = mu**2. * sparse.identity(A.shape[0])
+	B = R + D
+	
+	x = sparse.lil_matrix((1, A.shape[1]), dtype='complex')
+	x[:] = 0.
+	try:
+		if x0.any():
+			x[:] = x0.copy()
+	except:
+		print()
+
+	x = x.transpose().tocsc()
+	
+	b = sparse.lil_matrix((1,B.shape[1]), dtype='complex')
+	b[:] = dv
+	b = b.transpose().tocsc()
+	madj = A.dot(b)
+
+	r = madj - B.dot(b)
+	p = r.copy()
+
+
+	
+	print("Starting iterations. \n \n")
+	for k in range(niter):
+		#print("Currently in iteration %i" % int(k+1), end="\r")
+		#sys.stdout.flush()
+
+		alpha = np.dot(r.transpose().toarray()[0],r.transpose().toarray()[0]) / np.dot(p.transpose().toarray()[0],B.dot(p).transpose().toarray()[0])
+		x = r - alpha * B.dot(p)
+	
+		r_old = r.copy()
+		r = madj - B.dot(x)
+		
+		beta = np.dot(r.transpose().toarray()[0],r.transpose().toarray()[0]) / np.dot(r_old.transpose().toarray()[0], r_old.transpose().toarray()[0])
+
+		p = r + beta * p
+
+		mcalc = B.dot(x).real - b
 		misfit = np.linalg.norm(mcalc.transpose().toarray(), 2)
 		print("Misfit after %i iterations is : %f \n" % (int(k+1), misfit) )
 	
 	mnorm = np.linalg.norm(x.toarray(), 2)
 	
 	return x, misfit, mnorm
+
 
 def lstsqs(A,b,mu=0):
 

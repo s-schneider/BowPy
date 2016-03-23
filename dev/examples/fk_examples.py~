@@ -42,21 +42,59 @@ alignon, partial_stack, gaps_fill_zeros, vespagram
 from sipy.util.picker import get_polygon
 
 
-#########3 L-curve
-murange = np.logspace(-30, 3, 100)
-L = np.zeros((3, murange.size))
 
+
+
+################ testsetup
+#read noise
+	noise = np.fromfile('../data/test_datasets/randnumbers/noisearr.txt')
+	noise = noise.reshape(20,300)
+
+with open("../data/test_datasets/ricker/rickerlist.dat", 'r') as fh:
+	rickerlist = np.array(fh.read().split()).astype('str')
+
+noisefoldlist = ["no_noise","10pct_noise", "20pct_noise", "50pct_noise", "60pct_noise", "80pct_noise"]
+noiselevellist = np.array([0., 0.1, 0.2, 0.5, 0.6, 0.8]) 
+
+for i, noisefolder in enumerate(noisefoldlist):
+	for filein in rickerlist:
+		PICPATH = "../data/test_datasets/ricker/" + noisefolder
+		PATH = "../data/test_datasets/ricker/" + filein
+		srs = read_st(PATH)
+		if i != 0:
+			data = stream2array(srs) * noiselevellist[i] * noise
+			srs = array2stream(data)
+
+
+		st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['boxcar', None], solver='ilsmr',method='interpolate', mu=2.5e-2, tol=1e-12)
+		st_rec.normalize()
+		picpath = 
+		fku.plot_data(stream2array(st_rec), savefig=picpath)
+
+		taperrange = [0.25, 0.5, 1, 1.5]
+		for ts in taperrange:
+			st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['taper', tr], solver='ilsmr',method='interpolate', mu=2.5e-2, tol=1e-12)
+
+
+		bwrange = [1,2,4,8]
+
+
+
+
+
+
+
+#########3 L-curve
+murange = np.logspace(-7, 7, 300)
+L = np.zeros((3, murange.size))
+print("Initiating matrices... \n \n")
 for i,muval in enumerate(murange):
 	print(muval)
-	st_rec, resnorm, solnorm = fk_reconstruct(sr90, slopes=[-3,3],maskshape=['butterworth', 4], slopepicking=False, method=None, mu=muval, tol=1e-15)
+	x, rnorm, snorm = cg_solver(B, dv, 20)
+	#	st_rec, resnorm, solnorm = fk_reconstruct(sr90, slopes=[-2,2],maskshape=['butterworth', 4], slopepicking=False,solver='ilsmr', method=None, mu=muval, tol=1e-15)
 	L[0][i]= muval
-	L[1][i]= resnorm
-	L[2][i]= solnorm
-solverlist = ['cgs', 'cg', 'bicg']
-
-st_rec_cg  = fk_reconstruct(sr90, slopes=[-3,3],maskshape=['butterworth', 4], slopepicking=False, method=None, solver='cg', mu=muval, tol=1e-15)
-st_rec_cgs  = fk_reconstruct(sr90, slopes=[-3,3],maskshape=['butterworth', 4], slopepicking=False, method=None, solver='cgs', mu=muval, tol=1e-15)
-st_rec_bicg  = fk_reconstruct(sr90, slopes=[-3,3],maskshape=['butterworth', 4], slopepicking=False, method=None, solver='bicg', mu=muval, tol=1e-15)
+	L[1][i]= rnorm
+	L[2][i]= snorm
 
 #stuni = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUNEW.QHD")
 sts = read_st("../data/synthetics_uniform/SUNEW.QHD")
