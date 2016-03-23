@@ -488,9 +488,9 @@ def makeMask(fkdata, slope, shape, rth=0.2):
 	Wr[ np.where(Wr < rth )] = 0.
 	
 	Wlhs = Wr[:,0:149]
-	Wrhs = Wr[:,1:149]
-	Wrhs = np.roll(np.flipud(np.fliplr(Wrhs)), 1)
-
+	Wrhs = Wr[:,1:151]
+	#Wrhs = np.roll(np.flipud(np.fliplr(Wrhs)), shift=-1, axis=0)
+	Wrhs = np.flipud(np.fliplr(Wrhs))
 	Wr[:,0:149] = Wlhs
 	Wr[:,150:] = Wrhs
 	return Wr

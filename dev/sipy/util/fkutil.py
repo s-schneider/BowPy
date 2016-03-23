@@ -489,8 +489,8 @@ def makeMask(fkdata, slope, shape, rth=0.2):
 	
 	Wlhs = Wr[:,0:149]
 	Wrhs = Wr[:,1:151]
-	Wrhs = np.roll(np.flipud(np.fliplr(Wrhs)),axes=0, -1)
-
+	#Wrhs = np.roll(np.flipud(np.fliplr(Wrhs)), shift=-1, axis=0)
+	Wrhs = np.flipud(np.fliplr(Wrhs))
 	Wr[:,0:149] = Wlhs
 	Wr[:,150:] = Wrhs
 	return Wr
@@ -807,7 +807,7 @@ def cg_solver(A,dv,mu,niter,x0=None):
 	print("Starting iterations. \n \n")
 	for k in range(niter):
 		#print("Currently in iteration %i" % int(k+1), end="\r")
-		sys.stdout.flush()
+		3sys.stdout.flush()
 
 		alpha = np.dot(r.transpose().toarray()[0],r.transpose().toarray()[0]) / np.dot(q.transpose().toarray()[0],q.transpose().toarray()[0])
 		x = x + alpha * p

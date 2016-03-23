@@ -423,29 +423,42 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, mindist=dist, smoothing=smoothpicks, interactive=slopepicking)
 	
 	if fulloutput:
-		plt.figure()
-		plt.plot(prange, M)
-		plt.plot(peaks[0], peaks[1], 'ro')
-		plt.show()
-		kin = raw_input("Use picks? (y/n) \n")
-		if kin in ['y' , 'Y']:
-			print("Using picks, continue \n")
-		elif kin in ['n', 'N']:
-			print("Don't use picks, return to beginning \n")
-			return
+		kin = 'n'
+		while kin in ('n', 'N'):
+			plt.figure()
+			plt.title('Magnitude-Distribution')
+			plt.xlabel('Slope in fk-domain')
+			plt.ylabel('Magnitude of slope')
+			plt.plot(prange, M)
+			plt.plot(peaks[0], peaks[1]/peaks[1].max()*M.max(), 'ro')
+			plt.show()
+			kin = raw_input("Use picks? (y/n) \n")
+			if kin in ['y' , 'Y']:
+				print("Using picks, continue \n")
+			elif kin in ['n', 'N']:
+				print("Don't use picks, please re-pick \n")
+				M, prange, peaks = slope_distribution(fkData, slopes, deltaslope, peakpick=None, mindist=dist, smoothing=smoothpicks, interactive=True)
 
 	print("Creating mask function with %i significant linear events \n" % len(peaks[0]) )
 	W = makeMask(fkData, peaks[0], maskshape)
 	if fulloutput:
 		plt.figure()
+		plt.subplot(3,1,1)
+		plt.title("fk-spectrum")
+		plt.imshow(abs(fkData), aspect='auto', interpolation='none')
+		plt.subplot(3,1,2)
+		plt.title("Mask-function")
 		plt.imshow(W, aspect='auto', interpolation='none')
+		plt.subplot(3,1,3)
+		plt.title("Applied mask-function")
+		plt.imshow(abs(W*fkData), aspect='auto', interpolation='none')
 		plt.show()
 		kin = raw_input("Use Mask? (y/n) \n")
 		if kin in ['y' , 'Y']:
 			print("Using Mask, continue \n")
 		elif kin in ['n', 'N']:
-			print("Don't use Mask, return to beginning \n")
-			return
+			msg="Don't use Mask, exit"
+			raise IOError(msg)
 
 	# To keep the order it would be better to transpose W to WT
 	# but for creation of Y, WT has to be transposed again,

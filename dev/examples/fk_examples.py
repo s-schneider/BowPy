@@ -43,12 +43,12 @@ from sipy.util.picker import get_polygon
 
 
 #########3 L-curve
-murange = np.logspace(-30, 3, 100)
+murange = np.logspace(-3, 3, 100)
 L = np.zeros((3, murange.size))
 
 for i,muval in enumerate(murange):
 	print(muval)
-	st_rec, resnorm, solnorm = fk_reconstruct(sr90, slopes=[-3,3],maskshape=['butterworth', 4], slopepicking=False, method=None, mu=muval, tol=1e-15)
+	st_rec, resnorm, solnorm = fk_reconstruct(sr90, slopes=[-2,2],maskshape=['butterworth', 4], slopepicking=False,solver='ilsmr', method=None, mu=muval, tol=1e-15)
 	L[0][i]= muval
 	L[1][i]= resnorm
 	L[2][i]= solnorm

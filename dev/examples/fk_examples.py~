@@ -108,7 +108,7 @@ with open("../data/test_datasets/randnumbers/rand80.txt", 'r') as fh:
 
 
 randlist = [rand10, rand20, rand50, rand80 ] 
-stlist = [[stri, 'ricker'], [sts, 'instaseis']]
+stlist = [[stri, 'ricker']] #, [sts, 'instaseis']]
 for streams in (stlist):
 	for values in randlist:
 		stemp =  streams[0].copy()
