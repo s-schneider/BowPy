@@ -85,16 +85,31 @@ for i, noisefolder in enumerate(noisefoldlist):
 
 
 #########3 L-curve
-murange = np.logspace(-7, 7, 300)
+global Binv
+global madj
+murange = np.logspace(-7, 7, 14)
 L = np.zeros((3, murange.size))
 print("Initiating matrices... \n \n")
+A = Ts.dot(FH.dot(Ys))
+Ah = A.conjugate().transpose()
+madj = Ah.dot(dv)
+
 for i,muval in enumerate(murange):
 	print(muval)
-	x, rnorm, snorm = cg_solver(B, dv, 20)
-	#	st_rec, resnorm, solnorm = fk_reconstruct(sr90, slopes=[-2,2],maskshape=['butterworth', 4], slopepicking=False,solver='ilsmr', method=None, mu=muval, tol=1e-15)
+	E = muval * sparse.eye(A.shape[0])
+	B = A + E
+	Binv = sparse.linalg.inv(B)
+	def getmnorm(x):
+		return print(np.linalg.norm(A.dot(x) - madj))
+
+	x = sparse.linalg.cg(Binv, madj, maxiter=100, callback=getmnorm)
+	
+	rnorm = np.linalg.norm(x[0],2)
+	snorm = np.linalg.norm(A.dot(x[0]) - madj,2)
 	L[0][i]= muval
 	L[1][i]= rnorm
 	L[2][i]= snorm
+
 
 #stuni = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUNEW.QHD")
 sts = read_st("../data/synthetics_uniform/SUNEW.QHD")
@@ -106,7 +121,7 @@ cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
 attach_network_to_traces(sts, inv[0])
 attach_coordinates_to_traces(sts, inv, cat[0])
 
-stri = read_st("../data/test_datasets/ricker/SR.QHD")
+stri = read_st("../data/test_datasets/ricker/original/SR.QHD")
 stri.normalize()
 attach_network_to_traces(stri, inv[0])
 attach_coordinates_to_traces(stri, inv, cat[0])

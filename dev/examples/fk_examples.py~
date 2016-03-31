@@ -47,8 +47,8 @@ from sipy.util.picker import get_polygon
 
 ################ testsetup
 #read noise
-	noise = np.fromfile('../data/test_datasets/randnumbers/noisearr.txt')
-	noise = noise.reshape(20,300)
+noise = np.fromfile('../data/test_datasets/randnumbers/noisearr.txt')
+noise = noise.reshape(20,300)
 
 with open("../data/test_datasets/ricker/rickerlist.dat", 'r') as fh:
 	rickerlist = np.array(fh.read().split()).astype('str')
@@ -58,17 +58,17 @@ noiselevellist = np.array([0., 0.1, 0.2, 0.5, 0.6, 0.8])
 
 for i, noisefolder in enumerate(noisefoldlist):
 	for filein in rickerlist:
-		PICPATH = "../data/test_datasets/ricker/" + noisefolder
-		PATH = "../data/test_datasets/ricker/" + filein
+		PICPATH = "../data/test_datasets/ricker/" + noisefolder + "/"
+		PATH = "../data/test_datasets/ricker/" + filein + "/"
 		srs = read_st(PATH)
 		if i != 0:
 			data = stream2array(srs) * noiselevellist[i] * noise
 			srs = array2stream(data)
 
-
+		name = 'boxcar_auto' + '.png'
+		picpath = PICPATH + name
 		st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['boxcar', None], solver='ilsmr',method='interpolate', mu=2.5e-2, tol=1e-12)
 		st_rec.normalize()
-		picpath = 
 		fku.plot_data(stream2array(st_rec), savefig=picpath)
 
 		taperrange = [0.25, 0.5, 1, 1.5]
@@ -88,13 +88,26 @@ for i, noisefolder in enumerate(noisefoldlist):
 murange = np.logspace(-7, 7, 300)
 L = np.zeros((3, murange.size))
 print("Initiating matrices... \n \n")
+A = Ts.dot(FH.dot(Yw))
+Ah = A.conjugate().transpose()
+madj = Ah.dot(dv)
+
 for i,muval in enumerate(murange):
 	print(muval)
-	x, rnorm, snorm = cg_solver(B, dv, 20)
+	E = mu * sparse.eye(A.shape[0])
+	B = A + E
+	Binv = sparse.linalg.inv(B)
+	global Binv
+	global madj
+	def getmnorm(x):
+	return np.linalg.norm(A.dot(x).toarray() - madj.toarray())
+
+	x = sparse.linalg.cg(Binv, madj)
 	#	st_rec, resnorm, solnorm = fk_reconstruct(sr90, slopes=[-2,2],maskshape=['butterworth', 4], slopepicking=False,solver='ilsmr', method=None, mu=muval, tol=1e-15)
 	L[0][i]= muval
 	L[1][i]= rnorm
 	L[2][i]= snorm
+
 
 #stuni = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUNEW.QHD")
 sts = read_st("../data/synthetics_uniform/SUNEW.QHD")
@@ -106,7 +119,7 @@ cat = read_cat("../data/synthetics_random/SRNEW_cat.xml")
 attach_network_to_traces(sts, inv[0])
 attach_coordinates_to_traces(sts, inv, cat[0])
 
-stri = read_st("../data/test_datasets/ricker/SR.QHD")
+stri = read_st("../data/test_datasets/ricker/original/SR.QHD")
 stri.normalize()
 attach_network_to_traces(stri, inv[0])
 attach_coordinates_to_traces(stri, inv, cat[0])

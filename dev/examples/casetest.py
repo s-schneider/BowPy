@@ -1,6 +1,7 @@
 """
 Testscript for all cases
 """
+import os 
 
 noise = np.fromfile('../data/test_datasets/randnumbers/noisearr.txt')
 noise = noise.reshape(20,300)
@@ -13,17 +14,22 @@ noiselevellist = np.array([0., 0.1, 0.2, 0.5, 0.6, 0.8])
 
 peaks = np.array([[-13.95      ,   6.06      ,  20.07      ],[  8.46648822,   8.42680793,   8.23354933]])
 errors = []
+#stream = read_st(PATH)
+
 for i, noisefolder in enumerate(noisefoldlist):
 	print("##################### NOISELVL %i %% #####################\n" % int(noiselevellist[i] * 100.) )
 	for filein in rickerlist:
 		print("##################### CURRENT FILE %s  #####################\n" % filein )
-		PICPATH = "../data/test_datasets/ricker/" + noisefolder + "/"
-		PATH = "../data/test_datasets/ricker/" + filein
-		srs = read_st(PATH)
-		if i != 0:
-			data = stream2array(srs) * noiselevellist[i] * noise
-			srs = array2stream(data)
+		PICPATH = filein[:filein.rfind("/"):] + "/" + noisefolder + "/"
+		if not os.path.isdir(PICPATH):
+			os.mkdir(PICPATH)
+		PATH = filein
+		stream = read_st(PATH)
+		#if i != 0:
+		data = stream2array(stream.copy(), normalize=True) + noiselevellist[i] * noise
+		srs = array2stream(data)
 
+			
 		name = 'boxcar_auto_noise_' + str(noiselevellist[i]) +  '.png'
 		picpath = PICPATH + name
 		st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['boxcar', None], solver='ilsmr',method='interpolate', mu=2.5e-2, tol=1e-12, peakinput=peaks)

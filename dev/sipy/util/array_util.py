@@ -28,7 +28,7 @@ from obspy.taup import TauPyModel
 from obspy.taup import getTravelTimes
 from obspy.taup.taup_geo import add_geo_to_arrivals
 
-from sipy.util.base import nextpow2
+from sipy.util.base import nextpow2, stream2array, array2stream
 
 """
 Collection of useful functions for processing seismological array data
@@ -105,59 +105,6 @@ def get_coords(inventory, returntype="dict"):
 					i += 1		
 
 	return coords
-
-def stream2array(stream, normalize=False):
-	sx = stream.copy()
-	x = np.zeros((len(sx), len(sx[0].data)))
-	for i, traces in enumerate(sx):
-		for j, data in enumerate(traces):
-			x[i,j]=data
-
-	if normalize:
-		x = x / x.max()
-
-	return(x)
-
-def array2stream(ArrayData, st_original=None, network=None):
-	"""
-	param network: Network, of with all the station information
-	type network: obspy.core.inventory.network.Network
-	"""		
-	traces = []
-	
-	for i, trace in enumerate(ArrayData):
-		newtrace = obspy.core.trace.Trace(trace)
-		traces.append(newtrace)
-		
-	stream = Stream(traces)
-	
-	# Just writes the network information, if possible input original stream
-	
-	if isinstance(st_original, Stream):
-		st_tmp = st_original.copy()
-		# Checks length of ArrayData and st_original, if needed,
-		# corrects trace.stats.npts value of new generated Stream-object.
-		if ArrayData.shape[1] == len(st_tmp[0]):
-
-			for i, trace in enumerate(stream):
-				trace.stats = st_tmp[i].stats
-
-		else:
-
-			for i, trace in enumerate(stream):
-				trace.stats = st_tmp[i].stats
-				trace.stats.npts = ArrayData.shape[1]
-			
-
-	elif isinstance(network, Network) and not isinstance(st_tmp, Stream):
-
-		for trace in stream:
-			trace.meta.network = network.code
-			trace.meta.station = network[0].code
-
-
-	return(stream)
-
 
 def attach_network_to_traces(stream, network):
 	"""

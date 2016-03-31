@@ -154,7 +154,7 @@ def array2stream(ArrayData, st_original=None, network=None):
 		for trace in stream:
 			trace.meta.network = network.code
 			trace.meta.station = network[0].code
-	
+
 
 	return(stream)
 

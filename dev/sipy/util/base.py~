@@ -9,7 +9,57 @@ import warnings
 Basic collection of fundamental functions for the SiPy lib
 Author: S. Schneider 2016
 """
+def stream2array(stream, normalize=False):
+	sx = stream.copy()
+	x = np.zeros((len(sx), len(sx[0].data)))
+	for i, traces in enumerate(sx):
+		for j, data in enumerate(traces):
+			x[i,j]=data
 
+	if normalize:
+		x = x / x.max()
+
+	return(x)
+
+def array2stream(ArrayData, st_original=None, network=None):
+	"""
+	param network: Network, of with all the station information
+	type network: obspy.core.inventory.network.Network
+	"""		
+	traces = []
+	
+	for i, trace in enumerate(ArrayData):
+		newtrace = obspy.core.trace.Trace(trace)
+		traces.append(newtrace)
+		
+	stream = Stream(traces)
+	
+	# Just writes the network information, if possible input original stream
+	
+	if isinstance(st_original, Stream):
+		st_tmp = st_original.copy()
+		# Checks length of ArrayData and st_original, if needed,
+		# corrects trace.stats.npts value of new generated Stream-object.
+		if ArrayData.shape[1] == len(st_tmp[0]):
+
+			for i, trace in enumerate(stream):
+				trace.stats = st_tmp[i].stats
+
+		else:
+
+			for i, trace in enumerate(stream):
+				trace.stats = st_tmp[i].stats
+				trace.stats.npts = ArrayData.shape[1]
+			
+
+	elif isinstance(network, Network) and not isinstance(st_tmp, Stream):
+
+		for trace in stream:
+			trace.meta.network = network.code
+			trace.meta.station = network[0].code
+
+
+	return(stream)
 def read_file(stream, inventory, catalog, array=False):
 	"""
 	function to read data files, such as MSEED, station-xml and quakeml, in a way of obspy.read
@@ -70,7 +120,7 @@ def create_ricker(nofs, noft, slope, shift, width=2.):
 	delta = int(1. / (slope * float(noft)/float(nofs)))
 	
 	trace = sp.signal.ricker(2*nofs, width)
-	trace = np.roll(trace, trace.argmax() * (int(0.9 * nofs)+shift))/trace.max()
+	trace = np.roll(trace, trace.argmax() * (int(0.9 * nofs)-shift))/trace.max()
 	if slope > 0:
 		for i in range(data.shape[0]):
 			data[i] = np.roll(trace, i * delta)[:nofs]	

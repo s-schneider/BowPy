@@ -537,7 +537,13 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 		print("Norm of Dv = %f \n" % x[6]) 
 		Dv_rec = x[0]
 	elif solver in ('cg'):
-		x = sparse.linalg.cg(B, dv, x0=None, tol=tol, maxiter=maxiter)
+		A = Ts.dot(FH.dot(Yw))
+		Ah = A.conjugate().transpose()
+		madj = Ah.dot(dv)
+		E = mu * sparse.eye(A.shape[0])
+		B = A + E
+		Binv = sparse.linalg.inv(B)
+		x = sparse.linalg.cg(Binv, madj)
 		Dv_rec = x[0]
 
 	else:

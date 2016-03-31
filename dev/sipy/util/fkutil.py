@@ -17,8 +17,8 @@ from obspy.taup import TauPyModel
 from obspy.core.event.event import Event
 from obspy import Stream, Trace, Inventory
 
-from sipy.util.base import nextpow2
-from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces, stream2array
+from sipy.util.base import nextpow2, stream2array
+from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces
 from sipy.util.picker import pick_data, FollowDotCursor
 import datetime
 import scipy as sp
@@ -266,6 +266,7 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 
 	if savefig:
 		plt.savefig(savefig)
+		plt.close("all")
 	else:
 		plt.ion()
 		plt.draw()
