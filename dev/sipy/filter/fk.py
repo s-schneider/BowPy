@@ -419,12 +419,12 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	"""
 
 	# Prepare data.
-	st_tmp = st.copy()
-	ArrayData= stream2array(st_tmp, normalize=True)
-	ADT = ArrayData.copy().transpose()
+	st_tmp 		= st.copy()
+	ArrayData	= stream2array(st_tmp, normalize=True)
+	ADT 		= ArrayData.copy().transpose()
 
-	fkData = np.fft.fft2(ArrayData)
-	fkDT = np.fft.fft2(ADT)
+	fkData 		= np.fft.fft2(ArrayData)
+	fkDT 		= np.fft.fft2(ADT)
 
 	# Implement automatic method, to cut into N 300 npts samples.
 	# Iterate over those.
@@ -480,12 +480,12 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	# To keep the order it would be better to transpose W to WT
 	# but for creation of Y, WT has to be transposed again,
 	# so this step can be skipped.
-	Y = W.reshape(1,W.size)[0]
-	Yw = sparse.diags(Y)
+	Y 	= W.reshape(1,W.size)[0]
+	Yw 	= sparse.diags(Y)
 
 	# Initialize arrays for cost-function.
-	dv = ADT.transpose().reshape(1, ADT.size)[0]
-	Dv = fkDT.transpose().reshape(1, fkDT.size)[0]
+	dv 	= ADT.transpose().reshape(1, ADT.size)[0]
+	Dv	= fkDT.transpose().reshape(1, fkDT.size)[0]
 	
 	T = np.ones((ArrayData.shape[0], ArrayData.shape[1]))
 	for i,trace in enumerate(ArrayData):
@@ -543,7 +543,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 		E = mu * sparse.eye(A.shape[0])
 		B = A + E
 		Binv = sparse.linalg.inv(B)
-		x = sparse.linalg.cg(Binv, madj)
+		x = sparse.linalg.cg(Binv, madj, maxiter=maxiter)
 		Dv_rec = x[0]
 
 	else:

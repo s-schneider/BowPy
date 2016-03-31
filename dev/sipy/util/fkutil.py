@@ -16,7 +16,7 @@ from obspy.geodetics import gps2dist_azimuth, kilometer2degrees, locations2degre
 from obspy.taup import TauPyModel
 from obspy.core.event.event import Event
 from obspy import Stream, Trace, Inventory
-
+from obspy.core.inventory.network import Network
 from sipy.util.base import nextpow2, stream2array
 from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces
 from sipy.util.picker import pick_data, FollowDotCursor
@@ -101,7 +101,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 		if isinstance(inv, Inventory) and isinstance(event,Event):
 			# Calculates y-axis info using epidistance information of the stream.
 			# Check if there is a network entry
-			attach_network_to_traces(st,inv[0])
+			attach_network_to_traces(st,inv)
 			attach_coordinates_to_traces(st, inv, event)
 			depth = event.origins[0]['depth']/1000.
 			isinv = True

@@ -106,12 +106,16 @@ def get_coords(inventory, returntype="dict"):
 
 	return coords
 
-def attach_network_to_traces(stream, network):
+def attach_network_to_traces(stream, inventory):
 	"""
 	Attaches the network-code of the inventory to each trace of the stream
 	"""
 	for trace in stream:
-		trace.meta.network = network.code
+		for network in inventory:
+			for station in network:
+				if station.code != trace.meta.station:
+					continue
+				trace.meta.network = network.code
 
 def attach_coordinates_to_traces(stream, inventory, event=None):
 	"""
@@ -185,7 +189,7 @@ def attach_epidist2coords(inventory, event, stream=None):
 
 	try:
 		
-		attach_network_to_traces(stream, inv[0])
+		attach_network_to_traces(stream, inv)
 		attach_coordinates_to_traces(stream, inv, event)
 		for trace in stream:
 			scode = trace.meta.network + "." + trace.meta.station
@@ -786,7 +790,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	st = stream.copy()
 	data = stream2array(st, normalize=True)
 
-	attach_network_to_traces(st, inv[0])
+	attach_network_to_traces(st, inv)
 	attach_coordinates_to_traces(st, inv, event)
 
 	epidist = np.zeros(data.shape[0])
@@ -985,8 +989,8 @@ def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 	st_tmp = stream.copy()
 	d = 0.
 	try:
-		yinfo = epidist2nparray(epidist(inv, event, stream))
-		attach_network_to_traces(stream, inv[0])
+		yinfo = epidist2nparray(attach_epidist2coords(inv, event, stream))
+		attach_network_to_traces(stream, inv)
 		attach_coordinates_to_traces(stream, inv, event)
 	except:
 		msg = "Need inventory and event information, not found"

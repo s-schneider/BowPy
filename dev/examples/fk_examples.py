@@ -32,6 +32,7 @@ import sipy.filter.fk as fk
 import sipy.filter.radon as radon
 import sipy.util.fkutil as fku
 import sipy.util.base as base
+import sipy.util.array_util as au
 
 from sipy.util.data_request import data_request
 from sipy.filter.fk import fk_filter, fktrafo, fk_reconstruct
@@ -102,8 +103,11 @@ for i,muval in enumerate(murange):
 	def getmnorm(x):
 		return print(np.linalg.norm(A.dot(x) - madj))
 
-	x = sparse.linalg.cg(Binv, madj, maxiter=100, callback=getmnorm)
-	
+	x = sparse.linalg.cg(Binv, madj, maxiter=100)#, callback=getmnorm)
+	dfk = x[0].reshape(20,300)
+	d = np.fft.ifft2(dfk).real
+	d = d/d.max()
+
 	rnorm = np.linalg.norm(x[0],2)
 	snorm = np.linalg.norm(A.dot(x[0]) - madj,2)
 	L[0][i]= muval
@@ -123,7 +127,7 @@ attach_coordinates_to_traces(sts, inv, cat[0])
 
 stri = read_st("../data/test_datasets/ricker/original/SR.QHD")
 stri.normalize()
-attach_network_to_traces(stri, inv[0])
+attach_network_to_traces(stri, inv)
 attach_coordinates_to_traces(stri, inv, cat[0])
 
 st = read_st("../data/synthetics_uniform/SUGAP.QHD")
@@ -145,7 +149,7 @@ t_axis = np.linspace(0,stuni_al[0].stats.delta * stuni_al[0].stats.npts, stuni_a
 stran = read_st("../data/synthetics_random/SRNEW.QHD")
 stran.normalize()
 invran= read_inv("../data/synthetics_random/SRNEW_inv.xml")
-attach_network_to_traces(stran, invran[0])
+attach_network_to_traces(stran, invran)
 attach_coordinates_to_traces(stran, invran, cat[0])
 epiran = epidist2nparray(epidist(invran, cat[0]))
 
@@ -165,7 +169,7 @@ stlist = [[stri, 'ricker']] #, [sts, 'instaseis']]
 for streams in (stlist):
 	for values in randlist:
 		stemp =  streams[0].copy()
-		attach_network_to_traces(stemp, inv[0])
+		attach_network_to_traces(stemp, inv)
 		attach_coordinates_to_traces(stemp, inv, cat[0])
 		for no in values:
 			name = 'SR' + str(int( 100. - len(values)/20.*100.)) +'.QHD'

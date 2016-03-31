@@ -28,7 +28,7 @@ from obspy.taup import TauPyModel
 from obspy.taup import getTravelTimes
 from obspy.taup.taup_geo import add_geo_to_arrivals
 
-from sipy.util.base import nextpow2
+from sipy.util.base import nextpow2, stream2array, array2stream
 
 """
 Collection of useful functions for processing seismological array data
@@ -106,65 +106,16 @@ def get_coords(inventory, returntype="dict"):
 
 	return coords
 
-def stream2array(stream, normalize=False):
-	sx = stream.copy()
-	x = np.zeros((len(sx), len(sx[0].data)))
-	for i, traces in enumerate(sx):
-		for j, data in enumerate(traces):
-			x[i,j]=data
-
-	if normalize:
-		x = x / x.max()
-
-	return(x)
-
-def array2stream(ArrayData, st_original=None, network=None):
-	"""
-	param network: Network, of with all the station information
-	type network: obspy.core.inventory.network.Network
-	"""		
-	traces = []
-	
-	for i, trace in enumerate(ArrayData):
-		newtrace = obspy.core.trace.Trace(trace)
-		traces.append(newtrace)
-		
-	stream = Stream(traces)
-	
-	# Just writes the network information, if possible input original stream
-	
-	if isinstance(st_original, Stream):
-		st_tmp = st_original.copy()
-		# Checks length of ArrayData and st_original, if needed,
-		# corrects trace.stats.npts value of new generated Stream-object.
-		if ArrayData.shape[1] == len(st_tmp[0]):
-
-			for i, trace in enumerate(stream):
-				trace.stats = st_tmp[i].stats
-
-		else:
-
-			for i, trace in enumerate(stream):
-				trace.stats = st_tmp[i].stats
-				trace.stats.npts = ArrayData.shape[1]
-			
-
-	elif isinstance(network, Network) and not isinstance(st_tmp, Stream):
-
-		for trace in stream:
-			trace.meta.network = network.code
-			trace.meta.station = network[0].code
-
-
-	return(stream)
-
-
-def attach_network_to_traces(stream, network):
+def attach_network_to_traces(stream, inventory):
 	"""
 	Attaches the network-code of the inventory to each trace of the stream
 	"""
 	for trace in stream:
-		trace.meta.network = network.code
+		for network in inventory:
+			for station in network
+				if station.code != trace.meta.station:
+					continue
+				trace.meta.network = network.code
 
 def attach_coordinates_to_traces(stream, inventory, event=None):
 	"""
@@ -238,7 +189,7 @@ def attach_epidist2coords(inventory, event, stream=None):
 
 	try:
 		
-		attach_network_to_traces(stream, inv[0])
+		attach_network_to_traces(stream, inv)
 		attach_coordinates_to_traces(stream, inv, event)
 		for trace in stream:
 			scode = trace.meta.network + "." + trace.meta.station
@@ -839,7 +790,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	st = stream.copy()
 	data = stream2array(st, normalize=True)
 
-	attach_network_to_traces(st, inv[0])
+	attach_network_to_traces(st, inv)
 	attach_coordinates_to_traces(st, inv, event)
 
 	epidist = np.zeros(data.shape[0])
@@ -1038,8 +989,8 @@ def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 	st_tmp = stream.copy()
 	d = 0.
 	try:
-		yinfo = epidist2nparray(epidist(inv, event, stream))
-		attach_network_to_traces(stream, inv[0])
+		yinfo = epidist2nparray(attach_epidist2coords(inv, event, stream))
+		attach_network_to_traces(stream, inv)
 		attach_coordinates_to_traces(stream, inv, event)
 	except:
 		msg = "Need inventory and event information, not found"

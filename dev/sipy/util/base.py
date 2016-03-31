@@ -3,6 +3,7 @@ import numpy as np
 import scipy as sp
 import obspy
 from obspy import UTCDateTime, Stream, Inventory
+from obspy.core.inventory.network import Network
 import warnings
 
 

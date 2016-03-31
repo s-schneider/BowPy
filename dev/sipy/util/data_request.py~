@@ -7,8 +7,9 @@ import obspy
 import numpy as np
 from obspy.geodetics import locations2degrees, gps2dist_azimuth
 from obspy.taup import TauPyModel
+import sys
 
-from sipy.util.array_util import center_of_gravity, plot_gcp, attach_network_to_traces, geometrical_center
+from sipy.util.array_util import center_of_gravity, plot_gcp, attach_network_to_traces, attach_coordinates_to_traces, geometrical_center
 
 def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ", minlat=None,
                  maxlat=None,minlon=None,maxlon=None, mindepth=None, maxdepth=None, 
@@ -66,24 +67,20 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 	returns
 
 	:param: Stream, Inventory, Catalog
-	:type: obspy 
+	:type: list, obspy, obspy 
 
 	### Example ###
 
 	from obspy import UTCDateTime
-	dl="IRIS"
-	start = UTCDateTime("2011-01-01T00:00:00")
-	end= UTCDateTime("2011-12-31T23:59:59")
-	minmag=9.0
-	nw="TA"
-	stats="*"
-
-	st, inv, cat = data_request(client_name = dl, start = start, end = end, minmag = minmag, net = nw, scode = stats)
+	start = UTCDateTime(2003,1,1,0,0)
+	end = UTCDateTime(2013,12,31,0,0)
+	stream, inv, cat = data_request('IRIS', start, end, 8.6, 'TA', minlat=34., maxlat=50., minlon=-125., maxlon=-116.)
 
 	"""
 
 	data =[]
 	stream = Stream()
+	streamall = []
 	client = Client(client_name)
 
 	try:
@@ -98,15 +95,22 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 	
 	print("Following events found: \n")
 	print(catalog)
-	print("\nLooking for stations with matching time\n")
 	m = TauPyModel(model="ak135")
 	Plist = ["P", "Pdiff"]
 	for event in catalog:
+		print("\n")
+		print("########################################")
+		print("Looking for available data for event: \n")
+		print(event.short_str())
+		print("\n")
+
 		origin_t = event.origins[0].time
 		station_stime = UTCDateTime(origin_t - 3600*24)
 		station_etime = UTCDateTime(origin_t + 3600*24)
+
 		try:
 			inventory = client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime, minlatitude=minlat, maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
+			print(inventory)
 		except:
 			print("No Inventory found for given parameters")
 			return
@@ -127,8 +131,6 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 			tstart = UTCDateTime(event.origins[0].time + Ptime - 3 * 60)
 			tend = UTCDateTime(event.origins[0].time + Ptime + 10 * 60)
 
-			print("Searching in network %s\n" % network.code)
-
 			array_fits = True
 			if azimuth or baz:
 				center = geometrical_center(inv)
@@ -142,23 +144,38 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 						array_fits = False
 
 				elif baz:
-					print("Looking for events in the back azimuth range of %f to %f", %(baz[0], baz[1]))
+					print("Looking for events in the back azimuth range of %f to %f" %(baz[0], baz[1]))
 					center_baz = gps2dist_azimuth(clat, clon, elat, elon)[2]
 					if center_baz > baz[1] and center_baz < baz[0]: 
 						print("Geometrical center of Array out of back azimuth bounds, \ncheking if single stations fit")
 						array_fits = False
 
 			# If array fits to azimuth/back azimuth or no azimuth/back azimuth is given
+			no_of_stations = 0
 			if array_fits:
+
 				for station in network:
 					try:
-						streamreq = client.get_waveforms(network.code, station.code, '*', channels,tstart, tend)
-						print("Downloaded data for station %s ... \n" % station.code )
-						stream += streamreq
+						streamreq	    = client.get_waveforms(network.code, station.code, '*', channels,tstart, tend)
+						no_of_stations += 1
+						print("Downloaded data for %i of %i available stations!" % (no_of_stations, network.selected_number_of_stations), end='\r' )
+						sys.stdout.flush()
+						stream 		   += streamreq
+						try:
+							if inventory_used:
+								inventory_used 	+= client.get_stations(network=network.code, station=station.code, level="station", 
+																	starttime=station_stime, endtime=station_etime, minlatitude=minlat, 
+																	maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
+						except:
+								inventory_used 	 = client.get_stations(network=network.code, station=station.code, level="station", 
+																	starttime=station_stime, endtime=station_etime, minlatitude=minlat, 
+																	maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
 					except:
-						print("No data for station %s ... \n" % station.code )
+						print("\n")
+						print("No data for station %s ... " % station.code, end='\r' )
+						sys.stdout.flush()
 						continue
-				attach_network_to_traces(stream, network)
+
 
 			# If not checking each station individually.
 			else:
@@ -173,12 +190,34 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 					if fit:
 						try:
 							streamreq = client.get_waveforms(network.code, station.code, '*', channels,tstart, tend)
-							print("Downloaded data for station %s ... \n" % station.code )
-							stream += streamreq
+							no_of_stations += 1
+							print("Downloaded data for %i of %i available stations!" % (no_of_stations, network.selected_number_of_stations), end='\r' )
+							sys.stdout.flush()
+							stream 		+= streamreq
+							try:
+								if inventory_used:
+									inventory_used 	+= client.get_stations(network=network.code, station=station.code, level="station", 
+																		starttime=station_stime, endtime=station_etime, minlatitude=minlat, 
+																		maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
+							except:
+									inventory_used 	 = client.get_stations(network=network.code, station=station.code, level="station", 
+																		starttime=station_stime, endtime=station_etime, minlatitude=minlat, 
+																		maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
 						except:
-							print("No data for station %s ... \n" % station.code )
+							print("No data for station %s ... " % station.code, end='\r' )
+							sys.stdout.flush()
 							continue
-				attach_network_to_traces(stream, network)				
+
+		try:
+			if invall:
+				invall += inventory
+		except:
+			invall 		= inventory
+
+		attach_network_to_traces(stream, network)
+		attach_coordinates_to_traces(stream, inventory, event)
+		streamall.append(stream)
+		stream = Stream()
 
 	if savefile:
 		 stname = str(origin_t).split('.')[0] + ".MSEED"
@@ -189,9 +228,10 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 		 catalog.write(catname, format="QUAKEML")
 
 	plt.ion()
-	inventory.plot()
+	invall.plot()
 	catalog.plot()
 	plt.ioff()
-
+	inventory = invall
+	stream = streamall
 	return(stream, inventory, catalog)
 

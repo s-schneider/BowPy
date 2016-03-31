@@ -32,6 +32,7 @@ import sipy.filter.fk as fk
 import sipy.filter.radon as radon
 import sipy.util.fkutil as fku
 import sipy.util.base as base
+import sipy.util.array_util as au
 
 from sipy.util.data_request import data_request
 from sipy.filter.fk import fk_filter, fktrafo, fk_reconstruct
@@ -85,25 +86,30 @@ for i, noisefolder in enumerate(noisefoldlist):
 
 
 #########3 L-curve
-murange = np.logspace(-7, 7, 300)
+global Binv
+global madj
+murange = np.logspace(-7, 7, 14)
 L = np.zeros((3, murange.size))
 print("Initiating matrices... \n \n")
-A = Ts.dot(FH.dot(Yw))
+A = Ts.dot(FH.dot(Ys))
 Ah = A.conjugate().transpose()
 madj = Ah.dot(dv)
 
 for i,muval in enumerate(murange):
 	print(muval)
-	E = mu * sparse.eye(A.shape[0])
+	E = muval * sparse.eye(A.shape[0])
 	B = A + E
 	Binv = sparse.linalg.inv(B)
-	global Binv
-	global madj
 	def getmnorm(x):
-	return np.linalg.norm(A.dot(x).toarray() - madj.toarray())
+		return print(np.linalg.norm(A.dot(x) - madj))
 
-	x = sparse.linalg.cg(Binv, madj)
-	#	st_rec, resnorm, solnorm = fk_reconstruct(sr90, slopes=[-2,2],maskshape=['butterworth', 4], slopepicking=False,solver='ilsmr', method=None, mu=muval, tol=1e-15)
+	x = sparse.linalg.cg(Binv, madj, maxiter=100)#, callback=getmnorm)
+	dfk = x[0].reshape(20,300)
+	d = np.fft.ifft2(dfk).real
+	d = d/d.max()
+
+	rnorm = np.linalg.norm(x[0],2)
+	snorm = np.linalg.norm(A.dot(x[0]) - madj,2)
 	L[0][i]= muval
 	L[1][i]= rnorm
 	L[2][i]= snorm
