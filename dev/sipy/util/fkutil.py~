@@ -98,14 +98,26 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 		isinv = False
 		isevent = False
 
-		if isinstance(inv, Inventory) and isinstance(event,Event):
+		# Check if inventory and catalog is input, then calculate distances etc. 
+		if isinstance(inv, Inventory): isinv   = True
+		if isinstance(event,Event):    isevent = True
+
+		if isinv:
 			# Calculates y-axis info using epidistance information of the stream.
 			# Check if there is a network entry
-			attach_network_to_traces(st,inv[0])
+			attach_network_to_traces(st,inv)
 			attach_coordinates_to_traces(st, inv, event)
-			depth = event.origins[0]['depth']/1000.
-			isinv = True
-			isevent = True
+		
+		if isevent:	depth = event.origins[0]['depth']/1000.
+		
+		# If no inventory or catalog as input, check if coordinates are attached to stream.
+		if not isinv:
+			for trace in st:
+				if not trace.stats.distance: 
+					isinv = False
+					break
+				else: 
+					isinv 	= True
 
 		yold=0
 		
@@ -159,10 +171,14 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 					for time, key in enumerate(timetable[0]):
 						plt.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
 
-			elif markphase and not isinv and not isevent:
-				msg='Markphase needs Inventory and Event Information, not found.'
+			elif markphase and not isinv:
+				msg='Markphase needs Inventory Information, not found.'
+				raise IOError(msg)	
+	
+			elif markphase and not isevent:
+				msg='Markphase needs Event Information, not found.'
 				raise IOError(msg)		
-			
+					
 			else:
 
 				if yinfo:
@@ -413,7 +429,7 @@ def shift_array(array, shift_value=0, y_dist=False):
 			array_shift[i] = np.roll(array[i], -shift_value*i)
 	return(array_shift)
 
-def makeMask(fkdata, slope, shape, rth=0.2):
+def makeMask(fkdata, slope, shape, rth=0.4):
 	"""
 	This function creates a Mask-array in shape of the original fkdata,
 	with straight lines (value = 1.) along the angles, given in slope and 0 everywhere else.
@@ -490,11 +506,11 @@ def makeMask(fkdata, slope, shape, rth=0.2):
 	Wr = np.flipud(sp.signal.resample(W, M.shape[1], axis=1))
 	Wr[ np.where(Wr > rth )] = 1.
 	Wr[ np.where(Wr < rth )] = 0.
-	
-	Wlhs = Wr[:,0:149]
+
+	Wlhs = np.roll(Wr[:,0:149], shift=1, axis=0)
 	Wrhs = Wr[:,1:151]
-	#Wrhs = np.roll(np.flipud(np.fliplr(Wrhs)), shift=-1, axis=0)
-	Wrhs = np.flipud(np.fliplr(Wrhs))
+	Wrhs = np.roll(np.flipud(np.fliplr(Wrhs)), shift=0, axis=0)
+	#Wrhs =         np.flipud(np.fliplr(Wrhs))
 	Wr[:,0:149] = Wlhs
 	Wr[:,150:] = Wrhs
 	return Wr

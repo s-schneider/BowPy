@@ -74,7 +74,7 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 	from obspy import UTCDateTime
 	start = UTCDateTime(2003,1,1,0,0)
 	end = UTCDateTime(2013,12,31,0,0)
-	stream, inv, cat = data_request('IRIS', start, end, 8.6, 'TA', minlat=34., maxlat=50., minlon=-125., maxlon=-116.)
+	stream, inventory, cat = data_request('IRIS', start, end, 8.6, 'TA', minlat=34., maxlat=50., minlon=-125., maxlon=-116.)
 
 	"""
 
@@ -214,7 +214,7 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 		except:
 			invall 		= inventory
 
-		attach_network_to_traces(stream, network)
+		attach_network_to_traces(stream, inventory)
 		attach_coordinates_to_traces(stream, inventory, event)
 		streamall.append(stream)
 		stream = Stream()

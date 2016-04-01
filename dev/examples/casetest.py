@@ -32,14 +32,14 @@ for i, noisefolder in enumerate(noisefoldlist):
 			
 		name = 'boxcar_auto_noise_' + str(noiselevellist[i]) +  '.png'
 		picpath = PICPATH + name
-		st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['boxcar', None], solver='cg',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
+		st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['boxcar', None], solver='ilsmr',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
 		st_rec.normalize()
 		fku.plot_data(stream2array(st_rec), savefig=picpath)
 
 
 		name = 'boxcar_size1_noise_' + str(noiselevellist[i]) +  '.png'
 		picpath = PICPATH + name
-		st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['boxcar', None], solver='cg',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
+		st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['boxcar', 1], solver='ilsmr',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
 		st_rec.normalize()
 		fku.plot_data(stream2array(st_rec), savefig=picpath)
 
@@ -48,7 +48,7 @@ for i, noisefolder in enumerate(noisefoldlist):
 		for ts in taperrange:
 			print("##################### %s, NOISE: %f, :CURRENTLY TAPERING WITH %f  #####################\n" % (filein, int(noiselevellist[i] * 100.), ts) )
 			try:
-				st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['taper', ts], solver='cg',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
+				st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['taper', ts], solver='ilsmr',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
 				name = 'taper_' + str(ts) + "_" + str(noiselevellist[i]) +  '.png'
 				picpath = PICPATH + name
 				st_rec.normalize()
@@ -61,7 +61,7 @@ for i, noisefolder in enumerate(noisefoldlist):
 		for bw in bwrange:
 			print("##################### %s, NOISE: %f, :CURRENTLY BUTTERWORTHING WITH %f  #####################\n" % (filein, int(noiselevellist[i] * 100.), bw) )
 			try:
-				st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['butterworth', bw], solver='cg',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
+				st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['butterworth', bw], solver='ilsmr',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
 				name = 'butterworth_' + str(bw) + "_" + str(noiselevellist[i]) +  '.png'
 				picpath = PICPATH + name
 				st_rec.normalize()

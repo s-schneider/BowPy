@@ -112,7 +112,7 @@ def attach_network_to_traces(stream, inventory):
 	"""
 	for trace in stream:
 		for network in inventory:
-			for station in network
+			for station in network:
 				if station.code != trace.meta.station:
 					continue
 				trace.meta.network = network.code
@@ -598,7 +598,7 @@ def stack(data, order=None):
 	return v
 
 
-def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
+def partial_stack(st, bins, phase, overlap=None, order=0.2, align=True, maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
 	"""
 	Will sort the traces into equally distributed bins and stack the bins.
 	The stacking is just an addition of the traces, more advanced schemes might follow.
@@ -612,15 +612,15 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 	:param st: obspy stream object
 	:type st: obspy.core.stream.Stream
 
-	:param no_of_bins: number of bins, that should be used, if overlap is set, it is used to calculate
+	:param bins: number of bins, that should be used, if overlap is set, it is used to calculate
 					   the size of each bin.
-	:type no_of_bins: int
+	:type bins: int
 
 	:param phase: Phase 
 	:type phase: str
 
 	:param overlap: degree of overlap of each bin, e.g 0.5 corresponds to 50 percent
-					overlap ov each bin
+					overlap ov each bin, to deactivate set to "None"
 	:type: float
 
 	:param order: Order of Nth-root stacking, default None
@@ -636,7 +636,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 	:param taup_model:
 
 	returns: 
-	:param bin_data: partial stacked data of the array in no_of_bins uniform distributed stacks
+	:param bin_data: partial stacked data of the array in bins uniform distributed stacks
 	:type bin_data: array
 
 	Author: S. Schneider, 2016
@@ -656,26 +656,29 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 	# and the new yinfo values.
 
 	# Resample the borders of the bin, to overlap, if activated
-	if overlap:
-		bin_size = (epidist.max() - epidist.min()) / no_of_bins
-		L = [ (epidist.min(), epidist.min() + bin_size) ]
-		y_resample = [ epidist.min() + bin_size/2. ]
-		i=0
+	if overlap and not isinstance(overlap, bool):
+		#bin_size = (epidist.max() - epidist.min()) / bins
+		bin_size 	= bins
+		L 			= [ (epidist.min(), epidist.min() + bin_size) ]
+		y_resample 	= [ epidist.min() + bin_size/2. ]
+		i			= 0
 		while ( L[i][0] + (1-overlap) * bin_size ) < epidist.max():
 			lower = L[i][0] + (1-overlap) * bin_size
 			upper = lower + bin_size
 			L.append( (lower, upper) ) 
 			y_resample.append( lower + bin_size/2. )
 			i += 1
+			if i == 100.:
+				break
 
 	else:
-		L = np.linspace(min(epidist), max(epidist), no_of_bins+1)
+		L = np.linspace(min(epidist), max(epidist), bins+1)
 		L = zip(L, np.roll(L, -1))
 		L = L[0:len(L)-1]
 		bin_size = abs(L[0][0] - L[0][1])
 
 		# Resample the y-axis information to new, equally distributed ones.
-		y_resample = np.linspace( min(min(L)) + bin_size/2., max(max(L))-bin_size/2., no_of_bins+1)
+		y_resample = np.linspace( min(min(L)) + bin_size/2., max(max(L))-bin_size/2., bins+1)
 		bin_distribution = np.zeros(len(y_resample))
 
 	# Preallocate some space in memory.
@@ -685,6 +688,10 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 	m = TauPyModel(taup_model)
 	depth = st_tmp[0].meta.depth
 	delta = st_tmp[0].meta.delta
+	if maxtimewindow:
+		mtw = maxtimewindow/delta
+	else:
+		mtw = 0.
 
 	# Calculate theoretical arrivals if align is enabled.
 	if align:
@@ -706,7 +713,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 			if i==0 :
 				if epidist[j] <= bins[1]:
 					if align:
-						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, method=shiftmethod)
+						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw, method=shiftmethod)
 					else:
 						trace_shift = trace
 					stack_arr = np.vstack([bin_data[i],trace_shift])
@@ -715,7 +722,7 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 			# Check if current trace is inside bin-boundaries.
 			if epidist[j] > bins[0] and epidist[j] <= bins[1]:
 				if align:
-					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, method=shiftmethod)
+					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw, method=shiftmethod)
 				else:
 					trace_shift = trace
 				stack_arr = np.vstack([bin_data[i],trace_shift])
@@ -724,13 +731,23 @@ def partial_stack(st, no_of_bins, phase, overlap=False, order=None, align=True, 
 			if overlap:
 				if i == len(L):
 					if align:
-						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], maxtimewindow/delta, method=shiftmethod)
+						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw, method=shiftmethod)
 					else:
 						trace_shift = trace
 					stack_arr = np.vstack([bin_data[i],trace_shift])
 					bin_data[i] = stack(stack_arr, order)
 
-	return bin_data
+	st_binned = array2stream(bin_data)
+	
+	for i, trace in enumerate(st_binned):
+		trace.stats.network			= st[0].stats.network
+		trace.stats.channel			= st[0].stats.channel
+		trace.stats.starttime		= st[0].stats.starttime
+		trace.stats.sampling_rate	= st[0].stats.sampling_rate
+		trace.stats.depth			= st[0].stats.depth
+		trace.stats.distance 		= y_resample[i]
+
+	return st_binned
 
 def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, markphases=['ttall', 'P^410P', 'P^660P'], method='FFT'):
 	"""
@@ -973,6 +990,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 
 def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 	"""
+	WARNING: Use this method only for synthetics, for real data prefer partial_stack
 	Fills the gaps inbetween irregular distributed traces 
 	in Stream with zero-padded Traces for further work.
 
