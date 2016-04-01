@@ -804,8 +804,8 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	"""
 
 	# Prepare and convert objects.
-	st = stream.copy()
-	data = stream2array(st, normalize=True)
+	st 		= stream.copy()
+	data 	= stream2array(st, normalize=True)
 
 	attach_network_to_traces(st, inv)
 	attach_coordinates_to_traces(st, inv, event)
@@ -820,9 +820,9 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	Nsample = st[0].stats.npts
 
 	# Find geometrical center station of array.
-	center = geometrical_center(inv)
+	center 	= geometrical_center(inv)
 	
-	cstat =  find_closest_station(inv, st, center['latitude'], center['longitude'])
+	cstat 	= find_closest_station(inv, st, center['latitude'], center['longitude'])
 	
 	for i, trace in enumerate(st):
 		if not trace.stats.station in [cstat]:
@@ -831,11 +831,11 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 			sref=i
 
 	# Prepare slownessrange, and allocate space in memory.
-	uN = int ((slomax - slomin) / slostep + 1)
-	urange = np.linspace(slomin, slomax, uN)
-	it = data.shape[1]		
-	iF = int(math.pow(2,nextpow2(it))) 
-	dft = np.fft.fft(data, iF, axis=1)
+	uN 		= int ((slomax - slomin) / slostep + 1)
+	urange 	= np.linspace(slomin, slomax, uN)
+	it 		= data.shape[1]		
+	iF 		= int(math.pow(2,nextpow2(it))) 
+	dft 	= np.fft.fft(data, iF, axis=1)
 
 	if method in ("fft"):
 		# Calculate timeshift-table as a tensor, see shift2ref method "fft" as guide.
@@ -857,24 +857,24 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 		vespa = np.zeros( (uN, data.shape[1]) )
 
 		# Transpose the tensor in right
-		tst =  timeshift_table.transpose(1,0,2)
+		tst = timeshift_table.transpose(1,0,2)
 		
 		# Slownesses
 		for i, shifttable in enumerate(tst):
-			dftshift = np.zeros(dft.shape).astype('complex')
-			dftshift = dft * shifttable
+			dftshift 	= np.zeros(dft.shape).astype('complex')
+			dftshift 	= dft * shifttable
 
-			shiftdata = np.fft.ifft(dftshift, iF)
-			vespatrace = shiftdata.real.copy()
+			shiftdata 	= np.fft.ifft(dftshift, iF)
+			vespatrace 	= shiftdata.real.copy()
 
 			# Put it in the right size again.
-			vespatrace = np.delete(vespatrace, np.s_[it:], 1)
+			vespatrace 	= np.delete(vespatrace, np.s_[it:], 1)
 
-			vespa[i] = stack(vespatrace, power)
+			vespa[i] 	= stack(vespatrace, power)
 
 	if method in ("normal"):
-		vespa = np.zeros( (uN, data.shape[1]) )
-		shift_data_tmp = np.zeros(data.shape)
+		vespa 			= np.zeros( (uN, data.shape[1]) )
+		shift_data_tmp 	= np.zeros(data.shape)
 	
 
 		tmin=0
@@ -949,12 +949,12 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 			plt.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()), origin='lower')
 
 			for phase in arrival:
-				t = phase.time
-				phase_time = origin + t - st[sref].stats.starttime
-				Phase_npt = int(phase_time/st[sref].stats.delta)
-				tPhase = Phase_npt * st[sref].stats.delta
-				name = phase.name
-				sloPhase = phase.ray_param_sec_degree - p_ref
+				t 			= phase.time
+				phase_time 	= origin + t - st[sref].stats.starttime
+				Phase_npt 	= int(phase_time/st[sref].stats.delta)
+				tPhase 		= Phase_npt * st[sref].stats.delta
+				name 		= phase.name
+				sloPhase 	= phase.ray_param_sec_degree - p_ref
 				if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
 					continue
 				plt.plot(tPhase, sloPhase, 'x')
@@ -970,12 +970,12 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 				plt.plot(taxis, trace+ urange[i], color='black')
 
 			for phase in arrival:
-				t = phase.time
-				phase_time = origin + t - st[sref].stats.starttime
-				Phase_npt = int(phase_time/st[sref].stats.delta)
-				tPhase = Phase_npt * st[sref].stats.delta
-				name = phase.name
-				sloPhase = phase.ray_param_sec_degree - p_ref
+				t 			= phase.time
+				phase_time 	= origin + t - st[sref].stats.starttime
+				Phase_npt 	= int(phase_time/st[sref].stats.delta)
+				tPhase 		= Phase_npt * st[sref].stats.delta
+				name 		= phase.name
+				sloPhase 	= phase.ray_param_sec_degree - p_ref
 				if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
 					continue
 				plt.plot(tPhase, sloPhase, 'x')
@@ -987,10 +987,72 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 
 	return vespa
 
+def resample_distance(stream, inv, event):
+	"""
+	Function reorganizes the traces in a equidistant manner.
+	"""	
+
+
+	st_tmp 			= stream.copy()
+	stream_resample = Stream()
+
+	try:
+		yinfo = epidist2nparray(attach_epidist2coords(inv, event, stream))
+		attach_network_to_traces(stream, inv)
+		attach_coordinates_to_traces(stream, inv, event)
+	except:
+		try:
+			yinfo = []
+			for trace in st_tmp:
+				yinfo.append(trace.stats.distance)
+			yinfo = np.array(yinfo)
+		except:
+			msg = "Need inventory and event or distance information in stream, not found"
+			raise TypeError(msg)
+	
+	ymax 		= yinfo.max()
+	ymin 		= yinfo.min()
+	ymeandiff 	= abs(np.diff(yinfo).mean())
+	npts 		= (ymax - ymin)	/ ymeandiff
+	
+	yresample 	= np.linspace(ymin, ymax, npts)
+	ilist		= []
+
+	for trace in st_tmp:
+		index_resampled = np.abs(yresample - trace.stats.distance).argmin()
+		
+		if index_resampled in ilist:
+			stacks = [trace.data]
+			for i, stacktraces in enumerate(stream_resample):
+				if stacktraces.stats.distance == yresample[index_resampled]:
+					stacks.append(stacktraces.data)
+			stream_resample[i].data  = stack(np.array(stacks)) 
+			continue
+
+		if np.abs(yresample - trace.stats.distance).min() <= ymeandiff:
+			trace.stats.distance = yresample[index_resampled]
+			stream_resample 	+= trace
+			ilist.append(index_resampled)
+
+		else:
+			print("Do something, difference is too big")
+
+
+
+	zero_traces = list(set( range(yresample.size) ) - set( ilist ) )
+	if zero_traces:
+		for j in zero_traces:
+			newtrace 					 = obspy.core.trace.Trace(np.zeros(st_tmp[0].data.size))
+			newtrace.stats.station		 = "empty"
+			newtrace.stats.distance 	 = yresample[j]
+			newtrace.stats.processing 	 = "empty"
+			stream_resample 			+= newtrace
+
+	return stream_resample
 
 def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 	"""
-	WARNING: Use this method only for synthetics, for real data prefer partial_stack
+	WARNING: Use this method only for synthetics, for real data prefer sipy.util.fkutil.partial_stack
 	Fills the gaps inbetween irregular distributed traces 
 	in Stream with zero-padded Traces for further work.
 
@@ -1004,15 +1066,21 @@ def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 
 	:returns: equi_stream
 	"""
-	st_tmp = stream.copy()
-	d = 0.
+	st_tmp 	= stream.copy()
+	d 		= 0.
 	try:
 		yinfo = epidist2nparray(attach_epidist2coords(inv, event, stream))
 		attach_network_to_traces(stream, inv)
 		attach_coordinates_to_traces(stream, inv, event)
 	except:
-		msg = "Need inventory and event information, not found"
-		raise TypeError(msg)
+		try:
+			yinfo = []
+			for trace in st_tmp:
+				yinfo.append(trace.stats.distance)
+			yinfo = np.array(yinfo)
+		except:
+			msg = "Need inventory and event or distance information in stream, not found"
+			raise TypeError(msg)
 
 	star = stream2array(st_tmp)
 	
