@@ -34,14 +34,14 @@ for i, noisefolder in enumerate(noisefoldlist):
 		picpath = PICPATH + name
 		st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['boxcar', None], solver='ilsmr',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
 		st_rec.normalize()
-		fku.plot_data(stream2array(st_rec), savefig=picpath)
+		fku.plot(st_rec, savefig=picpath)
 
 
 		name = 'boxcar_size1_noise_' + str(noiselevellist[i]) +  '.png'
 		picpath = PICPATH + name
 		st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['boxcar', 1], solver='ilsmr',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
 		st_rec.normalize()
-		fku.plot_data(stream2array(st_rec), savefig=picpath)
+		fku.plot(st_rec, savefig=picpath)
 
 
 		taperrange = [0.5, 1, 1.5]
@@ -52,7 +52,7 @@ for i, noisefolder in enumerate(noisefoldlist):
 				name = 'taper_' + str(ts) + "_" + str(noiselevellist[i]) +  '.png'
 				picpath = PICPATH + name
 				st_rec.normalize()
-				fku.plot_data(stream2array(st_rec), savefig=picpath)
+				fku.plot(st_rec, savefig=picpath)
 			except:
 				error.append(picpath)
 				continue
@@ -65,7 +65,7 @@ for i, noisefolder in enumerate(noisefoldlist):
 				name = 'butterworth_' + str(bw) + "_" + str(noiselevellist[i]) +  '.png'
 				picpath = PICPATH + name
 				st_rec.normalize()
-				fku.plot_data(stream2array(st_rec), savefig=picpath)
+				fku.plot(st_rec, savefig=picpath)
 			except:
 				error.append(picpath)
 				continue

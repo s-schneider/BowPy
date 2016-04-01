@@ -45,7 +45,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=None, clr='black', newfigure=True):
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=None, clr='black', newfigure=True, savefig=False):
 	"""
 	Alpha Version!
 	
@@ -202,10 +202,15 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 					plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)			
 			
 			yold = y_dist
-		plt.ion()
-		plt.draw()
-		plt.show()
-		plt.ioff()
+		if savefig:
+			plt.savefig(savefig)
+			plt.close("all")
+		else:
+			plt.ion()
+			plt.draw()
+			plt.show()
+			plt.ioff()
+
 
 	elif isinstance(st, Trace):
 
@@ -255,10 +260,14 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 			plt.title(title)
 			plt.plot(t_axis, zoom*data, color=clr)
 
-		plt.ion()
-		plt.draw()
-		plt.show()
-		plt.ioff()
+		if savefig:
+			plt.savefig(savefig)
+			plt.close("all")
+		else:
+			plt.ion()
+			plt.draw()
+			plt.show()
+			plt.ioff()
 
 def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, savefig=False):
 	"""
