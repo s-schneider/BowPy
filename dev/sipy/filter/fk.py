@@ -508,13 +508,17 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	print("Starting reconstruction...\n")
 
 	maxiter=None
+	interpol = False
+
 	if isinstance(method, str):
 		if method in ("denoise"):
 				maxiter = 2
 		elif method in ("interpolate"):
 				maxiter = 10
+				interpol = True
 	elif isinstance(method, int):
 		maxiter=method
+		
 
 	if solver in ("lsqr", "leastsquares"):
 		print(" ...using iterative least-squares solver...\n")
@@ -551,7 +555,17 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 		return
 
 	data_rec = np.fft.ifft2(Dv_rec.reshape(fkData.shape)).real
-	st_rec = array2stream(data_rec, st)
+	
+
+
+	if interpol:
+		st_rec = st.copy()
+		for i, trace in enumerate(st_rec):
+			if trace.stats.processing == 'empty':
+				str_rec[i].data = data_rec[i]
+
+	else:
+		st_rec = array2stream(data_rec, st)
 
 	if fulloutput:
 		return st_rec, FH, dv, Dv, Dv_rec, Ts, Yw
