@@ -561,8 +561,11 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	if interpol:
 		st_rec = st.copy()
 		for i, trace in enumerate(st_rec):
-			if trace.stats.processing == 'empty':
-				str_rec[i].data = data_rec[i]
+			try:
+				if trace.stats.processing == 'empty':
+					st_rec[i].data = data_rec[i,:]
+			except:
+				continue
 
 	else:
 		st_rec = array2stream(data_rec, st)
