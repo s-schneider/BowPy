@@ -575,6 +575,36 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	else:
 		return st_rec
 
+def pocs(st, maxiter, threshold):
+	"""
+	This functions reconstructs missing signals in the f-k domain, using the original data,
+	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
+	2D.
+
+	Reference: 3D interpolation of irregular data with a POCS algorithm, Abma & Kabir, 2006
+	"""
+	st_tmp 		= st.copy()
+	ArrayData 	= stream2array(st_tmp, normalize)
+	
+	ix = ArrayData.shape[0]
+	iK = int(math.pow(2,nextpow2(ix)))
+	it = ArrayData.shape[1]
+	iF = int(math.pow(2,nextpow2(it)))
+
+	fkdata = np.fft.fft2(ArrayData, s=(iK,iF))
+
+	data_tmp = ArrayData.copy()
+	for i in range(maxiter):
+		fkdata = np.fft.fft2(data_tmp, s=(iK,iF))
+		fkdata[ np.where(fkdata < threshold )] = 0.
+		data_tmp = np.fft.ifft2(fkdata, s=(iK,iF)).real.copy()
+
+	ArrayData 	= np.fft.ifft2(fkdata, s=(iK,iF)).real
+	
+	st_rec 	= array2stream(ArrayData)
+
+	return st_rec
+
 def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
 	"""
 	Only use with the function fk_filter!
