@@ -181,11 +181,11 @@ def attach_epidist2coords(inventory, event, stream=None):
 	param stream:
 	type stream:
 	"""
-	inv = inventory
+	inv 		 = inventory
 	Array_Coords = get_coords(inv)
 
-	eventlat = event.origins[0].latitude
-	eventlon = event.origins[0].longitude
+	eventlat 	 = event.origins[0].latitude
+	eventlon 	 = event.origins[0].longitude
 
 	try:
 		
@@ -199,9 +199,11 @@ def attach_epidist2coords(inventory, event, stream=None):
 
 		for network in inv:
 			for station in network:
-				scode = network.code + "." + station.code
-				lat1 = Array_Coords[scode]["latitude"]
-				lat2 = Array_Coords[scode]["longitude"]
+
+				scode 	= network.code + "." + station.code
+				lat1 	= Array_Coords[scode]["latitude"]
+				lat2 	= Array_Coords[scode]["longitude"]
+
 				# calculate epidist in km
 				# adds an epidist entry to the Array_coords dictionary 
 				Array_Coords[scode]["epidist"] = locations2degrees( lat1, lat2, eventlat, eventlon )
@@ -271,10 +273,13 @@ def find_closest_station(inventory, stream, latitude, longitude,
 
 	for i, station in enumerate(inventory[0]):
 		distance = np.sqrt( ((gps2dist_azimuth(lats[i], lngs[i], x, y)[0]) / 1000.0) ** 2  + ( np.abs( np.abs(z) - np.abs(hgt[i]))) ** 2 )
+
 		if min_distance is None or distance < min_distance:
 			if station.code in used_stations:
-				min_distance = distance
+
+				min_distance 		 = distance
 				min_distance_station = station.code
+
 	return min_distance_station
 	
 def epidist2list(Array_Coords):
@@ -383,26 +388,27 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 	# Calculate depth and distance of receiver and event.
 	# Set some variables.
 	attach_coordinates_to_traces(st_tmp, inv, event)
-	depth = event.origins[0]['depth']/1000.
-	origin = event.origins[0]['time']
-	m = TauPyModel(taup_model)
-	tmin = 0
-	tmax = 0
+	depth 	= event.origins[0]['depth']/1000.
+	origin 	= event.origins[0]['time']
+	m 		= TauPyModel(taup_model)
+	tmin 	= 0
+	tmax 	= 0
 
 	if isinstance(ref, int):
-		ref_dist = st_tmp[ref].stats.distance
-		ref_start = st_tmp[ref].stats.starttime
-		delta = st_tmp[ref].stats.delta
-		iref = ref
+		ref_dist 	= st_tmp[ref].stats.distance
+		ref_start 	= st_tmp[ref].stats.starttime
+		delta 		= st_tmp[ref].stats.delta
+		iref 		= ref
 
 	elif isinstance(ref, str):
 		for i, trace in enumerate(st_tmp):
 			if trace.stats['station'] != 'ref':
 				continue
 			ref_dist = trace.stats.distance
-			iref = i
+			iref 	 = i
+
 		ref_start = trace.stats.starttime
-		delta = trace.stats.delta
+		delta 	  = trace.stats.delta
 
 	# Calculating reference arriving time/index of phase.
 	ref_t = origin + m.get_travel_times(depth, ref_dist, phase_list=[phase])[0].time - ref_start
@@ -413,14 +419,14 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 			continue
 	
 		dist = st_tmp[no_x].stats.distance
-		t = m.get_travel_times(depth, dist, phase_list=[phase])[0].time
+		t 	 = m.get_travel_times(depth, dist, phase_list=[phase])[0].time
 
 		# Calculate arrivals, and shift times/indicies.
-		phase_time = origin + t - st_tmp[no_x].stats.starttime
-		phase_n = int(phase_time/delta)
-		datashift, shift_index = shift2ref(data[no_x,:], ref_n, phase_n, mtw=maxtimewindow/delta, method=shiftmethod)
-		shifttimes[no_x]=delta*shift_index
-		data[no_x,:] = datashift
+		phase_time 				= origin + t - st_tmp[no_x].stats.starttime
+		phase_n 				= int(phase_time/delta)
+		datashift, shift_index 	= shift2ref(data[no_x,:], ref_n, phase_n, mtw=maxtimewindow/delta, method=shiftmethod)
+		shifttimes[no_x] 		= delta*shift_index
+		data[no_x,:] 			= datashift
 
 		# Positive shift_index indicates positive shift in time and vice versa.	
 		if shift_index > 0 and shift_index > tmin: tmin = shift_index
@@ -435,8 +441,8 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 		if i == iref:
 			trace.stats.aligned = phase
 		else:
-			trace.stats.starttime = trace.stats.starttime - shifttimes[i]	
-			trace.stats.aligned = phase
+			trace.stats.starttime 	= trace.stats.starttime - shifttimes[i]	
+			trace.stats.aligned 	= phase
 
 	return st_align
 
@@ -463,14 +469,14 @@ def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 	trace=array.copy()
 	# if mtw is set 
 	if mtw != 0:
-		tmin = tref - int(mtw/2.)
-		tmax = tref + int(mtw/2.)
-		stmax = trace[tref]
-		mtw_index = tref
+		tmin 		= tref - int(mtw/2.)
+		tmax 		= tref + int(mtw/2.)
+		stmax 		= trace[tref]
+		mtw_index 	= tref
 		for k in range(tmin,tmax+1):
 			if trace[k] > stmax:
-					stmax=trace[k]
-					mtw_index = k
+					stmax 		= trace[k]
+					mtw_index 	= k
 		shift_value = tref - mtw_index
 
 	else:
@@ -480,12 +486,12 @@ def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 		shift_trace = np.roll(trace, shift_value)
 	
 	if method in ("FFT", "fft", "Fft", "fFt", "ffT", "FfT"):
-		it = trace.size		
-		iF = int(math.pow(2,nextpow2(it))) 
+		it 	= trace.size		
+		iF 	= int(math.pow(2,nextpow2(it))) 
 		dft = np.fft.fft(trace, iF)
 
-		arg = -2. * np.pi * shift_value / float(iF)
-		dft_shift = np.zeros(dft.size).astype('complex')
+		arg 		= -2. * np.pi * shift_value / float(iF)
+		dft_shift 	= np.zeros(dft.size).astype('complex')
 
 		for i, ampl in enumerate(dft):
 			dft_shift[i] = ampl * np.complex(np.cos(i * arg), np.sin(i * arg))
@@ -505,25 +511,25 @@ def corr_stat(stream, inv, phase):
 		print("No event information attached to stream!")
 		return
 	
-	st =stream.copy()
-	data = stream2array(st)
-	data_corr = np.zeros(data.shape)
-	center = geometrical_center(inv)
-	cstat =  find_closest_station(inv, st, center['latitude'], center['longitude'])
+	st 			= stream.copy()
+	data 		= stream2array(st)
+	data_corr 	= np.zeros(data.shape)
+	center 		= geometrical_center(inv)
+	cstat 		= find_closest_station(inv, st, center['latitude'], center['longitude'])
 	
-	tmin=0
-	tmax=0
+	tmin = 0
+	tmax = 0
 
 	for trace in stream:
 		if trace.stats.station != cstat:
 			continue
-		depth = trace.stats.depth
-		distance = trace.stats.distance
-		delta = trace.stats.delta
+		depth 		= trace.stats.depth
+		distance 	= trace.stats.distance
+		delta 		= trace.stats.delta
 
-	m = TauPyModel('ak135')
+	m 		= TauPyModel('ak135')
 	arrival = m.get_travel_times(depth, distance, phase_list=[phase])
-	slo = arrival[0].ray_param_sec_degree
+	slo 	= arrival[0].ray_param_sec_degree
 
 	for i, trace in enumerate(data):
 		shift = int( slo*( distance - st[i].stats.distance)/delta)
@@ -531,7 +537,7 @@ def corr_stat(stream, inv, phase):
 		data_corr[i,:], shift_index = shift2ref(trace, 0, shift)
 		if shift_index > 0 and shift_index > tmin: tmin = shift_index
 		if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
-	data_corr = truncate(data, tmin, tmax)
+	data_corr 	= truncate(data, tmin, tmax)
 	stream_corr = array2stream(data_corr, st)
 	
 	return stream_corr
@@ -547,15 +553,15 @@ def truncate(data, tmin, tmax):
 	:param tmax: difference of the ending indicies
 	"""
 	if data.ndim > 1:
-		trunc_n = data.shape[1] - tmin - tmax
-		trunc_data = np.zeros( (data.shape[0], trunc_n) )
+		trunc_n 	= data.shape[1] - tmin - tmax
+		trunc_data 	= np.zeros( (data.shape[0], trunc_n) )
 
 		for i,trace in enumerate(data):
 			trunc_data[i,:] = trace[tmin:trace.size - tmax]
 
 	else:
-		trunc_n = data.size - tmin - tmax
-		trunc_data = np.array( trunc_n )
+		trunc_n 	= data.size - tmin - tmax
+		trunc_data 	= np.array( trunc_n )
 
 		for x in data:
 			trunc_data = data[tmin:data.size - tmax]
@@ -577,7 +583,7 @@ def stack(data, order=None):
 
 	i, j = data.shape
 	vNth = 0
-	v = 0
+	v 	 = 0
 	# if order is not None	
 	try:
  		order = float(order)
@@ -587,8 +593,8 @@ def stack(data, order=None):
 		for i,trNth in enumerate(dataNth):
 			vNth = vNth + datasgn[i] * trNth
 
-		vsgn = np.sign(vNth)
-		v = vsgn * abs(vNth)**order		
+		vsgn 	= np.sign(vNth)
+		v 		= vsgn * abs(vNth)**order		
 
 	except TypeError:
 		for trace in data:
@@ -643,9 +649,9 @@ def partial_stack(st, bins, phase, overlap=None, order=0.2, align=True, maxtimew
 	Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
 	"""
 
-	st_tmp = st.copy()
+	st_tmp 	= st.copy()
 
-	data = stream2array(st_tmp, normalize=True)
+	data 	= stream2array(st_tmp, normalize=True)
 	
 	# Create list of distances from stations to array
 	epidist = np.zeros(len(st_tmp))
@@ -675,6 +681,7 @@ def partial_stack(st, bins, phase, overlap=None, order=0.2, align=True, maxtimew
 		L = np.linspace(min(epidist), max(epidist), bins+1)
 		L = zip(L, np.roll(L, -1))
 		L = L[0:len(L)-1]
+
 		bin_size = abs(L[0][0] - L[0][1])
 
 		# Resample the y-axis information to new, equally distributed ones.
@@ -684,10 +691,10 @@ def partial_stack(st, bins, phase, overlap=None, order=0.2, align=True, maxtimew
 	# Preallocate some space in memory.
 	bin_data = np.zeros((len(y_resample),data.shape[1]))
 
-	
-	m = TauPyModel(taup_model)
-	depth = st_tmp[0].meta.depth
-	delta = st_tmp[0].meta.delta
+	m 		= TauPyModel(taup_model)
+	depth 	= st_tmp[0].meta.depth
+	delta 	= st_tmp[0].meta.delta
+
 	if maxtimewindow:
 		mtw = maxtimewindow/delta
 	else:
@@ -715,8 +722,8 @@ def partial_stack(st, bins, phase, overlap=None, order=0.2, align=True, maxtimew
 					if align:
 						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw, method=shiftmethod)
 					else:
-						trace_shift = trace
-					stack_arr = np.vstack([bin_data[i],trace_shift])
+						trace_shift 	= trace
+					stack_arr 	= np.vstack([bin_data[i],trace_shift])
 					bin_data[i] = stack(stack_arr, order)
 
 			# Check if current trace is inside bin-boundaries.
@@ -724,8 +731,9 @@ def partial_stack(st, bins, phase, overlap=None, order=0.2, align=True, maxtimew
 				if align:
 					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw, method=shiftmethod)
 				else:
-					trace_shift = trace
-				stack_arr = np.vstack([bin_data[i],trace_shift])
+					trace_shift 	= trace
+
+				stack_arr 	= np.vstack([bin_data[i],trace_shift])
 				bin_data[i] = stack(stack_arr, order)
 
 			if overlap:
@@ -733,8 +741,9 @@ def partial_stack(st, bins, phase, overlap=None, order=0.2, align=True, maxtimew
 					if align:
 						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw, method=shiftmethod)
 					else:
-						trace_shift = trace
-					stack_arr = np.vstack([bin_data[i],trace_shift])
+						trace_shift 	= trace
+
+					stack_arr 	= np.vstack([bin_data[i],trace_shift])
 					bin_data[i] = stack(stack_arr, order)
 
 	st_binned = array2stream(bin_data)
@@ -911,12 +920,12 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 		
 
 		plt.figure()
-		RE = 6371.0
-		REdeg = kilometer2degrees(RE)
-		origin = event.origins[0]['time']
-		depth = event.origins[0]['depth']/1000.
-		m = TauPyModel('ak135')
-		dist = st[sref].stats.distance
+		RE 		= 6371.0
+		REdeg 	= kilometer2degrees(RE)
+		origin 	= event.origins[0]['time']
+		depth 	= event.origins[0]['depth']/1000.
+		m 		= TauPyModel('ak135')
+		dist 	= st[sref].stats.distance
 		arrival =  m.get_travel_times(depth, dist, phase_list=markphases)
 
 
@@ -1023,13 +1032,13 @@ def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak13
 
 		index_resampled = np.abs(yresample - trace.stats.distance).argmin()
 		
-		torg 				 = m.get_travel_times(trace.stats.depth, trace.stats.distance, phase_list=['P'])[0].time
-		tres 				 = m.get_travel_times(trace.stats.depth, yresample[index_resampled], phase_list=['P'])[0].time
-		tdelta 				 = tres - torg 
-		shiftvalue 			 = int(tdelta / trace.stats.delta)
+		torg 		= m.get_travel_times(trace.stats.depth, trace.stats.distance, phase_list=['P'])[0].time
+		tres 		= m.get_travel_times(trace.stats.depth, yresample[index_resampled], phase_list=['P'])[0].time
+		tdelta 		= tres - torg 
+		shiftvalue 	= int(tdelta / trace.stats.delta)
 
-		trace.data, shift_index 			 = shift2ref(data[no], 0, shiftvalue, method=shiftmethod)
-		trace.stats.starttime= trace.stats.starttime 
+		trace.data, shift_index = shift2ref(data[no], 0, shiftvalue, method=shiftmethod)
+		trace.stats.starttime	= trace.stats.starttime + tdelta
 
 		# Doublettes are stacked
 		if index_resampled in ilist:
@@ -1103,31 +1112,29 @@ def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 	
 	decimal_res = float(decimal_res)
 	# Find biggest value for y-ticks.
-	mind = int(round(np.diff(yinfo).min() * decimal_res))
-	maxd = int(round(np.diff(yinfo).max() * decimal_res))
-	grd_delta = fractions.gcd(mind, maxd)/decimal_res
+	mind 		= int(round(np.diff(yinfo).min() * decimal_res))
+	maxd 		= int(round(np.diff(yinfo).max() * decimal_res))
+	grd_delta 	= fractions.gcd(mind, maxd)/decimal_res
+	N 			= (grd_max - grd_min)/grd_delta + 1
+	grd 		= np.linspace(grd_min, grd_max, N) 
 	
-	N=(grd_max - grd_min)/grd_delta + 1
-	
-	grd = np.linspace(grd_min, grd_max, N) 
-	
-	equi_data = np.zeros((grd.size, star.shape[1]))
+	equi_data 	= np.zeros((grd.size, star.shape[1]))
 	
 	# Create new Array and new Trace-object
 	traces = []
 	for i, trace in enumerate(equi_data):
-		newtrace = obspy.core.trace.Trace(trace)
-		newtrace.stats.distance = grd[i]
-		newtrace.stats.processing = "empty"
+		newtrace 					= obspy.core.trace.Trace(trace)
+		newtrace.stats.distance 	= grd[i]
+		newtrace.stats.processing 	= "empty"
 		traces.append(newtrace)
 
 	# Append data in Trace-Object
 	for i, trace in enumerate(star):
 		# Find nearest matching gridpoint for each trace.
-		new_index = np.abs(grd-yinfo[i]).argmin()
-		traces[ new_index ] = obspy.core.trace.Trace(trace)
-		traces[ new_index ].stats = st_tmp[i].stats
-		traces[ new_index ].stats.distance = grd[new_index]
+		new_index 							= np.abs(grd-yinfo[i]).argmin()
+		traces[ new_index ] 				= obspy.core.trace.Trace(trace)
+		traces[ new_index ].stats 			= st_tmp[i].stats
+		traces[ new_index ].stats.distance 	= grd[new_index]
 	
 	
 	# Create new equidistant Stream-Object.
@@ -1161,8 +1168,8 @@ def plot_inv(inventory, projection="local"):
         bmap.scatter(x, y, marker="x", c="red", s=40, zorder=20)
         plt.text(x, y, "Center of Gravity", color="red")
 
-        geo = geometrical_center(inventory)
-        x, y = bmap(geo["longitude"], geo["latitude"])
+        geo 	= geometrical_center(inventory)
+        x, y 	= bmap(geo["longitude"], geo["latitude"])
         bmap.scatter(x, y, marker="x", c="green", s=40, zorder=20)
         plt.text(x, y, "Geometrical Center", color="green")
         plt.ion()
@@ -1233,20 +1240,21 @@ def plot_gcp(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefig
 	Documantation follows, still working on. What kind of information would be useful to plot?
 	Have to add a legend.
 	"""
-	model = TauPyModel('ak135')
-	slat = event.origins[0].latitude
-	slon = event.origins[0].longitude
-	depth = event.origins[0].depth/1000.
+	model 	= TauPyModel('ak135')
+	slat 	= event.origins[0].latitude
+	slon 	= event.origins[0].longitude
+	depth 	= event.origins[0].depth/1000.
 	
-	center = geometrical_center(inventory)
-	rlat = center['latitude']
-	rlon = center['longitude']
-	pp = model.get_pierce_points_geo(depth, slat, slon, rlat, rlon, phases)
-	pp = add_geo_to_arrivals(pp, slat, slon, rlat, rlon, 6372, 0)
+	center 	= geometrical_center(inventory)
+	rlat 	= center['latitude']
+	rlon 	= center['longitude']
+	pp 		= model.get_pierce_points_geo(depth, slat, slon, rlat, rlon, phases)
+	pp 		= add_geo_to_arrivals(pp, slat, slon, rlat, rlon, 6372, 0)
 	
 	piercepoints = []
-	plat = []
-	plon = []
+	plat 		 = []
+	plon 		 = []
+
 	for arrival in pp:
 		name = arrival.name
 		if not name in phases: continue
@@ -1272,10 +1280,10 @@ def plot_gcp(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefig
 	# resolution = 'c' means use crude resolution coastlines, 'l' means low, 'h' high etc.
 	# zorder is the plotting level, 0 is the lowest, 1 = one level higher ...   
 	# m = Basemap(projection='nsper',lon_0=20, lat_0=25,resolution='c')
-	m = Basemap(projection='kav7',lon_0=piercepoints[0][1], resolution='c')   
-	sx, sy = m(slon, slat)
-	rx, ry = m(rlon, rlat)
-	px, py = m(plon, plat)
+	m 		= Basemap(projection='kav7',lon_0=piercepoints[0][1], resolution='c')   
+	sx, sy 	= m(slon, slat)
+	rx, ry 	= m(rlon, rlat)
+	px, py 	= m(plon, plat)
 
 	# import event coordinates, with symbol (* = Star)
 	m.scatter(sx, sy, 80, marker='*', color= '#004BCB', zorder=2)
