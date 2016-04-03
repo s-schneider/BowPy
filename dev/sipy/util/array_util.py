@@ -390,13 +390,13 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 	tmax = 0
 
 	if isinstance(ref, int):
-		ref_dist = st[ref].stats.distance
-		ref_start = st[ref].stats.starttime
-		delta = st[ref].stats.delta
+		ref_dist = st_tmp[ref].stats.distance
+		ref_start = st_tmp[ref].stats.starttime
+		delta = st_tmp[ref].stats.delta
 		iref = ref
 
 	elif isinstance(ref, str):
-		for i, trace in enumerate(st):
+		for i, trace in enumerate(st_tmp):
 			if trace.stats['station'] != 'ref':
 				continue
 			ref_dist = trace.stats.distance
@@ -412,11 +412,11 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 		if no_x == iref:
 			continue
 	
-		dist = st[no_x].stats.distance
+		dist = st_tmp[no_x].stats.distance
 		t = m.get_travel_times(depth, dist, phase_list=[phase])[0].time
 
 		# Calculate arrivals, and shift times/indicies.
-		phase_time = origin + t - st[no_x].stats.starttime
+		phase_time = origin + t - st_tmp[no_x].stats.starttime
 		phase_n = int(phase_time/delta)
 		datashift, shift_index = shift2ref(data[no_x,:], ref_n, phase_n, mtw=maxtimewindow/delta, method=shiftmethod)
 		shifttimes[no_x]=delta*shift_index
@@ -428,7 +428,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 
 		data_trunc = truncate(data, tmin, tmax)
 
-	st_align = array2stream(data_trunc, st)
+	st_align = array2stream(data_trunc, st_tmp)
 
 	# Change startime entry and add alignon entry.
 	for i, trace in enumerate(st_align):
@@ -987,19 +987,19 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 
 	return vespa
 
-def resample_distance(stream, inv, event):
+def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak135'):
 	"""
 	Function reorganizes the traces in a equidistant manner.
 	"""	
-
-
+	m 				= TauPyModel(taup_model)
 	st_tmp 			= stream.copy()
+	data 			= stream2array(st_tmp)
 	stream_resample = Stream()
 
 	try:
-		yinfo = epidist2nparray(attach_epidist2coords(inv, event, stream))
-		attach_network_to_traces(stream, inv)
-		attach_coordinates_to_traces(stream, inv, event)
+		yinfo = epidist2nparray(attach_epidist2coords(inv, event, st_tmp))
+		attach_network_to_traces(st_tmp, inv)
+		attach_coordinates_to_traces(st_tmp, inv, event)
 	except:
 		try:
 			yinfo = []
@@ -1018,9 +1018,20 @@ def resample_distance(stream, inv, event):
 	yresample 	= np.linspace(ymin, ymax, npts)
 	ilist		= []
 
-	for trace in st_tmp:
+	# Shifting takes place
+	for no, trace in enumerate(st_tmp):
+
 		index_resampled = np.abs(yresample - trace.stats.distance).argmin()
 		
+		torg 				 = m.get_travel_times(trace.stats.depth, trace.stats.distance, phase_list=['P'])[0].time
+		tres 				 = m.get_travel_times(trace.stats.depth, yresample[index_resampled], phase_list=['P'])[0].time
+		tdelta 				 = tres - torg 
+		shiftvalue 			 = int(tdelta / trace.stats.delta)
+
+		trace.data, shift_index 			 = shift2ref(data[no], 0, shiftvalue, method=shiftmethod)
+		trace.stats.starttime= trace.stats.starttime 
+
+		# Doublettes are stacked
 		if index_resampled in ilist:
 			stacks = [trace.data]
 			for i, stacktraces in enumerate(stream_resample):
@@ -1029,7 +1040,9 @@ def resample_distance(stream, inv, event):
 			stream_resample[i].data  = stack(np.array(stacks)) 
 			continue
 
+		# If Distance is resonable, shift trace and correct time information.
 		if np.abs(yresample - trace.stats.distance).min() <= ymeandiff:
+
 			trace.stats.distance = yresample[index_resampled]
 			stream_resample 	+= trace
 			ilist.append(index_resampled)
