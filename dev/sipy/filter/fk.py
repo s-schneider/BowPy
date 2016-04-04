@@ -428,10 +428,13 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 
 	# Look for missing Traces
 	recon_list 	= []
+
 	for i, trace in enumerate(st_tmp):
-		if sum(trace.data) == 0:
-			trace.stats.zerotrace = 'True'
-			recon_list.append(i)
+		try:
+			if trace.stats.zerotrace == 'True':
+				recon_list.append(i)
+		except:
+			continue
 
 	# Calculate mask-function W.
 	try:	
@@ -493,7 +496,8 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	elif isinstance(method, int):
 		maxiter=method
 
-	if solver in ("lsqr", "leastsquares", "ilsmr", "iterative", "cg"):
+	print("maximum %i" %maxiter)
+	if solver in ("lsqr", "leastsquares", "ilsmr", "iterative", "cg", "fmin"):
 		pocs = False
 		# To keep the order it would be better to transpose W to WT
 		# but for creation of Y, WT has to be transposed again,
@@ -506,9 +510,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 		Dv	= fkDT.transpose().reshape(1, fkDT.size)[0]
 	
 		T = np.ones((ArrayData.shape[0], ArrayData.shape[1]))
-		for i,trace in enumerate(ArrayData):
-			if sum(trace) == 0.:
-				T[i] = 0.
+		T[recon_list] = 0.
 		T = T.reshape(1, T.size)[0]
 
 		Ts = sparse.diags(T)
@@ -556,6 +558,21 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 			Binv 	= sparse.linalg.inv(B)
 			x 		= sparse.linalg.cg(Binv, madj, maxiter=maxiter)
 			Dv_rec 	= x[0]
+
+		elif solver in ('fmin'):
+			A 		= Ts.dot(FH.dot(Yw))
+			global arg1
+			global arg2
+			global arg3
+			arg1 = dv
+			arg2 = A
+			arg3 = mu
+
+			def J(x):
+				COST = np.linalg.norm(arg1 - arg2.dot(x), 2)**2. + arg3*np.linalg.norm(x,2)**2.
+				return COST 
+
+			Dv_rec = sp.optimize.fmin_cg(J, x0=Dv, maxiter=10)			
 
 		data_rec = np.fft.ifft2(Dv_rec.reshape(fkData.shape)).real
 
