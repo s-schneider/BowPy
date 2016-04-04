@@ -290,7 +290,7 @@ def fktrafo(stream, inv, event, normalize=True):
 	return fkdata
 
 def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], 
-					method='denoise', solver="iterative",  mu=5e-2, tol=1e-12, fulloutput=False, peakinput=False):
+					method='denoise', solver="iterative",  mu=5e-2, tol=1e-12, fulloutput=False, peakinput=False, alpha=0.9):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros, and its Mask-array (see makeMask, and slope_distribution.
@@ -426,11 +426,12 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	fkData 		= np.fft.fft2(ArrayData)
 	fkDT 		= np.fft.fft2(ADT)
 
-	# Implement automatic method, to cut into N 300 npts samples.
-	# Iterate over those.
-	#if ADT.shape[0] > 300:
-	#	msg="Data sample to big, no sufficient memory!"
-	#	raise MemoryError(msg)
+	# Look for missing Traces
+	recon_list 	= []
+	for i, trace in enumerate(st_tmp):
+		if sum(trace.data) == 0:
+			trace.stats.zerotrace = 'True'
+			recon_list.append(i)
 
 	# Calculate mask-function W.
 	try:	
@@ -458,6 +459,8 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	
 	print("Creating mask function with %i significant linear events \n" % len(peaks[0]) )
 	W = makeMask(fkData, peaks[0], maskshape)
+
+	# If fulloutput is desired, a bunch of messages and user interaction appears.
 	if fulloutput:
 		plt.figure()
 		plt.subplot(3,1,1)
@@ -477,105 +480,126 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 			msg="Don't use Mask, exit"
 			raise IOError(msg)
 
-	# To keep the order it would be better to transpose W to WT
-	# but for creation of Y, WT has to be transposed again,
-	# so this step can be skipped.
-	Y 	= W.reshape(1,W.size)[0]
-	Yw 	= sparse.diags(Y)
-
-	# Initialize arrays for cost-function.
-	dv 	= ADT.transpose().reshape(1, ADT.size)[0]
-	Dv	= fkDT.transpose().reshape(1, fkDT.size)[0]
-	
-	T = np.ones((ArrayData.shape[0], ArrayData.shape[1]))
-	for i,trace in enumerate(ArrayData):
-		if sum(trace) == 0.:
-			T[i] = 0.
-	T = T.reshape(1, T.size)[0]
-
-	Ts = sparse.diags(T)
-	
-
-	# Create sparse-matrix with iFFT operations.	
-	print("Creating iFFT2 operator as a %ix%i matrix ...\n" %(fkDT.shape[0]*fkDT.shape[1], fkDT.shape[0]*fkDT.shape[1]))	
-
-	FH = create_iFFT2mtx(fkDT.shape[0], fkDT.shape[1])
-	print("... finished\n")
-
-	# Create model matrix A.
-	print("Creating sparse %ix%i matrix A ...\n" %(FH.shape[0], FH.shape[1]))	
-	A =  Ts.dot(FH.dot(Yw))
-	print("Starting reconstruction...\n")
-
+	# Checking for number of iteration and reconstruction behavior.
 	maxiter=None
 	interpol = False
-
 	if isinstance(method, str):
 		if method in ("denoise"):
 				maxiter = 2
 		elif method in ("interpolate"):
 				maxiter = 10
 				interpol = True
+
 	elif isinstance(method, int):
 		maxiter=method
-		
 
-	if solver in ("lsqr", "leastsquares"):
-		print(" ...using iterative least-squares solver...\n")
-		x = sparse.linalg.lsqr(A, dv, mu, atol=tol, btol=tol, iter_lim=maxiter)
-		print("istop = %i \n" % x[1])
-		print("Used iterations = %i \n" % x[2])
-		print("1 Norm = %f \n " % x[3])
-		print("2 Norm = %f \n" % x[4])
-		print("Condition number = %f \n" % x[6])
-		print("Norm of Dv = %f \n" % x[8]) 
-		Dv_rec = x[0]
-	elif solver in ("ilsmr", "iterative"):
-		print(" ...using iterative LSMR solver...\n")
-		x = sparse.linalg.lsmr(A,dv,mu, atol=tol, btol=tol, maxiter=maxiter)
-		print("istop = %i \n" % x[1])
-		print("Used iterations = %i \n" % x[2])
-		print("Misfit = %f \n " % x[3])
-		print("Modelnorm = %f \n" % x[4])
-		print("Condition number = %f \n" % x[5])
-		print("Norm of Dv = %f \n" % x[6]) 
-		Dv_rec = x[0]
-	elif solver in ('cg'):
-		A = Ts.dot(FH.dot(Yw))
-		Ah = A.conjugate().transpose()
-		madj = Ah.dot(dv)
-		E = mu * sparse.eye(A.shape[0])
-		B = A + E
-		Binv = sparse.linalg.inv(B)
-		x = sparse.linalg.cg(Binv, madj, maxiter=maxiter)
-		Dv_rec = x[0]
+	if solver in ("lsqr", "leastsquares", "ilsmr", "iterative", "cg"):
+		pocs = False
+		# To keep the order it would be better to transpose W to WT
+		# but for creation of Y, WT has to be transposed again,
+		# so this step can be skipped.
+		Y 	= W.reshape(1,W.size)[0]
+		Yw 	= sparse.diags(Y)
 
+		# Initialize arrays for cost-function.
+		dv 	= ADT.transpose().reshape(1, ADT.size)[0]
+		Dv	= fkDT.transpose().reshape(1, fkDT.size)[0]
+	
+		T = np.ones((ArrayData.shape[0], ArrayData.shape[1]))
+		for i,trace in enumerate(ArrayData):
+			if sum(trace) == 0.:
+				T[i] = 0.
+		T = T.reshape(1, T.size)[0]
+
+		Ts = sparse.diags(T)
+	
+
+		# Create sparse-matrix with iFFT operations.	
+		print("Creating iFFT2 operator as a %ix%i matrix ...\n" %(fkDT.shape[0]*fkDT.shape[1], fkDT.shape[0]*fkDT.shape[1]))	
+
+		FH = create_iFFT2mtx(fkDT.shape[0], fkDT.shape[1])
+		print("... finished\n")
+
+		# Create model matrix A.
+		print("Creating sparse %ix%i matrix A ...\n" %(FH.shape[0], FH.shape[1]))	
+		A =  Ts.dot(FH.dot(Yw))
+		print("Starting reconstruction...\n")
+
+		if solver in ("lsqr", "leastsquares"):
+			print(" ...using iterative least-squares solver...\n")
+			x = sparse.linalg.lsqr(A, dv, mu, atol=tol, btol=tol, iter_lim=maxiter)
+			print("istop = %i \n" % x[1])
+			print("Used iterations = %i \n" % x[2])
+			print("1 Norm = %f \n " % x[3])
+			print("2 Norm = %f \n" % x[4])
+			print("Condition number = %f \n" % x[6])
+			print("Norm of Dv = %f \n" % x[8]) 
+			Dv_rec = x[0]
+
+		elif solver in ("ilsmr", "iterative"):
+			print(" ...using iterative LSMR solver...\n")
+			x = sparse.linalg.lsmr(A,dv,mu, atol=tol, btol=tol, maxiter=maxiter)
+			print("istop = %i \n" % x[1])
+			print("Used iterations = %i \n" % x[2])
+			print("Misfit = %f \n " % x[3])
+			print("Modelnorm = %f \n" % x[4])
+			print("Condition number = %f \n" % x[5])
+			print("Norm of Dv = %f \n" % x[6]) 
+			Dv_rec = x[0]
+
+		elif solver in ("cg"):
+			A 		= Ts.dot(FH.dot(Yw))
+			Ah 		= A.conjugate().transpose()
+			madj 	= Ah.dot(dv)
+			E 		= mu * sparse.eye(A.shape[0])
+			B 		= A + E
+			Binv 	= sparse.linalg.inv(B)
+			x 		= sparse.linalg.cg(Binv, madj, maxiter=maxiter)
+			Dv_rec 	= x[0]
+
+		data_rec = np.fft.ifft2(Dv_rec.reshape(fkData.shape)).real
+
+	elif solver in ("pocs"):
+		pocs=True
+		threshold = abs( (fkData*W.astype('complex').max()) ) 
+
+		for i in range(maxiter):
+			data_tmp 								= ArrayData.copy()
+			fkdata 									= np.fft.fft2(data_tmp) * W.astype('complex')
+			fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
+			threshold = threshold * alpha
+			#if i % 10 == 0.:
+			#	plt.imshow(abs(fkdata), aspect='auto', interpolation='none')
+			#	plt.savefig("%s.png" % i)
+			data_tmp 								= np.fft.ifft2(fkdata).real.copy()
+			ArrayData[recon_list] 					= data_tmp[recon_list]
+	
+		data_rec = ArrayData.copy()
 	else:
 		print("No solver or method specified.")
 		return
 
-	data_rec = np.fft.ifft2(Dv_rec.reshape(fkData.shape)).real
 	
-
 
 	if interpol:
 		st_rec = st.copy()
 		for i, trace in enumerate(st_rec):
 			try:
-				if trace.stats.processing == 'empty':
+				if trace.stats.zerotrace == 'True':
 					st_rec[i].data = data_rec[i,:]
+					st_rec[i].stats.zerotrace = 'reconstructed'
 			except:
 				continue
 
 	else:
 		st_rec = array2stream(data_rec, st)
 
-	if fulloutput:
+	if fulloutput and not pocs:
 		return st_rec, FH, dv, Dv, Dv_rec, Ts, Yw
 	else:
 		return st_rec
 
-def pocs(st, maxiter, nol=1):
+def pocs_recon(st, maxiter, nol=1):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in

@@ -174,7 +174,7 @@ for streams in (stlist):
 		for no in values:
 			name = 'SR' + str(int( 100. - len(values)/20.*100.)) +'.QHD'
 			stemp[no].data = np.zeros(300)
-			stemp[no].stats.processing = "empty"
+			stemp[no].stats.zerotrace = "True"
 			stemp.write("../data/test_datasets/%s/%s" % (streams[1],name), format='Q')
 
 

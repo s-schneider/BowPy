@@ -1067,7 +1067,7 @@ def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak13
 			newtrace 					 = obspy.core.trace.Trace(np.zeros(st_tmp[0].data.size))
 			newtrace.stats.station		 = "empty"
 			newtrace.stats.distance 	 = yresample[j]
-			newtrace.stats.processing 	 = "empty"
+			newtrace.stats.zerotrace 	 = "True"
 			stream_resample 			+= newtrace
 
 	return stream_resample
@@ -1125,7 +1125,7 @@ def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 	for i, trace in enumerate(equi_data):
 		newtrace 					= obspy.core.trace.Trace(trace)
 		newtrace.stats.distance 	= grd[i]
-		newtrace.stats.processing 	= "empty"
+		newtrace.stats.zerotrace 	= "True"
 		traces.append(newtrace)
 
 	# Append data in Trace-Object

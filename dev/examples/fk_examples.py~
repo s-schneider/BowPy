@@ -127,7 +127,7 @@ attach_coordinates_to_traces(sts, inv, cat[0])
 
 stri = read_st("../data/test_datasets/ricker/original/SR.QHD")
 stri.normalize()
-attach_network_to_traces(stri, inv[0])
+attach_network_to_traces(stri, inv)
 attach_coordinates_to_traces(stri, inv, cat[0])
 
 st = read_st("../data/synthetics_uniform/SUGAP.QHD")
@@ -149,7 +149,7 @@ t_axis = np.linspace(0,stuni_al[0].stats.delta * stuni_al[0].stats.npts, stuni_a
 stran = read_st("../data/synthetics_random/SRNEW.QHD")
 stran.normalize()
 invran= read_inv("../data/synthetics_random/SRNEW_inv.xml")
-attach_network_to_traces(stran, invran[0])
+attach_network_to_traces(stran, invran)
 attach_coordinates_to_traces(stran, invran, cat[0])
 epiran = epidist2nparray(epidist(invran, cat[0]))
 
@@ -169,7 +169,7 @@ stlist = [[stri, 'ricker']] #, [sts, 'instaseis']]
 for streams in (stlist):
 	for values in randlist:
 		stemp =  streams[0].copy()
-		attach_network_to_traces(stemp, inv[0])
+		attach_network_to_traces(stemp, inv)
 		attach_coordinates_to_traces(stemp, inv, cat[0])
 		for no in values:
 			name = 'SR' + str(int( 100. - len(values)/20.*100.)) +'.QHD'
