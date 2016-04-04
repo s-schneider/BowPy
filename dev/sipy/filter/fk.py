@@ -575,14 +575,29 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	else:
 		return st_rec
 
-def pocs(st, maxiter):
+def pocs(st, maxiter, nol=1):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
 	2D.
 
 	Reference: 3D interpolation of irregular data with a POCS algorithm, Abma & Kabir, 2006
+
+	:param st:
+	:type  st:
+
+	:param maxiter:
+	:type  maxiter:
+
+	:param nol: Number of loops
+	:type  nol:
+
+	returns:
+
+	:param st_rec:
+	:type  st_rec:
 	"""
+
 	st_tmp 		= st.copy()
 	ArrayData 	= stream2array(st_tmp, normalize=True)
 	recon_list 	= []
@@ -604,21 +619,23 @@ def pocs(st, maxiter):
 	it = ArrayData.shape[1]
 	iF = int(math.pow(2,nextpow2(it)))
 
-	threshold = np.fft.fft2(ArrayData, s=(iK,iF)).max()
+	threshold = abs(np.fft.fft2(ArrayData, s=(iK,iF)).max())
+	
+	for n in range(nol):
 
-	for i in range(maxiter):
-		data_tmp 								= ArrayData.copy()
-		fkdata 									= np.fft.fft2(data_tmp, s=(iK,iF))
-		fkdata[ np.where(fkdata < threshold)] 	= 0. + 0j
-		threshold = threshold * 0.9
-		#if i % 10 == 0.:
-		#	plt.imshow(abs(fkdata), aspect='auto', interpolation='none')
-		#	plt.savefig("%s.png" % i)
-		data_tmp 								= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
-		data_tmp 								= data_tmp
-		ArrayData[recon_list] 					= data_tmp[recon_list]
+		for i in range(maxiter):
+			data_tmp 								= ArrayData.copy()
+			fkdata 									= np.fft.fft2(data_tmp, s=(iK,iF))
+			fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
+			threshold = threshold * 0.9
+			#if i % 10 == 0.:
+			#	plt.imshow(abs(fkdata), aspect='auto', interpolation='none')
+			#	plt.savefig("%s.png" % i)
+			data_tmp 								= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
+			ArrayData[recon_list] 					= data_tmp[recon_list]
 
-	ArrayData[recon_list] = ArrayData[recon_list]/ArrayData[recon_list].max()
+		threshold = abs(np.fft.fft2(ArrayData, s=(iK,iF)).max())
+
 	st_rec 	= array2stream(ArrayData)
 
 	return st_rec
