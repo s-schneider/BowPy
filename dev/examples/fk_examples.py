@@ -88,28 +88,32 @@ for i, noisefolder in enumerate(noisefoldlist):
 #########3 L-curve
 global Binv
 global madj
-murange = np.logspace(-7, 7, 14)
+murange = np.logspace(-40, 40, 100)
 L = np.zeros((3, murange.size))
 print("Initiating matrices... \n \n")
 A = Ts.dot(FH.dot(Ys))
-Ah = A.conjugate().transpose()
-madj = Ah.dot(dv)
+#Ah = A.conjugate().transpose()
+#madj = Ah.dot(dv)
 
 for i,muval in enumerate(murange):
 	print(muval)
-	E = muval * sparse.eye(A.shape[0])
-	B = A + E
-	Binv = sparse.linalg.inv(B)
-	def getmnorm(x):
-		return print(np.linalg.norm(A.dot(x) - madj))
+	stw = stn.copy()
+	#E = muval * sparse.eye(A.shape[0])
+	#B = A + E
+	#Binv = sparse.linalg.inv(B)
+	#def getmnorm(x):
+	#	return print(np.linalg.norm(A.dot(x) - madj))
 
-	x = sparse.linalg.cg(Binv, madj, maxiter=100)#, callback=getmnorm)
-	dfk = x[0].reshape(20,300)
-	d = np.fft.ifft2(dfk).real
-	d = d/d.max()
+	#x = sparse.linalg.cg(Binv, madj, maxiter=100)#, callback=getmnorm)
+	#dfk = x[0].reshape(20,300)
+	#d = np.fft.ifft2(dfk).real
+	#d = d/d.max()
 
-	rnorm = np.linalg.norm(x[0],2)
-	snorm = np.linalg.norm(A.dot(x[0]) - madj,2)
+	#rnorm = np.linalg.norm(x[0],2)
+	#snorm = np.linalg.norm(A.dot(x[0]) - madj,2)
+
+	st_rec, rnorm, snorm = fk_reconstruct(stw, slopes=[-2,2], deltaslope=0.001, maskshape=['butterworth', 4], fulloutput=False, solver='lsqr',method=20, mu=muval, tol=0, peakinput=peaks)
+
 	L[0][i]= muval
 	L[1][i]= rnorm
 	L[2][i]= snorm

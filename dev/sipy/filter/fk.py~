@@ -420,7 +420,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 
 	# Prepare data.
 	st_tmp 		= st.copy()
-	ArrayData	= stream2array(st_tmp, normalize=True)
+	ArrayData	= stream2array(st_tmp, normalize=False)
 	ADT 		= ArrayData.copy().transpose()
 
 	fkData 		= np.fft.fft2(ArrayData)
@@ -529,18 +529,18 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 
 		if solver in ("lsqr", "leastsquares"):
 			print(" ...using iterative least-squares solver...\n")
-			x = sparse.linalg.lsqr(A, dv, mu, atol=tol, btol=tol, iter_lim=maxiter)
+			x = sparse.linalg.lsqr(A, dv, mu, atol=tol, btol=tol, conlim=tol, iter_lim=maxiter)
 			print("istop = %i \n" % x[1])
 			print("Used iterations = %i \n" % x[2])
-			print("1 Norm = %f \n " % x[3])
-			print("2 Norm = %f \n" % x[4])
+			print("residual Norm ||x||_2 = %f \n " % x[8])
+			print("Misfit ||Ax - b||_2= %f \n" % x[4]) 
 			print("Condition number = %f \n" % x[6])
-			print("Norm of Dv = %f \n" % x[8]) 
+			
 			Dv_rec = x[0]
 
 		elif solver in ("ilsmr", "iterative"):
 			print(" ...using iterative LSMR solver...\n")
-			x = sparse.linalg.lsmr(A,dv,mu, atol=tol, btol=tol, maxiter=maxiter)
+			x = sparse.linalg.lsmr(A,dv,mu, atol=tol, btol=tol, conlim=tol, maxiter=maxiter)
 			print("istop = %i \n" % x[1])
 			print("Used iterations = %i \n" % x[2])
 			print("Misfit = %f \n " % x[3])
@@ -614,7 +614,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	if fulloutput and not pocs:
 		return st_rec, FH, dv, Dv, Dv_rec, Ts, Yw
 	else:
-		return st_rec
+		return st_rec #, x[8], x[4]
 
 def pocs_recon(st, maxiter, nol=1):
 	"""
