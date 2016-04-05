@@ -489,6 +489,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	if isinstance(method, str):
 		if method in ("denoise"):
 				maxiter = 2
+				recon_list = []
 		elif method in ("interpolate"):
 				maxiter = 10
 				interpol = True

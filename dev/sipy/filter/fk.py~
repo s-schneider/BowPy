@@ -420,7 +420,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 
 	# Prepare data.
 	st_tmp 		= st.copy()
-	ArrayData	= stream2array(st_tmp, normalize=False)
+	ArrayData	= stream2array(st_tmp, normalize=True)
 	ADT 		= ArrayData.copy().transpose()
 
 	fkData 		= np.fft.fft2(ArrayData)
@@ -488,7 +488,8 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	interpol = False
 	if isinstance(method, str):
 		if method in ("denoise"):
-				maxiter = 2
+				maxiter = 20
+				recon_list = []
 		elif method in ("interpolate"):
 				maxiter = 10
 				interpol = True
