@@ -83,8 +83,8 @@ for i, noisefolder in enumerate(noisefoldlist):
 		for alpha in alphalist:
 			recnormlin = []
 			recnormexp = []
-			name1 = 'pocs_' + str(noiselevellist[i]) + str(alpha) + '-alpha_' + 'linear' + '.png'
-			name2 = 'pocs_' + str(noiselevellist[i]) + str(alpha) + '-alpha_' + 'exp' + '.png'		
+			name1 = 'pocs_' + str(noiselevellist[i]) + '-noise_' + str(alpha) + '-alpha_' + 'linear' + '.png'
+			name2 = 'pocs_' + str(noiselevellist[i]) + '-noise_' + str(alpha) + '-alpha_' + 'exp' + '.png'		
 			picpath1 = PICPATH + name1
 			picpath2 = PICPATH + name2
 			plotname = PICPATH + 'pocs_' + str(noiselevellist[i]) + str(alpha) + '-alpha' + '.png'
@@ -104,9 +104,9 @@ for i, noisefolder in enumerate(noisefoldlist):
 			linplot.append([alpha, recnormlin])
 			expplot.append([alpha, recnormexp])
 
-			plt.title(str(alpha))
-			pltlabellin = str(alpha) + "_" + str(maxiter) + "linear"
-			pltlabelexp = str(alpha) + "_" + str(maxiter) + "exp"
+			plt.title("POCS with alpha = %f " % str(alpha))
+			pltlabellin = "maxiter=" + str(maxiter) + "_linear"
+			pltlabelexp = "maxiter=" + str(maxiter) + "_exp"
 			plt.plot(recnormlin, 'ro', label=pltlabellin)
 			plt.plot(recnormexp, 'bo', label=pltlabelexp)
 			plt.legend()

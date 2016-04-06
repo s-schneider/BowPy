@@ -104,13 +104,13 @@ for i, noisefolder in enumerate(noisefoldlist):
 			linplot.append([alpha, recnormlin])
 			expplot.append([alpha, recnormexp])
 
-			plt.title(str(alpha))
-			pltlabellin = str(alpha) + "_" + str(maxiter) + "linear"
-			pltlabelexp = str(alpha) + "_" + str(maxiter) + "exp"
+			plt.title("POCS with alpha = %f " % str(alpha))
+			pltlabellin = "maxiter=" + str(maxiter) + "_linear"
+			pltlabelexp = "maxiter=" + str(maxiter) + "_exp"
 			plt.plot(recnormlin, 'ro', label=pltlabellin)
 			plt.plot(recnormexp, 'bo', label=pltlabelexp)
 			plt.legend()
-			plt.savefig(picpath2)
+			plt.savefig(plotname)
 			plt.close("all")
 
 				"""
