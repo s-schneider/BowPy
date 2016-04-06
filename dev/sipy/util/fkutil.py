@@ -842,6 +842,9 @@ def pocs(data, maxiter, noft, alpha=0.9, decrease='linear'):
 
 			if decrease in ('linear'):	threshold = threshold * alpha
 			elif decrease in ('exp'):	threshold = threshold * sp.exp(-(i+1) * alpha)
+			else:
+				print('No decrease method chosen')
+				return
 			#elif decrease in ('
 			#if i % 10 == 0.:
 			#	plt.imshow(abs(fkdata), aspect='auto', interpolation='none')

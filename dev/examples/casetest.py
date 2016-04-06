@@ -87,6 +87,7 @@ for i, noisefolder in enumerate(noisefoldlist):
 			name2 = 'pocs_' + str(noiselevellist[i]) + str(alpha) + '-alpha_' + 'exp' + '.png'		
 			picpath1 = PICPATH + name1
 			picpath2 = PICPATH + name2
+			plotname = PICPATH + 'pocs_' + str(noiselevellist[i]) + str(alpha) + '-alpha' + '.png'
 			print("##################### CURRENT ALPHA %f  #####################\n" % alpha )
 			for maxiter in maxiterlist:
 				srs = array2stream(data).copy()
@@ -103,12 +104,14 @@ for i, noisefolder in enumerate(noisefoldlist):
 			linplot.append([alpha, recnormlin])
 			expplot.append([alpha, recnormexp])
 
-			plt.plot(recnormlin, 'ro')
-			plt.savefig(picpath1)
-
-			plt.plot(recnormexp, 'bo')
-			plt.savefig(picpath2)
-		
+			plt.title(str(alpha))
+			pltlabellin = str(alpha) + "_" + str(maxiter) + "linear"
+			pltlabelexp = str(alpha) + "_" + str(maxiter) + "exp"
+			plt.plot(recnormlin, 'ro', label=pltlabellin)
+			plt.plot(recnormexp, 'bo', label=pltlabelexp)
+			plt.legend()
+			plt.savefig(plotname)
+			plt.close("all")
 
 				"""
 				prename ='boxcar_size1_noise_' + str(noiselevellist[i]) +  'orig' + '.png'
