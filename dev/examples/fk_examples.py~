@@ -88,7 +88,7 @@ for i, noisefolder in enumerate(noisefoldlist):
 #########3 L-curve
 global Binv
 global madj
-murange = np.logspace(-20, 10, 100)
+murange = np.logspace(-40, 40, 100)
 L = np.zeros((3, murange.size))
 print("Initiating matrices... \n \n")
 A = Ts.dot(FH.dot(Ys))
@@ -112,7 +112,7 @@ for i,muval in enumerate(murange):
 	#rnorm = np.linalg.norm(x[0],2)
 	#snorm = np.linalg.norm(A.dot(x[0]) - madj,2)
 
-	st_rec, rnorm, snorm = fk_reconstruct(stw, slopes=[-2,2], deltaslope=0.001, maskshape=['butterworth', 4], fulloutput=False, solver='lsqr',method=1, mu=muval, tol=0, peakinput=peaks)
+	st_rec, rnorm, snorm = fk_reconstruct(stw, slopes=[-2,2], deltaslope=0.001, maskshape=['butterworth', 4], fulloutput=False, solver='lsqr',method=20, mu=muval, tol=0, peakinput=peaks)
 
 	L[0][i]= muval
 	L[1][i]= rnorm

@@ -19,7 +19,7 @@ from scipy.optimize import fmin_cg
 
 from sipy.util.array_util import array2stream, stream2array, epidist2nparray, attach_epidist2coords, alignon
 from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array,\
-							find_peaks, slope_distribution, makeMask, create_iFFT2mtx, cg_solver, lstsqs
+							find_peaks, slope_distribution, makeMask, create_iFFT2mtx, cg_solver, lstsqs, pocs
 from sipy.util.base import nextpow2
 from sipy.util.picker import get_polygon
 
@@ -420,7 +420,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 
 	# Prepare data.
 	st_tmp 		= st.copy()
-	ArrayData	= stream2array(st_tmp, normalize=True)
+	ArrayData	= stream2array(st_tmp, normalize=False)
 	ADT 		= ArrayData.copy().transpose()
 
 	fkData 		= np.fft.fft2(ArrayData)
@@ -433,8 +433,12 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 		try:
 			if trace.stats.zerotrace == 'True':
 				recon_list.append(i)
+		except AttributeError:
+			if sum(trace.data) == 0. :
+				recon_list.append(i)
 		except:
 			continue
+	print(recon_list)
 
 	# Calculate mask-function W.
 	try:	
@@ -488,7 +492,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	interpol = False
 	if isinstance(method, str):
 		if method in ("denoise"):
-				maxiter = 20
+				maxiter = 2
 				recon_list = []
 		elif method in ("interpolate"):
 				maxiter = 10
@@ -601,13 +605,10 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 
 	if interpol:
 		st_rec = st.copy()
-		for i, trace in enumerate(st_rec):
-			try:
-				if trace.stats.zerotrace == 'True':
-					st_rec[i].data = data_rec[i,:]
-					st_rec[i].stats.zerotrace = 'reconstructed'
-			except:
-				continue
+		for i in recon_list:
+			st_rec[i].data = data_rec[i,:]
+			st_rec[i].stats.zerotrace = 'reconstructed'
+
 
 	else:
 		st_rec = array2stream(data_rec, st)
@@ -617,7 +618,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	else:
 		return st_rec #, x[8], x[4]
 
-def pocs_recon(st, maxiter, nol=1):
+def pocs_recon(st, maxiter, method='denoise', decrease='linear', alpha=0.9):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
@@ -644,41 +645,29 @@ def pocs_recon(st, maxiter, nol=1):
 	ArrayData 	= stream2array(st_tmp, normalize=True)
 	recon_list 	= []
 
-	for i, trace in enumerate(st_tmp):
-		try:
-			if trace.stats.processing in ['empty']:
-				recon_list.append(i)
+	if method in ('recon'):
+		for i, trace in enumerate(st_tmp):
+			try:
+				if trace.stats.processing in ['empty']:
+					recon_list.append(i)
 
-		except AttributeError:
-			if sum(trace.data) == 0. :
-				recon_list.append(i)
+			except AttributeError:
+				if sum(trace.data) == 0. :
+					recon_list.append(i)
 
-		except:
-			continue
+			except:
+				continue
+		
+		noft = recon_list
+		
+	elif method in ('denoise'):
+		noft = ArrayData.shape[0]
 
-	ix = ArrayData.shape[0]
-	iK = int(math.pow(2,nextpow2(ix)))
-	it = ArrayData.shape[1]
-	iF = int(math.pow(2,nextpow2(it)))
+	ADfinal = sipy.util.fkutil.pocs(ArrayData, maxiter, noft, alpha, decrease)
 
-	threshold = abs(np.fft.fft2(ArrayData, s=(iK,iF)).max())
-	
-	for n in range(nol):
+	#datap = ADfinal.copy()
 
-		for i in range(maxiter):
-			data_tmp 								= ArrayData.copy()
-			fkdata 									= np.fft.fft2(data_tmp, s=(iK,iF))
-			fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
-			threshold = threshold * 0.9
-			#if i % 10 == 0.:
-			#	plt.imshow(abs(fkdata), aspect='auto', interpolation='none')
-			#	plt.savefig("%s.png" % i)
-			data_tmp 								= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
-			ArrayData[recon_list] 					= data_tmp[recon_list]
-
-		threshold = abs(np.fft.fft2(ArrayData, s=(iK,iF)).max())
-
-	st_rec 	= array2stream(ArrayData)
+	st_rec 	= array2stream(ADfinal)
 
 	return st_rec
 
