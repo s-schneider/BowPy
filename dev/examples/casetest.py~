@@ -82,9 +82,12 @@ for i, noisefolder in enumerate(noisefoldlist):
 		
 		for alpha in alphalist:
 			recnormlin = []
+			difflin = []
 			recnormexp = []
-			name1 = 'pocs_' + str(noiselevellist[i]) + str(alpha) + '-alpha_' + 'linear' + '.png'
-			name2 = 'pocs_' + str(noiselevellist[i]) + str(alpha) + '-alpha_' + 'exp' + '.png'		
+			diffexp = []
+
+			name1 = 'pocs_' + str(noiselevellist[i]) + '-noise_' + str(alpha) + '-alpha_' + 'linear' + '.png'
+			name2 = 'pocs_' + str(noiselevellist[i]) + '-noise_' + str(alpha) + '-alpha_' + 'exp' + '.png'		
 			picpath1 = PICPATH + name1
 			picpath2 = PICPATH + name2
 			plotname = PICPATH + 'pocs_' + str(noiselevellist[i]) + str(alpha) + '-alpha' + '.png'
@@ -96,19 +99,30 @@ for i, noisefolder in enumerate(noisefoldlist):
 				st_rec.normalize(global_max=True)
 				drec = stream2array(st_rec)
 				recnormlin.append(np.linalg.norm(data_org-drec, 2))
+				difflin.append(abs(data_org-drec).mean())		
 
 				srs = array2stream(data).copy()
 				st_rec = pocs_recon(srs, maxiter, method='denoise', decrease='exp', alpha=alpha)
-				recnormexp.append(np.linalg.norm(data_org-drec, 2))
+				drecexp = stream2array(st_rec)
+				recnormexp.append(np.linalg.norm(data_org-drecexp, 2))
+				diffexp.append(abs(data_org-drec).mean())
 
-			linplot.append([alpha, recnormlin])
-			expplot.append([alpha, recnormexp])
+			linplot.append([alpha, recnormlin, difflin])
+			expplot.append([alpha, recnormexp, diffexp])
 
-			plt.title("POCS with alpha = %f " % str(alpha))
-			pltlabellin = "maxiter=" + str(maxiter) + "_linear"
-			pltlabelexp = "maxiter=" + str(maxiter) + "_exp"
+			plt.title("POCS with alpha = %f and maxiter = %i " % (np.round(alpha*1000.)/1000., maxiter) )
+			pltlabellin = "rnorm lin"
+			pltlabelexp = "rnorm exp"
 			plt.plot(recnormlin, 'ro', label=pltlabellin)
 			plt.plot(recnormexp, 'bo', label=pltlabelexp)
+			plt.legend()
+			plt.savefig(plotname)
+			plt.close("all")
+
+			pltlabellindiff = "diff lin"
+			pltlabelexpdiff = "diff exp"
+			plt.plot(difflin, 'rx', label=pltlabellindiff)
+			plt.plot(diffexp, 'bx', label=pltlabelexpdiff)
 			plt.legend()
 			plt.savefig(plotname)
 			plt.close("all")
