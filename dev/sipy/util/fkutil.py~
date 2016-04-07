@@ -45,7 +45,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=None, clr='black', newfigure=True, savefig=False):
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=None, clr='black', clrtrace=None, newfigure=True, savefig=False):
 	"""
 	Alpha Version!
 	
@@ -76,6 +76,13 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 
 	param clr: Color of plot
 	type  clr: string
+	
+	param clrtrace: dict containing tracenumber and color, e.g.:
+						>>>		clrtrace = {1: 'red', 7: 'green'}
+						>>>		trace 1 in red
+						>>>		trace 7 in green
+							
+	type  clrtrace: list 
 
 	"""
 
@@ -101,7 +108,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 		plt.xlabel("Time in s")
 		isinv = False
 		isevent = False
-
+		cclr = clr
 		# Check if inventory and catalog is input, then calculate distances etc. 
 		if isinstance(inv, Inventory): isinv   = True
 		if isinstance(event,Event):    isevent = True
@@ -119,8 +126,14 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 			try:
 				for trace in st:
 					if not trace.stats.distance: 
-						isinv = False
-						break
+						isinv 	= False
+						try:
+							attach_coordinates_to_traces(st, inv, event)
+							isinv = True
+							break
+						except:
+							isinv = False
+							break
 					else: 
 						isinv 	= True
 			except:
@@ -131,6 +144,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 		# Normalize Data, if set to 'all'
 		if norm in ['all']:
 			data = data/data.max()
+		
+
 		for j, trace in enumerate(data):
 
 			# Normalize trace, if set to 'trace'
@@ -141,11 +156,13 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 				y_dist = st[j].stats.distance
 			except:
 				y_dist = yold + 1
+			
 			if markphase and isinv and isevent:
 				origin = event.origins[0]['time']
 				m = TauPyModel('ak135')
 				arrivals = m.get_travel_times(depth, y_dist, phase_list=markphase)
 				timetable = [ [], [] ]
+
 				for k, phase in enumerate(arrivals):
 					phase_name = phase.name
 					t = phase.time
@@ -158,22 +175,50 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 					else:	
 						timetable[0].append(phase_name)
 						timetable[1].append(Phase)
-					
+
+
+				if not timetable[0] or not timetable[1]:
+					if isinstance(markphase, str):
+						print('%s Phase not in Seismogram' % markphase)
+						plt.close('all')
+						return
+					else:
+						print('Phases not in Seismogram')
+						plt.close('all')
+						return
 
 				if yinfo:
 					plt.ylabel("Distance in deg")
 					plt.xlabel("Time in s")
+
+					try:
+						if j in clrtrace: 
+							cclr = clrtrace[j]
+						else:
+							cclr = clr
+					except:
+						cclr = clr
+
 					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-					plt.plot(t_axis,zoom*trace+ y_dist, color=clr)
+					plt.plot(t_axis,zoom*trace+ y_dist, color=cclr)
 					plt.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color='red' )
 					for time, key in enumerate(timetable[0]):
 						plt.annotate('%s' % key, xy=(timetable[1][time],y_dist))
 				else:
 					plt.ylabel("No. of trace")
 					plt.xlabel("Time in s")
+
+					try:
+						if j in clrtrace: 
+							cclr = clrtrace[j]
+						else:
+							cclr = clr
+					except:
+						cclr = clr
+
 					plt.gca().yaxis.set_major_locator(plt.NullLocator())
 					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-					plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)
+					plt.plot(t_axis,zoom*trace+ spacing*j, color=cclr)
 					plt.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color='red' )
 					for time, key in enumerate(timetable[0]):
 						plt.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
@@ -192,8 +237,15 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 					try:
 						plt.ylabel("Distance in deg")
 						plt.xlabel("Time in s")
+						try:
+							if j in clrtrace: 
+								cclr = clrtrace[j]
+							else:
+								cclr = clr
+						except:
+							cclr = clr
 						plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-						plt.plot(t_axis,zoom*trace+ y_dist, color=clr)
+						plt.plot(t_axis,zoom*trace+ y_dist, color=cclr)
 				
 					except:
 						msg='Oops, something not found.'
@@ -201,9 +253,17 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 				else:
 					plt.ylabel("No. of trace")
 					plt.xlabel("Time in s")
+					try:
+						if j in clrtrace: 
+							cclr = clrtrace[j]
+						else:
+							cclr = clr
+					except:
+						cclr = clr
+
 					plt.gca().yaxis.set_major_locator(plt.NullLocator())
 					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-					plt.plot(t_axis,zoom*trace+ spacing*j, color=clr)			
+					plt.plot(t_axis,zoom*trace+ spacing*j, color=cclr)			
 			
 			yold = y_dist
 		if savefig:
@@ -821,10 +881,11 @@ def pocs(data, maxiter, noft, alpha=0.9, decrease='linear'):
 	:param datap:
 	:type  datap:
 	"""
+	if not decrease in ('linear', 'exp'):
+		msg='No decrease method chosen'
+		raise IOError(msg)
 
 	ArrayData 	= data.copy()
-	#recon_list 	= []
-
 	ix = ArrayData.shape[0]
 	iK = int(math.pow(2,nextpow2(ix)))
 	it = ArrayData.shape[1]
@@ -833,7 +894,7 @@ def pocs(data, maxiter, noft, alpha=0.9, decrease='linear'):
 	threshold = abs(np.fft.fft2(ArrayData, s=(iK,iF)).max())
 		
 	ADfinal = ArrayData.copy()
-	for n in range(noft):
+	for n in noft:
 		ADtemp = ArrayData.copy()
 		for i in range(maxiter):
 			data_tmp 								= ADtemp.copy()
@@ -842,10 +903,6 @@ def pocs(data, maxiter, noft, alpha=0.9, decrease='linear'):
 
 			if decrease in ('linear'):	threshold = threshold * alpha
 			elif decrease in ('exp'):	threshold = threshold * sp.exp(-(i+1) * alpha)
-			#elif decrease in ('
-			#if i % 10 == 0.:
-			#	plt.imshow(abs(fkdata), aspect='auto', interpolation='none')
-			#	plt.savefig("%s.png" % i)
 			data_tmp 								= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
 			ADtemp[n] 					= data_tmp[n]
 		ADfinal[n] = ADtemp[n].copy()

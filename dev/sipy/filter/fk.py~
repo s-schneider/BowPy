@@ -23,7 +23,8 @@ from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array,
 from sipy.util.base import nextpow2
 from sipy.util.picker import get_polygon
 
-def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', fshape=['spike'], phase=None, polygon=12, normalize=True, SSA=False):
+def fk_filter(st, inv=None, event=None, ftype='eliminate-polygon', fshape=['spike'], phase=None, polygon=12, normalize=True, SSA=False,
+					slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], peakinput=False):
 	"""
 	Import stream, the function applies an 2D FFT, removes a certain window around the
 	desired phase to surpress a slownessvalue corresponding to a wavenumber and applies an 2d iFFT.
@@ -40,17 +41,9 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', f
 	param event: Event
 	type event: obspy.core.event.Event
 
-	param trafo: Type of transformation, default is 'FK', possible inputs are:
-				 FK: for f-k transformation via numpy.fft.fft2
-				 LS: for a combination of 1D FFT in time-domain and and Lomb-Scargle
-				     in the space-domain, via numpy.fft.fft and scipy.signal.lombscargle
-	type trafo: string
-
 	param ftype: type of method, default is 'eliminate-polygon', possible inputs are:
 				 -eliminate
 				 -extract
-				
-				 if trafo is set to FK, also:
 				 -eliminate-polygon
 				 -extract-polygon
 
@@ -154,100 +147,85 @@ def fk_filter(st, inv=None, event=None, trafo='FK', ftype='eliminate-polygon', f
 	# Decide when to use SSA to fill the gaps, calc mean distance of each epidist entry
 	# if it differs too much --> SSA
 
-	if trafo == "FK":
 
-		if ftype in ("eliminate"):
-			if phase:
-				if not isinstance(event, Event) and not isinstance(inv, Inventory):
-					msg='For alignment on phase calculation inventory and event information is needed, not found.'
-					raise IOError(msg)
-
-				st_al = alignon(st_tmp, inv, event, phase)
-				ArrayData = stream2array(st_al, normalize)
-				array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
-				array_filtered_fk = line_set_zero(array_fk, shape=fshape)
-				
-			else:
-				array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
-				array_filtered_fk = line_set_zero(array_fk, shape=fshape)
-
-		elif ftype in ("extract"):
-			if phase:
-				if not isinstance(event, Event) and not isinstance(inv, Inventory):
-					msg='For alignment on phase calculation inventory and event information is needed, not found.'
-					raise IOError(msg)
-
-				st_al = alignon(st_tmp, inv, event, phase)
-				ArrayData = stream2array(st_al, normalize)
-				array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
-				array_filtered_fk = line_cut(array_fk, shape=fshape)
-
-			else:
-				array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
-				array_filtered_fk = line_cut(array_fk, shape=fshape)			
-		
-		elif ftype in ("eliminate-polygon"):
-			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
-			if isinstance(event, Event) and isinstance(inv, Inventory):
-				if phase:
-					st_al = alignon(st_tmp, inv, event, phase)
-					ArrayData = stream2array(st_al, normalize)
-					array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
-					array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-															  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
-				else:
-					array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-															  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
-			else:
-				msg='For wavenumber calculation inventory and event information is needed, not found.'
+	if ftype in ("eliminate"):
+		if phase:
+			if not isinstance(event, Event) and not isinstance(inv, Inventory):
+				msg='For alignment on phase calculation inventory and event information is needed, not found.'
 				raise IOError(msg)
 
-		elif ftype in ("extract-polygon"):
+			st_al = alignon(st_tmp, inv, event, phase)
+			ArrayData = stream2array(st_al, normalize)
 			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
-			if isinstance(event, Event) and isinstance(inv, Inventory):
-				if phase:
-					st_al = alignon(st_tmp, inv, event, phase)
-					ArrayData = stream2array(st_al, normalize)
-					array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
-					array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-														yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
-				else:
-					array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-														yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
-			else:
-				msg='For wavenumber calculation inventory and event information is needed, not found.'
+			array_filtered_fk = line_set_zero(array_fk, shape=fshape)
+			
+		else:
+			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+			array_filtered_fk = line_set_zero(array_fk, shape=fshape)
+
+	elif ftype in ("extract"):
+		if phase:
+			if not isinstance(event, Event) and not isinstance(inv, Inventory):
+				msg='For alignment on phase calculation inventory and event information is needed, not found.'
 				raise IOError(msg)
+
+			st_al = alignon(st_tmp, inv, event, phase)
+			ArrayData = stream2array(st_al, normalize)
+			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+			array_filtered_fk = line_cut(array_fk, shape=fshape)
 
 		else:
-			print("No type of filter specified")
-			raise TypeError
+			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+			array_filtered_fk = line_cut(array_fk, shape=fshape)			
+	
+	elif ftype in ("eliminate-polygon"):
+		array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+		if phase:
+			if not isinstance(event, Event) and not isinstance(inv, Inventory):
+				msg='For alignment on phase calculation inventory and event information is needed, not found.'
+				raise IOError(msg)
+			st_al = alignon(st_tmp, inv, event, phase)
+			ArrayData = stream2array(st_al, normalize)
+			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+			array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+													  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
 
-		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF)).real
+		else:
+			array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+													  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
 
-	# 2D FFT-LS 
-	# elif trafo in ("LS"):
 
-	# 	try:
-	# 		yinfo = epidist2nparray(epidist(inv, event, st_tmp))
-	# 	else:
-	# 		msg='For wavenumber calculation inventory and event information is needed, not found.'
-	# 		raise IOError(msg)	
+	elif ftype in ("extract-polygon"):
+		array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+		if phase:
+			if not isinstance(event, Event) and not isinstance(inv, Inventory):
+				msg='For alignment on phase calculation inventory and event information is needed, not found.'
+				raise IOError(msg)
 
-	# 	# Apply filter.
-	# 	if ftype in ("eliminate"):
-	# 		array_filtered, periods = _fk_ls_filter_eliminate_phase_sp(ArrayData, y_dist=yinfo)
+				st_al = alignon(st_tmp, inv, event, phase)
+				ArrayData = stream2array(st_al, normalize)
+				array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+				array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+													yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
+		else:
+			array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+												yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
 
-	# 	elif ftype in ("extract"):
-	# 		array_filtered, periods = _fk_ls_filter_extract_phase_sp(ArrayData, y_dist=yinfo)
-
-	# 	else:
-	# 		print("No type of fk-filter specified")
-	# 		raise TypeError		
-
+	elif ftype in ("mask"):
+		array_fk = np.fft.fft2(ArrayData)
+		M, prange, peaks = slope_distribution(array_fk, slopes, deltaslope, peakpick=None, mindist=dist, smoothing=smoothpicks, interactive=slopepicking)
+		W = makeMask(array_fk, peaks[0], maskshape)
+		array_filtered_fk =  array_fk * W
+		array_filtered = np.fft.ifft2(array_filtered_fk)
+		stream_filtered = array2stream(array_filtered, st_original=st.copy())
+		return stream_filtered
 
 	else:
-		print("No valid input for type of Transformationtype")
+		print("No type of filter specified")
 		raise TypeError
+
+	array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF)).real
+
 
 	# Convert to Stream object.
 	array_filtered = array_filtered[0:ix, 0:it]
@@ -661,9 +639,9 @@ def pocs_recon(st, maxiter, method='denoise', decrease='linear', alpha=0.9):
 		noft = recon_list
 		
 	elif method in ('denoise'):
-		noft = ArrayData.shape[0]
+		noft = range(ArrayData.shape[0])
 
-	ADfinal = sipy.util.fkutil.pocs(ArrayData, maxiter, noft, alpha, decrease)
+	ADfinal = pocs(ArrayData, maxiter, noft, alpha, decrease)
 
 	#datap = ADfinal.copy()
 

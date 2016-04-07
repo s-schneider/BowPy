@@ -133,6 +133,8 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 	 be attached to the traces.
 	:type event: :class:`obspy.core.event.Event`
 	"""
+
+	attach_network_to_traces(stream, inventory)
 	# Get the coordinates for all stations
 	coords = {}
 	for network in inventory:
@@ -348,6 +350,30 @@ def find_equisets(numbers):
 	
 	return
 
+def cut(st, tmin, tmax=0):
+
+	st_tmp 		 = st.copy()
+	delta 		 = st_tmp[0].stats.delta
+	npts	 	 = st_tmp[0].stats.npts	
+
+	# Check for equal samplingrates and correcting timeinfo.
+	for trace in st_tmp:
+		if trace.stats.delta != delta:
+			print('no equal sampling rate, abort')
+			return
+		else:
+			trace.stats.starttime += tmin 
+
+	data 		 = stream2array(st_tmp)
+	imin 		 = int(tmin/delta)
+	imax		 = int(tmax/delta)
+
+
+	data_trunc = truncate(data, imin, imax)
+
+	st_new = array2stream(data_trunc, st_tmp)
+	
+	return st_new
 
 
 def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal', taup_model='ak135'):

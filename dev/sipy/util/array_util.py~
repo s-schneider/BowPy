@@ -133,6 +133,8 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 	 be attached to the traces.
 	:type event: :class:`obspy.core.event.Event`
 	"""
+
+	attach_network_to_traces(stream, inventory)
 	# Get the coordinates for all stations
 	coords = {}
 	for network in inventory:
@@ -348,6 +350,30 @@ def find_equisets(numbers):
 	
 	return
 
+def cut(st, tmin, tmax=0):
+
+	st_tmp 		 = st.copy()
+	delta 		 = st_tmp[0].stats.delta
+	npts	 	 = st_tmp[0].stats.npts	
+
+	# Check for equal samplingrates and correcting timeinfo.
+	for trace in st_tmp:
+		if trace.stats.delta != delta:
+			print('no equal sampling rate, abort')
+			return
+		else:
+			trace.stats.starttime += tmin 
+
+	data 		 = stream2array(st_tmp)
+	imin 		 = int(tmin/delta)
+	imax		 = int(tmax/delta)
+
+
+	data_trunc = truncate(data, imin, imax)
+
+	st_new = array2stream(data_trunc, st_tmp)
+	
+	return st_new
 
 
 def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal', taup_model='ak135'):
@@ -1067,7 +1093,7 @@ def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak13
 			newtrace 					 = obspy.core.trace.Trace(np.zeros(st_tmp[0].data.size))
 			newtrace.stats.station		 = "empty"
 			newtrace.stats.distance 	 = yresample[j]
-			newtrace.stats.processing 	 = "empty"
+			newtrace.stats.zerotrace 	 = "True"
 			stream_resample 			+= newtrace
 
 	return stream_resample
@@ -1125,7 +1151,7 @@ def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 	for i, trace in enumerate(equi_data):
 		newtrace 					= obspy.core.trace.Trace(trace)
 		newtrace.stats.distance 	= grd[i]
-		newtrace.stats.processing 	= "empty"
+		newtrace.stats.zerotrace 	= "True"
 		traces.append(newtrace)
 
 	# Append data in Trace-Object
