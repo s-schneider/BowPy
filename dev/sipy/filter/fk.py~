@@ -646,7 +646,7 @@ def pocs_recon(st, maxiter, method='denoise', decrease='linear', alpha=0.9):
 		
 	elif method in ('denoise'):
 		noft = range(ArrayData.shape[0])
-	print(recon_list)
+
 	ADfinal = pocs(ArrayData, maxiter, noft, alpha, decrease)
 
 	#datap = ADfinal.copy()

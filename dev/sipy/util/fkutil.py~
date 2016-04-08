@@ -578,12 +578,14 @@ def makeMask(fkdata, slope, shape, rth=0.4):
 	Wr[ np.where(Wr > rth )] = 1.
 	Wr[ np.where(Wr < rth )] = 0.
 
-	Wlhs = np.roll(Wr[:,0:149], shift=1, axis=0)
-	Wrhs = Wr[:,1:151]
-	Wrhs = np.roll(np.flipud(np.fliplr(Wrhs)), shift=0, axis=0)
+	#Wlhs = np.roll(Wr[:,0:149], shift=1, axis=0)
+	Wlhs	= np.roll(Wr[:,0:Wr.shape[1]/2-1], shift=1, axis=0)
+	#Wrhs 	= Wr[:,1:151]
+	Wrhs	= Wr[:,1:Wr.shape[1]/2+1]
+	Wrhs 	= np.roll(np.flipud(np.fliplr(Wrhs)), shift=0, axis=0)
 	#Wrhs =         np.flipud(np.fliplr(Wrhs))
-	Wr[:,0:149] = Wlhs
-	Wr[:,150:] = Wrhs
+	Wr[:,0:Wr.shape[1]/2-1] = Wlhs
+	Wr[:,1:Wr.shape[1]/2+1] = Wrhs
 	return Wr
 
 def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0, mindist=0, smoothing=False, interactive=False):
@@ -851,7 +853,7 @@ def create_iFFT2mtx(nx, ny):
 	
 	return sparse_iFFT2mtx
 
-def pocs(data, maxiter, noft, alpha=0.9, decrease='linear'):
+def pocs(data, maxiter, noft, alpha=0.9, decrease='linear', peaks=None, maskshape=None):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
@@ -876,36 +878,55 @@ def pocs(data, maxiter, noft, alpha=0.9, decrease='linear'):
 	:param datap:
 	:type  datap:
 	"""
-	if not decrease in ('linear', 'exp'):
-		msg='No decrease method chosen'
-		raise IOError(msg)
+	#if not decrease in ('linear', 'exp', None):
+	#	msg='No decrease method chosen'
+	#	raise IOError(msg)
 
 	ArrayData 	= data.copy()
 	ix = ArrayData.shape[0]
 	iK = int(math.pow(2,nextpow2(ix)))
 	it = ArrayData.shape[1]
 	iF = int(math.pow(2,nextpow2(it)))
-
-	threshold = abs(np.fft.fft2(ArrayData, s=(iK,iF)).max())
+	fkdata = np.fft.fft2(ArrayData, s=(iK,iF))
+	threshold = abs(fkdata.max())
 		
 	ADfinal = ArrayData.copy()
-	for n in noft:
-		ADtemp = ArrayData.copy()
-		for i in range(maxiter):
-			data_tmp 								= ADtemp.copy()
-			fkdata 									= np.fft.fft2(data_tmp, s=(iK,iF))
-			fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
-			#plt.imshow(abs(np.fft.fftshift(fkdata.transpose(), axes=1)), aspect='auto', interpolation='none')
-			#plt.show()
-			if decrease in ('linear'):	threshold = threshold * alpha
-			elif decrease in ('exp'):	threshold = threshold * sp.exp(-(i+1) * alpha)
-			data_tmp 								= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
-			ADtemp[n] 					= data_tmp[n]
-			#plt.imshow(data_tmp, aspect='auto', cmap='Greys')
-			#plt.show()
-		ADfinal[n] = ADtemp[n].copy()
+	if decrease in ('linear', 'exp'):
+		for n in noft:
+			ADtemp = ArrayData.copy()
+			for i in range(maxiter):
+				data_tmp 								= ADtemp.copy()
+				fkdata 									= np.fft.fft2(data_tmp, s=(iK,iF))
+				#savepath1 = "/home/s_schn42/dev/pocsxt_" + str(i) + "_before.png"
+				#plot(data_tmp, savefig=savepath1)
+				fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
+				#plt.title('after')
+				#plt.imshow(abs(np.fft.fftshift(fkdata.transpose(), axes=1)), aspect='auto', interpolation='none')
+				#savepath2 = "/home/s_schn42/dev/pocsxt_" + str(i) + "_after.png"
+				#plt.savefig(savepath2)
+				if decrease in ('linear'):	threshold = threshold * alpha
+				elif decrease in ('exp'):	threshold = threshold * sp.exp(-(i+1) * alpha)
+				data_tmp 								= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
+				ADtemp[n] 					= data_tmp[n]
+				#plt.imshow(data_tmp, aspect='auto', cmap='Greys')
+				#plot(data_tmp, savefig=savepath2)
+				#plt.show()
+			ADfinal[n] = ADtemp[n].copy()
 
-		threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
+			threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
+	
+	if not decrease:
+		W = makeMask(fkdata, peaks[0], maskshape)
+		for n in noft:
+			ADtemp = ArrayData.copy()
+			for i in range(maxiter):
+				data_tmp 	= ADtemp.copy()
+				fkdata 		= W * np.fft.fft2(data_tmp, s=(iK,iF))
+				data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
+				ADtemp 		= alpha * ADtemp			
+				ADtemp[n] 	= (1. - alpha) * data_tmp[n]
+
+			ADfinal[n] = ADtemp[n].copy()
 
 	datap = ADfinal.copy()
 
@@ -1084,7 +1105,7 @@ def create_filter(name, length, cutoff=None, ncorner=None):
 	
 	elif name in ['taper', 'Taper']:
 		x = np.linspace(0, length, length)
-		y = np.round(np.(-x+cutoff)*ncorner) +0.5
+		y = np.round(cutoff-x)*ncorner +0.5
 		y[y>1.] = 1.
 		y[y<0.] = 0.
 		if y.max() < 1:
