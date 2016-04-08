@@ -449,14 +449,20 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	if fulloutput:
 		plt.figure()
 		plt.subplot(3,1,1)
-		plt.title("fk-spectrum")
-		plt.imshow(abs(fkData), aspect='auto', interpolation='none')
+		plt.gca().yaxis.set_major_locator(plt.NullLocator())
+		plt.gca().xaxis.set_major_locator(plt.NullLocator())
+		#plt.title("fk-spectrum")
+		plt.imshow(abs(np.fft.fftshift(fkData)), aspect='auto', interpolation='none')
 		plt.subplot(3,1,2)
-		plt.title("Mask-function")
-		plt.imshow(W, aspect='auto', interpolation='none')
+		plt.gca().yaxis.set_major_locator(plt.NullLocator())
+		plt.gca().xaxis.set_major_locator(plt.NullLocator())
+		#plt.title("Mask-function")
+		plt.imshow(np.fft.fftshift(W), aspect='auto', interpolation='none')
 		plt.subplot(3,1,3)
-		plt.title("Applied mask-function")
-		plt.imshow(abs(W*fkData), aspect='auto', interpolation='none')
+		plt.gca().yaxis.set_major_locator(plt.NullLocator())
+		plt.gca().xaxis.set_major_locator(plt.NullLocator())
+		#plt.title("Applied mask-function")
+		plt.imshow(abs(np.fft.fftshift(W*fkData)), aspect='auto', interpolation='none')
 		plt.show()
 		kin = raw_input("Use Mask? (y/n) \n")
 		if kin in ['y' , 'Y']:
@@ -626,7 +632,7 @@ def pocs_recon(st, maxiter, method='denoise', decrease='linear', alpha=0.9):
 	if method in ('recon'):
 		for i, trace in enumerate(st_tmp):
 			try:
-				if trace.stats.processing in ['empty']:
+				if trace.stats.zerotrace in ['True']:
 					recon_list.append(i)
 
 			except AttributeError:
@@ -660,8 +666,8 @@ def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yt
 	dsfk = np.fft.fftshift(data.conj().transpose())
 
 	# Define polygon by user-input.
-	indicies = get_polygon(np.log(abs(dsfk)), polygon, xlabel, xticks, ylabel, yticks)
-
+	#indicies = get_polygon(np.log(abs(dsfk)), polygon, xlabel, xticks, ylabel, yticks)
+	indicies = get_polygon(abs(dsfk), polygon, xlabel, xticks, ylabel, yticks)
 	# Create new array, only contains extractet energy, pointed to with indicies
 	dsfk_extract = np.zeros(dsfk.shape)
 	dsfk_extract.conj().transpose().flat[ indicies ]=1.
@@ -683,8 +689,8 @@ def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, 
 	dsfk = np.fft.fftshift(data.conj().transpose())
 	
 	# Define polygon by user-input.
-	indicies = get_polygon(np.log(abs(dsfk)), polygon, xlabel, xticks, ylabel, yticks)
-
+	#indicies = get_polygon(np.log(abs(dsfk)), polygon, xlabel, xticks, ylabel, yticks)
+	indicies = get_polygon(abs(dsfk), polygon, xlabel, xticks, ylabel, yticks)
 	# Create new array, contains all the energy, except the eliminated, pointed to with indicies
 	dsfk_elim = dsfk.conj().transpose()
 	dsfk_elim.flat[ indicies ]=0.

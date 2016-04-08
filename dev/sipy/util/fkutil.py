@@ -895,11 +895,14 @@ def pocs(data, maxiter, noft, alpha=0.9, decrease='linear'):
 			data_tmp 								= ADtemp.copy()
 			fkdata 									= np.fft.fft2(data_tmp, s=(iK,iF))
 			fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
-
+			#plt.imshow(abs(np.fft.fftshift(fkdata.transpose(), axes=1)), aspect='auto', interpolation='none')
+			#plt.show()
 			if decrease in ('linear'):	threshold = threshold * alpha
 			elif decrease in ('exp'):	threshold = threshold * sp.exp(-(i+1) * alpha)
 			data_tmp 								= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
 			ADtemp[n] 					= data_tmp[n]
+			#plt.imshow(data_tmp, aspect='auto', cmap='Greys')
+			#plt.show()
 		ADfinal[n] = ADtemp[n].copy()
 
 		threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
@@ -1081,7 +1084,7 @@ def create_filter(name, length, cutoff=None, ncorner=None):
 	
 	elif name in ['taper', 'Taper']:
 		x = np.linspace(0, length, length)
-		y = (-x+cutoff)*ncorner +0.5
+		y = np.round(np.(-x+cutoff)*ncorner) +0.5
 		y[y>1.] = 1.
 		y[y<0.] = 0.
 		if y.max() < 1:

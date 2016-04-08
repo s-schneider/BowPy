@@ -49,7 +49,7 @@ def radon_filter(st, inv, event, p, weights, line_model, inversion_model, hyperp
 	Rpick.conj().transpose().flat[ indicies ]=1
 	Rpick=R*Rpick
 
-	Delta_resampled = np.arange( int(math.floor(min(epi[0]))), int(math.ceil(max(epi[0])))+1, (int(math.ceil(max(epi[0]))) - int(math.floor(min(epi[0]))))/20.)
+	Delta_resampled = np.arange( int(math.floor(min(epi))), int(math.ceil(max(epi)))+1, (int(math.ceil(max(epi))) - int(math.floor(min(epi))))/20.)
 	yticks = np.arange(int(math.ceil(min(Delta_resampled/10)))*10, int(math.ceil(max(Delta_resampled/10)))*10 + 10,10)[::-1]
 	xticks =  np.arange(int(math.ceil(min(t/100)))*100, int(math.ceil(max(t/100)))*100 + 100,100)[::2]
 
@@ -118,7 +118,7 @@ def radon_inverse(st, inv, event, p, weights, line_model, inversion_model, hyper
 	# Define some array/matrices lengths.
 	st_tmp = st.copy()
 	M = stream2array(st_tmp)
-	epi = epidist2nparray(epidist(inv, event, st_tmp))
+	epi = epidist2nparray(attach_epidist2coords(inv, event, st_tmp))
 	delta = np.array([ epi.copy() ])
 	ref_dist = np.mean(delta)
 
@@ -300,7 +300,7 @@ def radon_forward(t,p,R,delta,ref_dist,line_model):
 
 	#Define some values.
 	Dist_array=delta-ref_dist
-	dF=1./(t[0][0]-t[0][1])
+	dF=1./(t[0]-t[1])
 	Rfft=np.fft.fft(R,iF,1)
 
 	#Populate ray parameter then distance data in time shift matrix.

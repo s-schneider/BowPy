@@ -221,9 +221,9 @@ def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, ytick
     plt.ylabel(ylabel, fontsize=15)
 
     try:
-        plt.imshow(abs(data), aspect='auto', extent=(xticks.min(), xticks.max(), yticks.min(), yticks.max()))
+        plt.imshow(abs(data), aspect='auto', extent=(xticks.min(), xticks.max(), yticks.min(), yticks.max()), interpolation='none')
     except AttributeError:
-        plt.imshow(abs(data), aspect='auto')
+        plt.imshow(abs(data), aspect='auto', interpolation='none')
 
     plt.show()      
     print("Calculate area inside chosen polygon\n")

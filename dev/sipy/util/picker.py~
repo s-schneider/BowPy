@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import matplotlib.cbook as cbook
 from matplotlib.lines import Line2D
+from matplotlib import path as mplPath
 import numpy as np
 import scipy.spatial as spatial
 
