@@ -511,7 +511,8 @@ def makeMask(fkdata, slope, shape, rth=0.4):
 	:param slope:
 
 	:param shape: -boxcar: convolve mask with a boxcar of length of number of slopevalues
-				  -
+				  -taper:
+				  -butterworth:
 	
 	:param rth =  Resamplethreshhold, marks the border between 0 and 1 for the resampling
 	Returns 
@@ -853,7 +854,7 @@ def create_iFFT2mtx(nx, ny):
 	
 	return sparse_iFFT2mtx
 
-def pocs(data, maxiter, noft, alpha=0.9, decrease='linear', peaks=None, maskshape=None):
+def pocs(data, maxiter, noft, alpha=0.9, method='linear', peaks=None, maskshape=None):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
@@ -873,6 +874,13 @@ def pocs(data, maxiter, noft, alpha=0.9, decrease='linear', peaks=None, maskshap
 	:param alpha: Factor of threshold decrease after each iteration
 	:type  alpha: float
 
+	:param method: Method to be used for the pocs algorithm
+					-'linear', 'exp', 'mask' or 'ssa'
+
+	:param peaks: Slope values for the mask
+
+	:param maskshape: Shape of the corners of mask, see makemask
+
 	returns:
 
 	:param datap:
@@ -891,43 +899,55 @@ def pocs(data, maxiter, noft, alpha=0.9, decrease='linear', peaks=None, maskshap
 	threshold = abs(fkdata.max())
 		
 	ADfinal = ArrayData.copy()
-	if decrease in ('linear', 'exp'):
-		for n in noft:
-			ADtemp = ArrayData.copy()
-			for i in range(maxiter):
-				data_tmp 								= ADtemp.copy()
-				fkdata 									= np.fft.fft2(data_tmp, s=(iK,iF))
-				#savepath1 = "/home/s_schn42/dev/pocsxt_" + str(i) + "_before.png"
-				#plot(data_tmp, savefig=savepath1)
-				fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
-				#plt.title('after')
-				#plt.imshow(abs(np.fft.fftshift(fkdata.transpose(), axes=1)), aspect='auto', interpolation='none')
-				#savepath2 = "/home/s_schn42/dev/pocsxt_" + str(i) + "_after.png"
-				#plt.savefig(savepath2)
-				if decrease in ('linear'):	threshold = threshold * alpha
-				elif decrease in ('exp'):	threshold = threshold * sp.exp(-(i+1) * alpha)
-				data_tmp 								= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
-				ADtemp[n] 					= data_tmp[n]
-				#plt.imshow(data_tmp, aspect='auto', cmap='Greys')
-				#plot(data_tmp, savefig=savepath2)
-				#plt.show()
-			ADfinal[n] = ADtemp[n].copy()
-
-			threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
-	
-	if not decrease:
-		W = makeMask(fkdata, peaks[0], maskshape)
+	if method in ('linear', 'exp'):
 		for n in noft:
 			ADtemp = ArrayData.copy()
 			for i in range(maxiter):
 				data_tmp 	= ADtemp.copy()
-				fkdata 		= W * np.fft.fft2(data_tmp, s=(iK,iF))
-				data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
-				ADtemp 		= alpha * ADtemp			
-				ADtemp[n] 	= (1. - alpha) * data_tmp[n]
+				fkdata 		= np.fft.fft2(data_tmp, s=(iK,iF))
+				fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
 
+				if method in ('linear'):threshold 	= threshold * alpha
+				elif method in ('exp'):	threshold 	= threshold * sp.exp(-(i+1) * alpha)
+
+				data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
+				ADtemp[n] 	= data_tmp[n]
 			ADfinal[n] = ADtemp[n].copy()
 
+			threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
+	
+	if method in ('maskvary'):
+		for n in noft:
+			ADtemp = ArrayData.copy()
+			for i in range(maxiter):
+				W = makeMask(fkdata, peaks[0], maskshape)
+				data_tmp 	= ADtemp.copy()
+				fkdata 		= W * np.fft.fft2(data_tmp, s=(iK,iF))
+				data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
+				ArrayData 		= alpha * ADtemp		
+				ArrayData[n] 	= (1. - alpha) * data_tmp[n]
+
+			ADfinal[n] = ArrayData[n].copy()
+
+	if method in ('mask'):
+		W = makeMask(fkdata, peaks[0], maskshape)
+		for n in noft:
+			data_tmp 	= ArrayData.copy()
+			fkdata 		= W * np.fft.fft2(data_tmp, s=(iK,iF))
+			data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
+			ArrayData 		= alpha * ArrayData			
+			ArrayData[n] 	= (1. - alpha) * data_tmp[n]
+
+			ADfinal[n] = ArrayData[n].copy()
+
+	if method in ('ssa'):
+		for n in noft:
+			data_tmp 	= ArrayData.copy()
+			data_ssa 	= fx_ssa(data_tmp,dt,p,flow,fhigh)
+			ArrayData 		= alpha * ArrayData			
+			ArrayData[n] 	= (1. - alpha) * data_ssa[n]
+
+			ADfinal[n] = ArrayData[n].copy()
 	datap = ADfinal.copy()
 
 	return datap
