@@ -510,9 +510,19 @@ def makeMask(fkdata, slope, shape, rth=0.4):
 
 	:param slope:
 
-	:param shape: -boxcar: convolve mask with a boxcar of length of number of slopevalues
-				  -taper:
-				  -butterworth:
+	:param shape: shape[0] describes the shape of the lobes of the mask. Possible inputs are:
+				 -boxcar (default)
+				 -taper
+				 -butterworth
+
+				  shape[1] is an additional attribute to the shape of taper and butterworth, for:
+				 -taper: maskshape[1] = slope of sides
+				 -butterworth: maskshape[1] = number of poles
+				
+				 e.g.: maskshape['taper', 2] produces a symmetric taper with slope of side = 2.
+
+
+	:type  maskshape: list
 	
 	:param rth =  Resamplethreshhold, marks the border between 0 and 1 for the resampling
 	Returns 
@@ -854,7 +864,7 @@ def create_iFFT2mtx(nx, ny):
 	
 	return sparse_iFFT2mtx
 
-def pocs(data, maxiter, noft, alpha=0.9, method='linear', peaks=None, maskshape=None):
+def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None, maskshape=None):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
@@ -899,6 +909,7 @@ def pocs(data, maxiter, noft, alpha=0.9, method='linear', peaks=None, maskshape=
 	threshold = abs(fkdata.max())
 		
 	ADfinal = ArrayData.copy()
+
 	if method in ('linear', 'exp'):
 		for n in noft:
 			ADtemp = ArrayData.copy()
@@ -907,40 +918,34 @@ def pocs(data, maxiter, noft, alpha=0.9, method='linear', peaks=None, maskshape=
 				fkdata 		= np.fft.fft2(data_tmp, s=(iK,iF))
 				fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
 
-				if method in ('linear'):threshold 	= threshold * alpha
-				elif method in ('exp'):	threshold 	= threshold * sp.exp(-(i+1) * alpha)
+				if method in ('linear'):
+					threshold 	= threshold * alpha
+				elif method in ('exp'):
+					threshold 	= threshold * sp.exp(-(i+1) * alpha)
 
 				data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
 				ADtemp[n] 	= data_tmp[n]
 			ADfinal[n] = ADtemp[n].copy()
 
 			threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
-	
-	if method in ('maskvary'):
+
+	elif method in ('mask'):
+		W 		= makeMask(fkdata, peaks[0], maskshape)
+		ADfinal = ArrayData.copy()
 		for n in noft:
-			ADtemp = ArrayData.copy()
+			ADtemp 	= ArrayData.copy()
+			threshold = abs(np.fft.fft2(ArrayData, s=(iK,iF)).max())
 			for i in range(maxiter):
-				W = makeMask(fkdata, peaks[0], maskshape)
-				data_tmp 	= ADtemp.copy()
+				data_tmp 	=ADtemp.copy()
 				fkdata 		= W * np.fft.fft2(data_tmp, s=(iK,iF))
+				fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
+				threshold 	= threshold * alpha
 				data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
-				ArrayData 		= alpha * ADtemp		
-				ArrayData[n] 	= (1. - alpha) * data_tmp[n]
+				ADtemp[n] 	= data_tmp[n]
 
-			ADfinal[n] = ArrayData[n].copy()
+			ADfinal[n] = ADtemp[n].copy()
 
-	if method in ('mask'):
-		W = makeMask(fkdata, peaks[0], maskshape)
-		for n in noft:
-			data_tmp 	= ArrayData.copy()
-			fkdata 		= W * np.fft.fft2(data_tmp, s=(iK,iF))
-			data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
-			ArrayData 		= alpha * ArrayData			
-			ArrayData[n] 	= (1. - alpha) * data_tmp[n]
-
-			ADfinal[n] = ArrayData[n].copy()
-
-	if method in ('ssa'):
+	elif method in ('ssa'):
 		for n in noft:
 			data_tmp 	= ArrayData.copy()
 			data_ssa 	= fx_ssa(data_tmp,dt,p,flow,fhigh)
@@ -948,6 +953,38 @@ def pocs(data, maxiter, noft, alpha=0.9, method='linear', peaks=None, maskshape=
 			ArrayData[n] 	= (1. - alpha) * data_ssa[n]
 
 			ADfinal[n] = ArrayData[n].copy()
+
+	elif method in ('update'):
+		threshold = beta * abs(np.fft.fft2(ArrayData, s=(iK,iF)).max())
+		ADtemp = ArrayData.copy()
+		for i in range(maxiter):
+			data_tmp 	= ADtemp.copy()
+			fkdata 		= np.fft.fft2(data_tmp, s=(iK,iF))
+			fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
+			ADtemp 	= alpha*data_tmp + (1. - alpha) * np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it]
+
+		ADfinal = ADtemp.copy()
+
+
+	elif method == 'maskvary':
+		
+		ADfinal = ArrayData.copy()
+		ADtemp 	= ArrayData.copy()
+		for n in noft:
+			for i in range(maxiter):
+				W 			= makeMask(fkdata, peaks[0], maskshape)
+				data_tmp 	= ADtemp.copy()
+				fkdata 		= W * np.fft.fft2(data_tmp, s=(iK,iF))
+				data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
+				ADtemp[n]	= alpha * ArrayData[n].copy()			
+				ADtemp[n]  += (1. - alpha) * data_tmp[n]
+
+			ADfinal[n] = ArrayData[n].copy()
+
+	else:
+		print('no method specified')
+		return
+
 	datap = ADfinal.copy()
 
 	return datap

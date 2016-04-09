@@ -34,6 +34,7 @@ import sipy.util.fkutil as fku
 import sipy.util.base as base
 import sipy.util.array_util as au
 
+from sipy.filter.fk import pocs_recon
 from sipy.util.data_request import data_request
 from sipy.filter.fk import fk_filter, fktrafo, fk_reconstruct
 from sipy.util.fkutil import  nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx
@@ -45,7 +46,12 @@ from sipy.util.picker import get_polygon
 noise = np.fromfile('../data/test_datasets/randnumbers/noisearr.txt')
 noise = noise.reshape(20,300)
 peaks = np.array([[-13.95      ,   6.06      ,  20.07      ],[  8.46648822,   8.42680793,   8.23354933]])
-
+stri = read_st("../data/test_datasets/ricker/original/SR.QHD")
+stri.normalize(global_max=True)
+data = stream2array(stri) 
+dn = data + 0.8 * noise
+stn = array2stream(dn, stri)
+stn.normalize(global_max=True)
 
 ################ testsetup
 #read noise

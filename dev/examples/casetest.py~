@@ -56,11 +56,9 @@ with open("../data/test_datasets/ricker/rickerlist.dat", 'r') as fh:
 noisefoldlist = ["no_noise","10pct_noise", "20pct_noise", "50pct_noise", "60pct_noise", "80pct_noise"]
 noiselevellist = np.array([0., 0.1, 0.2, 0.5, 0.6, 0.8]) 
 alphalist = np.linspace(0.01, 0.9, 50)
-maxiterlist = np.array([20]) #np.arange(50)
-#peaks = np.array([[-13.95      ,   6.06      ,  20.07      ],[  8.46648822,   8.42680793,   8.23354933]])
+maxiterlist = np.arange(50)
+peaks = np.array([[-13.95      ,   6.06      ,  20.07      ],[  8.46648822,   8.42680793,   8.23354933]])
 errors = []
-#stream = read_st(PATH)
-Qall = []
 FPATH = '/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/'
 for i, noisefolder in enumerate(noisefoldlist):
 	print("##################### NOISELVL %i %% #####################\n" % int(noiselevellist[i] * 100.) )
@@ -68,23 +66,19 @@ for i, noisefolder in enumerate(noisefoldlist):
 		print("##################### CURRENT FILE %s  #####################\n" % filein )
 		PICPATH = filein[:filein.rfind("/"):] + "/" + noisefolder + "/"
 		FNAME 	= filein[filein.rfind("/"):].split('/')[1].split('.')[0]
-		plotname = FPATH + FNAME + 'pocs_' + 'nlvl' + str(noiselevellist[i]) + '.png'
-		plotnamelog = FPATH + FNAME + 'pocs_' + 'nlvl' + str(noiselevellist[i]) + '_logplot' '.png'
+		plotname = FPATH + FNAME + 'pocs_' + 'nlvl' + str(noiselevellist[i]) + '_linear''.png'
+		plotnamelog = FPATH + FNAME + 'pocs_' + 'nlvl' + str(noiselevellist[i]) + '_mask' '.png'
 		if not os.path.isdir(PICPATH):
 			os.mkdir(PICPATH)
 		PATH = filein
 		stream = read_st(PATH)
 		data_org = stream2array(stream.copy(), normalize=True)
-		#if i != 0:
 		data = stream2array(stream.copy(), normalize=True) + noiselevellist[i] * noise
 		srs = array2stream(data)
-		#prename = 'noise_' + str(noiselevellist[i]) +  'orig' + '.png'
-		#prepath = PICPATH + prename
-		#fku.plot(srs, savefig=prepath)
 
-		plotname = FPATH + FNAME + 'pocs_' + 'nlvl' + str(noiselevellist[i]) + '.png'
+		Qall = []
 		Qlin = []
-		Qexp = []
+		Qmask = []
 		for alpha in alphalist:
 
 			difflin = []
@@ -102,21 +96,36 @@ for i, noisefolder in enumerate(noisefoldlist):
 			for maxiter in maxiterlist:
 				srs = array2stream(data).copy()
 				print('POCS RECON WITH %i ITERATIONS' % maxiter)
-				st_rec = pocs_recon(srs, maxiter, method='denoise', decrease='linear', alpha=alpha)
+				st_rec = pocs_recon(srs, maxiter, method='denoise', dmethod='linear', alpha=alpha)
 				st_rec.normalize(global_max=True)
 				drec = stream2array(st_rec)
 				Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drec,2)**2.
-				Qlin.append(Q)	
+				Qlin = 10.*np.log(Q)	
 
 				srs = array2stream(data).copy()
-				st_rec = pocs_recon(srs, maxiter, method='denoise', decrease='exp', alpha=alpha)
-				drecexp = stream2array(st_rec)
-				Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drecexp,2)**2.
-				Qexp.append(Q)
+				st_rec = pocs_recon(srs, maxiter, method='denoise', dmethod='mask', alpha=alpha, beta=None, peaks=peaks, maskshape=['butterworth', 4])
+				drecmask = stream2array(st_rec)
+				Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drecmask,2)**2.
+				Qmask = 10.*np.log(Q)
 
-		Qall.append([Qlin, Qexp])
+				Qall.append([alpha, maxiter, Qlin, Qmask])
+
+
+		for point in Qall:
+			plt.scatter(point[0], point[1], c=point[2], cmap='jet', s=50)
+		plt.colorbar()
+		plt.savefig(plotname)
+
+		for point in Qall:
+			plt.scatter(point[0], point[1], c=point[3], cmap='jet', s=50)
+		plt.colorbar()
+		plt.savefig(plotnamelog)
+
+
+
+
 		plt.close("all")
-		plt.title("POCS with alpha = %s " % '{:01.2}'.format(alpha) )
+		plt.title("%s, Noise: i%, alpha = %s , No of It: %i" % (FNAME, '{:01.2}'.format(alpha), '{:01.2}'.format(alpha), )
 		plt.xlabel('Alpha')
 		plt.ylabel('Q')
 		pltlabellin = "rnorm lin"
@@ -125,8 +134,8 @@ for i, noisefolder in enumerate(noisefoldlist):
 		plt.plot(alphalist, Qexp, 'bo', label=pltlabelexp)
 		plt.legend()
 		plt.savefig(plotname)
-		plt.close("all")
-		
+
+		plt.close("all")		
 		plt.yscale('log')
 		plt.plot(alphalist, Qlin, 'ro', label=pltlabellin)
 		plt.plot(alphalist, Qexp, 'bo', label=pltlabelexp)
