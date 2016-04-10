@@ -239,3 +239,35 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 	stream = streamall
 	return(stream, inventory, catalog)
 
+def cat4stream(stream, client_name):
+
+	client = Client(client_name)
+	try:
+		eventinfo 	= stream[0].stats.sh
+		depth 		= eventinfo['DEPTH']
+		lat 		= eventinfo['LAT']
+		lon 		= eventinfo['LON']
+		origin 		= eventinfo['ORIGIN']
+
+		etime = stream[0].stats.starttime
+
+		for trace in stream[1:]:
+			if trace.stats.starttime < etime: etime = trace.stats.starttime
+
+		stime = etime - 600
+		cat = client.get_events(starttime=stime, endtime=etime, maxdepth=depth, latitude=lat, longitude=lon, maxradius=0.5)
+
+		return cat
+	except:
+		print('No Catalog found')
+		return
+
+	
+
+def inv4stream(network, client_name):
+
+	client 	= Client(client_name)
+	inv 	= client.get_stations(network=network)
+	
+	return inv
+
