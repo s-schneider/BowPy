@@ -115,83 +115,62 @@ for i, noisefolder in enumerate(noisefoldlist):
 			plt.scatter(point[0], point[1], c=point[2], cmap='jet', s=50)
 		plt.colorbar()
 		plt.savefig(plotname)
+		plt.close("all")
+
 		savepath = plotname + '.dat'
 		np.savetxt(savepath, Qall)	
 
 		for point in Qall:
-			plt.scatter(point[0], point[1], c=point[3], cmap='jet', s=50)
+			plt.scatter(point[0], point[1], c=point[3], cmap='', s=50)
 		plt.colorbar()
 		plt.savefig(plotname2)
 		savepath = plotname2 + '.dat'
 		np.savetxt(savepath, Qall)
 
 
-		plt.close("all")
-		plt.title("%s, Noise: i%, alpha = %s , No of It: %i" % (FNAME, '{:01.2}'.format(alpha), '{:01.2}'.format(alpha), )
-		plt.xlabel('Alpha')
-		plt.ylabel('Q')
-		pltlabellin = "rnorm lin"
-		pltlabelexp = "rnorm exp"
-		plt.plot(alphalist, Qlin, 'ro', label=pltlabellin)
-		plt.plot(alphalist, Qexp, 'bo', label=pltlabelexp)
-		plt.legend()
-		plt.savefig(plotname)
+#############################################
 
-		plt.close("all")		
-		plt.yscale('log')
-		plt.plot(alphalist, Qlin, 'ro', label=pltlabellin)
-		plt.plot(alphalist, Qexp, 'bo', label=pltlabelexp)
-		plt.legend()	
-		plt.savefig(plotname2)
+with open("/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/masklist.dat", 'r') as fh:
+	masklist = np.array(fh.read().split()).astype('str')
 
-			#pltlabellindiff = "diff lin"
-			#pltlabelexpdiff = "diff exp"
-			#plt.plot(difflin, 'rx', label=pltlabellindiff)
-			#plt.plot(diffexp, 'bx', label=pltlabelexpdiff)
-			#plt.legend()
-			#plt.savefig(plotname2)
-			#plt.close("all")
+with open("/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/linearlist.dat", 'r') as fh:
+	linearlist = np.array(fh.read().split()).astype('str')
 
-"""
-prename ='boxcar_size1_noise_' + str(noiselevellist[i]) +  'orig' + '.png'
-prepath = PICPATH + prename
-fku.plot(srs, savefig=prepath)
-name = 'boxcar_size1_noise_' + str(noiselevellist[i]) +  '.png'
-picpath = PICPATH + name
-#st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['boxcar', 1], solver='ilsmr',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
-st_rec.normalize(global_max=True))
-fku.plot(st_rec, savefig=picpath)
+FPATH = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/"
+
+for name in masklist:
+	ifile = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/" + name
+	Q = np.loadtxt(ifile)
+
+	fname = name.split('png')[0]
+	plotname = FPATH + fname + 'png'
+
+	point = Q.transpose()
+	plt.scatter(point[0], point[1], c=point[3], s=60, cmap='seismic')#, s=50)
+	plt.xlabel('Alpha')
+	plt.ylabel('No of iterations')
+	plt.clim(-10,10)
+	plt.colorbar()
+	plt.savefig(plotname)
+	plt.close("all")
+
+for name in linearlist:
+	ifile = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/" + name
+	Q = np.loadtxt(ifile)
+
+	fname = name.split('png')[0]
+	plotname = FPATH + fname + 'png'
+
+	point = Q.transpose()
+	plt.scatter(point[0], point[1], c=point[3], s=60, cmap='seismic')#, s=50)
+	plt.xlabel('Alpha')
+	plt.ylabel('No of iterations')
+	plt.clim(-10,10)
+	plt.colorbar()
+	plt.savefig(plotname)
+	plt.close("all")
 
 
-taperrange = [0.5, 1, 1.5]
-for ts in taperrange:
-	print("##################### %s, NOISE: %f, :CURRENTLY TAPERING WITH %f  #####################\n" % (filein, int(noiselevellist[i] * 100.), ts) )
-	try:
-		prename = 'taper_' + str(ts) + "_" + str(noiselevellist[i]) +  'orig' + '.png'
-		prepath = PICPATH + prename
-		fku.plot(srs, savefig=prepath)
-		#st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['taper', ts], solver='ilsmr',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
-		name = 'taper_' + str(ts) + "_" + str(noiselevellist[i]) +  '.png'
-		picpath = PICPATH + name
-		st_rec.normalize(global_max=True))
-		fku.plot(st_rec, savefig=picpath)
-	except:
-		error.append(picpath)
-		continue
+####################################
 
-bwrange = [1,2,4,8]
-for bw in bwrange:
-	print("##################### %s, NOISE: %f, :CURRENTLY BUTTERWORTHING WITH %f  #####################\n" % (filein, int(noiselevellist[i] * 100.), bw) )
-	try:
-		prename = 'butterworth_' + str(bw) + "_" + str(noiselevellist[i]) +  'orig' + '.png'
-		prepath = PICPATH + prename
-		fku.plot(srs, savefig=prepath)
-		#st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['butterworth', bw], solver='ilsmr',method='interpolate', mu=42, tol=1e-12, peakinput=peaks)
-		name = 'butterworth_' + str(bw) + "_" + str(noiselevellist[i]) +  '.png'
-		picpath = PICPATH + name
-		st_rec.normalize(global_max=True))
-		fku.plot(st_rec, savefig=picpath)
-	except:
-		error.append(picpath)
-		continue
-"""
+
