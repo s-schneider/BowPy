@@ -46,6 +46,7 @@ alignon, partial_stack, gaps_fill_zeros, vespagram
 from sipy.util.picker import get_polygon
 
 import os
+import sys
 
 noise = np.fromfile('../data/test_datasets/randnumbers/noisearr.txt')
 noise = noise.reshape(20,300)
@@ -56,7 +57,12 @@ with open("../data/test_datasets/ricker/rickerlist.dat", 'r') as fh:
 noisefoldlist = ["no_noise","10pct_noise", "20pct_noise", "50pct_noise", "60pct_noise", "80pct_noise"]
 noiselevellist = np.array([0., 0.1, 0.2, 0.5, 0.6, 0.8]) 
 alphalist = np.linspace(0.01, 0.9, 50)
-maxiterlist = np.arange(50)
+maxiterlist = np.arange(51)[1:]
+bwlist = [1,2,4]
+taperlist = [2,4,5,8,200]
+
+
+
 peaks = np.array([[-13.95      ,   6.06      ,  20.07      ],[  8.46648822,   8.42680793,   8.23354933]])
 errors = []
 FPATH = '/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/'
@@ -72,101 +78,137 @@ for i, noisefolder in enumerate(noisefoldlist):
 			os.mkdir(PICPATH)
 		PATH = filein
 		stream = read_st(PATH)
-		data_org = stream2array(stream.copy(), normalize=True)
+		d0 = stream2array(stream.copy(), normalize=True)
 		data = stream2array(stream.copy(), normalize=True) + noiselevellist[i] * noise
 		srs = array2stream(data)
+		Qlinall = []
+		Qbwmaskall = []
+		Qtapermaskall = []
 
-		Qall = []
-		Qlin = []
-		Qmask = []
 		for alpha in alphalist:
-
-			difflin = []
-			diffexp = []
-
 
 			name1 = 'pocs_' + str(noiselevellist[i]) + '-noise_' + '{:01.2}'.format(alpha) + '-alpha_' + 'linear' + '.png'
 			name2 = 'pocs_' + str(noiselevellist[i]) + '-noise_' + '{:01.2}'.format(alpha) + '-alpha_' + 'exp' + '.png'		
 			picpath1 = PICPATH + name1
 			picpath2 = PICPATH + name2
-			#plotname = PICPATH + 'pocs_' + str(noiselevellist[i]) + '{:01.2}'.format(alpha) + '-alpha' + 'norm' + '.png'
-			
+			plotnameQall = PICPATH + 'pocs_' + str(noiselevellist[i]) + '{:01.2}'.format(alpha) + '-alpha' + 'norm' + 'lin'
+			plotnameQmbwall = PICPATH + 'pocs_' + str(noiselevellist[i]) + '{:01.2}'.format(alpha) + '-alpha' + 'norm' + 'mask_bw'
+			plotnameQmtaperall = PICPATH + 'pocs_' + str(noiselevellist[i]) + '{:01.2}'.format(alpha) + '-alpha' + 'norm' + 'mask_taper'
+			plotnameQmvaryall = PICPATH + 'pocs_' + str(noiselevellist[i]) + '{:01.2}'.format(alpha) + '-alpha' + 'norm' + 'mask_vary'
 
 			print("##################### CURRENT ALPHA %f  #####################\n" % alpha )
 			for maxiter in maxiterlist:
-				srs = array2stream(data).copy()
-				print('POCS RECON WITH %i ITERATIONS' % maxiter)
+
+				print('POCS RECON WITH %i ITERATIONS' % maxiter, end="\r")
+				sys.stdout.flush()
+				print('LINEAR')
+				data_org = d0.copy()
+				srs = array2stream(data.copy())
 				st_rec = pocs_recon(srs, maxiter, method='denoise', dmethod='linear', alpha=alpha)
-				st_rec.normalize(global_max=True)
-				drec = stream2array(st_rec)
+				drec = stream2array(st_rec, normalize=True)
 				Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drec,2)**2.
 				Qlin = 10.*np.log(Q)	
+				Qlinall.append([alpha, maxiter, Qlin])
 
-				srs = array2stream(data).copy()
-				st_rec = pocs_recon(srs, maxiter, method='denoise', dmethod='mask', alpha=alpha, beta=None, peaks=peaks, maskshape=['butterworth', 4])
-				drecmask = stream2array(st_rec)
-				Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drecmask,2)**2.
-				Qmask = 10.*np.log(Q)
+				for bws in bwlist:
+					print('USING BW, %i, MASK' % int(bws), end="\r")
+					sys.stdout.flush()
+					data_org = d0.copy()
+					srs = array2stream(data.copy())
+					st_rec = pocs_recon(srs, maxiter, method='denoise', dmethod='mask', alpha=alpha, beta=None, peaks=peaks, maskshape=['butterworth', bws])
+					drecmask = stream2array(st_rec, normalize=True)
+					Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drecmask,2)**2.
+					
+					Qbwmaskall.append([alpha, maxiter, 10.*np.log(Q), bws])
 
-				Qall.append([alpha, maxiter, Qlin, Qmask])
+				for taper in taperlist:
+					print('USING TAPER, %i, MASK' % int(taper), end="\r")
+					sys.stdout.flush()
+					data_org = d0.copy()
+					srs = array2stream(data.copy())
+					st_rec = pocs_recon(srs, maxiter, method='denoise', dmethod='mask', alpha=alpha, beta=None, peaks=peaks, maskshape=['taper', taper])
+					drecmask = stream2array(st_rec, normalize=True)
+					Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drecmask,2)**2.
+					
+					Qtapermaskall.append([alpha, maxiter, 10.*np.log(Q), taper])
 
 
-		for point in Qall:
-			plt.scatter(point[0], point[1], c=point[2], cmap='jet', s=50)
-		plt.colorbar()
-		plt.savefig(plotname)
-		plt.close("all")
+		savepath = plotnameQall + '.dat'
+		np.savetxt(savepath, Qlinall)
+	
+		savepath = plotnameQmbwall + '.dat'
+		np.savetxt(savepath, Qbwmaskall)
+	
+		savepath = plotnameQmtaperall + '.dat'
+		np.savetxt(savepath, Qtapermaskall)	
 
-		savepath = plotname + '.dat'
-		np.savetxt(savepath, Qall)	
-
-		for point in Qall:
-			plt.scatter(point[0], point[1], c=point[3], cmap='jet', s=50)
-		plt.colorbar()
-		plt.savefig(plotname2)
-		savepath = plotname2 + '.dat'
-		np.savetxt(savepath, Qall)
+		#savepath = plotnameQmvaryall + '.dat'
+		#np.savetxt(savepath, Qmaskvaryall)			
 
 
 #############################################
 
-with open("/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/masklist.dat", 'r') as fh:
+with open("/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/Qvalues/masklist.dat", 'r') as fh:
 	masklist = np.array(fh.read().split()).astype('str')
 
-with open("/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/linearlist.dat", 'r') as fh:
+with open("/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/Qvalues/linearlist.dat", 'r') as fh:
 	linearlist = np.array(fh.read().split()).astype('str')
 
 FPATH = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/"
 
 for name in masklist:
-	ifile = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/" + name
-	Q = np.loadtxt(ifile)
+	ifile = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/Qvalues/" + name
+	Qraw = np.loadtxt(ifile)
+
+	Q=[]
+	for p in Qraw:
+		if not p[2] == np.float64('inf'):
+			Q.append(p)
+	point = np.array(Q).transpose()
 
 	fname = name.split('png')[0]
 	plotname = FPATH + fname + 'png'
-	plt.xlabel
-	for point in Q:
-		if not point[2] == np.float64('inf'):
-			plt.scatter(point[0], point[1], c=point[2], cmap='jet', s=50)
-	plt.xlabel('Alpha')
-	plt.ylabel('No of iterations')
-	plt.clim(-14, 1)
-	plt.colorbar()
+
+	fig, ax = plt.subplots()	
+	cmap = 'seismic'
+	scat = ax.scatter(point[0], point[1], c=point[2], s=60, cmap=cmap)#, s=50)
+	ax.set_xlim(0.,0.91)
+	ax.set_ylim(0,50)
+	ax.autoscale(False)
+	ax.set_xlabel('Alpha')
+	ax.set_ylabel('No of iterations')
+	scat.set_clim(-10,10)
+	cbar = plt.colorbar(scat)
+	cbar.ax.set_xlabel('Q')
 	plt.savefig(plotname)
 	plt.close("all")
 
 for name in linearlist:
-	ifile = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/" + name
-	Q = np.loadtxt(ifile)
+	ifile = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/Qvalues/" + name
+	Qraw = np.loadtxt(ifile)
+
+	Q=[]
+	for p in Qraw:
+		if not p[2] == np.float64('inf'):
+			if not p[0] == 0:
+				if not p[1] ==0:
+					Q.append(p)
+	point = np.array(Q).transpose()
 
 	fname = name.split('png')[0]
 	plotname = FPATH + fname + 'png'
 
-	point = Q.transpose()
-	plt.scatter(point[0], point[1], c=point[3], s=60), cmap='jet')#, s=50)
-	plt.xlabel('Alpha')
-	plt.ylabel('No of iterations')
-	plt.colorbar()
+	fig, ax = plt.subplots()	
+	cmap = 'seismic'
+	scat = ax.scatter(point[0], point[1], c=point[3], s=60, cmap=cmap)#, s=50)
+	ax.set_xlim(0.,0.91)
+	ax.set_ylim(0,50)
+	ax.autoscale(False)
+	ax.set_xlabel('Alpha')
+	ax.set_ylabel('No of iterations')
+	scat.set_clim(-10,10)
+	cbar = plt.colorbar(scat)
+	cbar.ax.set_xlabel('Q')
 	plt.savefig(plotname)
 	plt.close("all")
 

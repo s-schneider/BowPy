@@ -500,7 +500,7 @@ def shift_array(array, shift_value=0, y_dist=False):
 			array_shift[i] = np.roll(array[i], -shift_value*i)
 	return(array_shift)
 
-def makeMask(fkdata, slope, shape, rth=0.4):
+def makeMask(fkdata, slope, shape, rth=0.4, expl_cutoff=False):
 	"""
 	This function creates a Mask-array in shape of the original fkdata,
 	with straight lines (value = 1.) along the angles, given in slope and 0 everywhere else.
@@ -529,26 +529,32 @@ def makeMask(fkdata, slope, shape, rth=0.4):
 
 	:param W: Mask function W
 	"""
-	M = fkdata.copy()
+	M 			= fkdata.copy()
 	
 	# Because of resolution issues, upsampling to double size
-	pnorm = 1/2. * ( float(M.shape[0]+1)/float(2. * M.shape[1]) )
+	pnorm 		= 1/2. * ( float(M.shape[0]+1)/float(2. * M.shape[1]) )
 	
-	prange = slope * pnorm
-	Mask =  np.zeros((M.shape[0], 2.*M.shape[1]))
-	maskshape = np.zeros((M.shape[0], 2.*M.shape[1]))
-	W = np.zeros((M.shape[0], 2.*M.shape[1]))
-	name = shape[0]
-	arg = shape[1]
+	prange 		= slope * pnorm
+	Mask 		= np.zeros((M.shape[0], 2.*M.shape[1]))
+	maskshape 	= np.zeros((M.shape[0], 2.*M.shape[1]))
+	W 			= np.zeros((M.shape[0], 2.*M.shape[1]))
+	name 		= shape[0]
+	arg 		= shape[1]
+
 	if name in ['butterworth', 'Butterworth', 'taper', 'Taper']:
-		cutoff = slope.size/2
+		if not expl_cutoff:
+			cutoff 	= slope.size/2
+		else:
+			cutoff 	= expl_cutoff
+ 
 		if cutoff < 1: cutoff = 1
-		maskshape_tmp = create_filter(name, Mask.shape[0]/2, cutoff, arg)
-		maskshape_lh = np.tile(maskshape_tmp, Mask.shape[1]).reshape(Mask.shape[1], maskshape_tmp.size).transpose()
-		maskshape_rh = np.flipud(maskshape_lh)
+		maskshape_tmp 	= create_filter(name, Mask.shape[0]/2, cutoff, arg)
+		maskshape_lh 	= np.tile(maskshape_tmp, Mask.shape[1]).reshape(Mask.shape[1], maskshape_tmp.size).transpose()
+		maskshape_rh 	= np.flipud(maskshape_lh)
+
 		maskshape[:maskshape.shape[0]/2,:] = maskshape_lh
 		maskshape[maskshape.shape[0]/2:,:] = maskshape_rh
-		maskshape
+
 
 	for m in prange:
 		if m == 0.:
@@ -582,19 +588,21 @@ def makeMask(fkdata, slope, shape, rth=0.4):
 
 		W[np.where(W!=0)]=1.
 
-	W[np.where(W > 1.)]=1.
+		W[np.where(W > 1.)]=1.
 
 	# Resample it to original size
 	Wr = np.flipud(sp.signal.resample(W, M.shape[1], axis=1))
-	Wr[ np.where(Wr > rth )] = 1.
-	Wr[ np.where(Wr < rth )] = 0.
+	Wr[ np.where(Wr > 1 ) ] = 1.
+	Wr[ np.where(Wr < 0 ) ] = 0.
+	if name in ['boxcar']:
+		Wr[ np.where(Wr > rth ) ] = 1.
+		Wr[ np.where(Wr < rth ) ] = 0.
 
-	#Wlhs = np.roll(Wr[:,0:149], shift=1, axis=0)
+
 	Wlhs	= np.roll(Wr[:,0:Wr.shape[1]/2-1], shift=1, axis=0)
-	#Wrhs 	= Wr[:,1:151]
 	Wrhs	= Wr[:,1:Wr.shape[1]/2+1]
 	Wrhs 	= np.roll(np.flipud(np.fliplr(Wrhs)), shift=0, axis=0)
-	#Wrhs =         np.flipud(np.fliplr(Wrhs))
+
 	Wr[:,0:Wr.shape[1]/2-1] = Wlhs
 	Wr[:,Wr.shape[1]/2:] = Wrhs
 	return Wr
@@ -933,9 +941,8 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None,
 		W 		= makeMask(fkdata, peaks[0], maskshape)
 		ADfinal = ArrayData.copy()
 		for n in noft:
-
 			ADtemp 	= ArrayData.copy()
-			threshold = abs(np.fft.fft2(ArrayData, s=(iK,iF)).max())
+			threshold = abs(W*np.fft.fft2(ADfinal, s=(iK,iF))).max()
 			for i in range(maxiter):
 				data_tmp 	=ADtemp.copy()
 				fkdata 		= W * np.fft.fft2(data_tmp, s=(iK,iF))
@@ -943,9 +950,6 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None,
 				threshold 	= threshold * alpha
 				data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
 				ADtemp[n] 	= data_tmp[n]
-
-				#ADtemp[n]	= alpha * ArrayData[n].copy()			
-				#ADtemp[n]  += (1. - alpha) * data_tmp[n]
 
 			ADfinal[n] = ADtemp[n].copy()
 
@@ -971,12 +975,12 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None,
 
 
 	elif method == 'maskvary':
-		
+				
 		ADfinal = ArrayData.copy()
 		ADtemp 	= ArrayData.copy()
 		for n in noft:
 			for i in range(maxiter):
-				W 			= makeMask(fkdata, peaks[0], maskshape)
+				W 			= makeMask(fkdata, peaks, shape=maskshape, expl_cutoff=i)
 				data_tmp 	= ADtemp.copy()
 				fkdata 		= W * np.fft.fft2(data_tmp, s=(iK,iF))
 				data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
@@ -1158,20 +1162,27 @@ def lstsqs(A,b,mu=0):
 	print("..finished")
 	return x
 
-def create_filter(name, length, cutoff=None, ncorner=None):
+def create_filter(name, length, cutoff=None, ncorner=None, cornerpoints=None):
+	
+	cut = float(cutoff)/float(length)
+	m 	= float(ncorner)
 
 	if name in ['butterworth', 'Butterworth']:
-		x = np.linspace(0, length, length)
-		y = 1. / (1. + (x/float(cutoff))**(2.*ncorner))
+		x = np.linspace(0, 1, length)
+		y = 1. / (1. + (x/float(cut))**(2.*ncorner))
 	
 	elif name in ['taper', 'Taper']:
-		x = np.linspace(0, length, length)
-		y = np.round(cutoff-x)*ncorner +0.5
-		y[y>1.] = 1.
-		y[y<0.] = 0.
-		if y.max() < 1:
-			msg='Length of filter and slope of taper do not match'
-			raise ValueError(msg)
+		shift	= 0.
+		fit = True
+		while fit:
+			cut += shift
+			x 		= np.linspace(0, 1, length)
+			y 		= (cut-x)*m + 0.5
+			y[y>1.] = 1.
+			y[y<0.] = 0.
+			if y.max() >= 1: fit=False
+			shift = 0.1
+		
 	else:
 		msg='No valid name for filter found.'
 		raise IOError(msg)
