@@ -3,6 +3,7 @@ import numpy as np
 import scipy as sp
 import obspy
 from obspy import UTCDateTime, Stream, Inventory
+from obspy.core.inventory.network import Network
 import warnings
 
 
@@ -18,7 +19,11 @@ def stream2array(stream, normalize=False):
 			x[i,j]=data
 
 	if normalize:
-		x = x / x.max()
+		if x.max()=0
+			print('Maximum value is 0")
+			return
+		else:
+			x = x / x.max()
 
 	return(x)
 

@@ -45,7 +45,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=None, clr='black', clrtrace=None, newfigure=True, savefig=False):
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphase=None, norm=None, clr='black', clrtrace=None, newfigure=True, savefig=False):
 	"""
 	Alpha Version!
 	
@@ -225,9 +225,22 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, markphase=None, norm=Non
 			elif markphase and not isevent:
 				msg='Markphase needs Event Information, not found.'
 				raise IOError(msg)		
-					
-			else:
+				
+			elif type(epidistances) == numpy.ndarray or type(epidistances)==list:
+				y_dist = epidistances
+				plt.ylabel("Distance in deg")
+				plt.xlabel("Time in s")
+				try:
+					if j in clrtrace: 
+						cclr = clrtrace[j]
+					else:
+						cclr = clr
+				except:
+					cclr = clr
+				plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist[j]+0.1))
+				plt.plot(t_axis, zoom*trace + y_dist[j], color=cclr)
 
+			else:
 				if yinfo:
 					try:
 						plt.ylabel("Distance in deg")
@@ -403,11 +416,8 @@ def line_cut(array, shape):
 			new_array[new_array.shape[0]-i] = array[new_array.shape[0]-i]			
 		return new_array
 
-	elif name in ['butterworth', 'Butterworth'] and isinstance(length, int):
+	elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
 		fil_lh = create_filter(name, array.shape[0]/2, length/2, kwarg)
-
-	elif name in ['taper', 'Taper'] and isinstance(length, int):
-		fil = create_filter(name, array.shape[0]/2, length/2, kwarg)
 
 	fil_rh = np.flipud(fil_lh)
 	fil = np.zeros(2*fil_lh.size)

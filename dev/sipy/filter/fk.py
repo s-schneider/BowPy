@@ -176,7 +176,7 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate-polygon', fshape=['spik
 
 		else:
 			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
-			array_filtered_fk = line_cut(array_fk, shape=fshape)			
+			array_filtered_fk = line_cut(array_fk, shape=fshape)
 	
 	elif ftype in ("eliminate-polygon"):
 		array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
