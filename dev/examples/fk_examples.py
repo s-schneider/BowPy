@@ -274,7 +274,19 @@ yls2ifft = fku.ls2ifft_prep(yls)
 
 """
 ##################INSTASEIS###############################
-
+Instaseis Source: Honshu
+	origin time      : 2011-03-11T05:47:32.760000Z
+	Longitude        :  143.1 deg
+	Latitude         :   37.5 deg
+	Depth            : 2.0e+01 km
+	Moment Magnitude :   13.82
+	Scalar Moment    :   5.31e+29 Nm
+	Mrr              :   1.73e+29 Nm
+	Mtt              :  -2.81e+28 Nm
+	Mpp              :  -1.45e+29 Nm
+	Mrt              :   2.12e+29 Nm
+	Mrp              :   4.55e+29 Nm
+	Mtp              :  -6.57e+28 Nm
 """
 #get data with instaseis
 import obspy
@@ -302,13 +314,13 @@ from sipy.filter.fk import fk_filter
 import sipy.util.fkutil as fku
 import instaseis as ins
 
-uniform=False
+uniform=True
 db = ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
 
-tofe = obspy.UTCDateTime(2016,2,9,18,41,1)
-lat = 0.0
-lon = 0.0
-depth = 100000
+tofe = obspy.UTCDateTime(2011,03,11,05,47,32,76)
+lat = 37.5
+lon = 143.1
+depth = 20000
 aperture=20
 no_of_stations=20
 # in degrees
@@ -326,16 +338,32 @@ catfile = "SYNTH_OUT_cat.xml"
 
 source = ins.Source(
 latitude=lat, longitude=lon, depth_in_m=depth,
-m_rr = 3.71e23 / 1E7,
-m_tt = 7.81e21 / 1E7,m_pp =8.26e23 / 1E7,
-m_rt = 1.399e23 / 1E7,
-m_rp =6.95e22 / 1E7,
-m_tp =3.177e24 / 1E7,
+m_rr = 1.73e29 / 1E7,
+m_tt = -2.81e28 / 1E7,
+m_pp = -1.45e29 / 1E7,
+m_rt = 2.12e+29 / 1E7,
+m_rp = 4.55e+29 / 1E7,
+m_tp = -6.57e+28 / 1E7,
 origin_time=tofe
 )
 
+"""
+	origin time      : 2011-03-11T05:47:32.760000Z
+	Longitude        :  143.1 deg
+	Latitude         :   37.5 deg
+	Depth            : 2.0e+01 km
+	Moment Magnitude :   13.82
+	Scalar Moment    :   5.31e+29 Nm
+	Mrr              :   1.73e+29 Nm
+	Mtt              :  -2.81e+28 Nm
+	Mpp              :  -1.45e+29 Nm
+	Mrt              :   2.12e+29 Nm
+	Mrp              :   4.55e+29 Nm
+	Mtp              :  -6.57e+28 Nm
+"""
+
 x = []
-#station_range = np.linspace(0,aperture-1,no_of_stations) + 100.
+station_range = np.linspace(0,aperture-1,no_of_stations) + 100.
 #r = np.random.randn(no_of_stations)
 #randrange = station_range + magn * r  
 #randrange[0] = station_range[0]
@@ -364,16 +392,16 @@ with open( qstfile, "w") as fh:
 			slon = i
 			name="X"+str(int(k))
 			print(name)
-			x.append(ins.Receiver(latitude="0", longitude=str(slon), network="LA", station=name ))
-			latdiff = gps2dist_azimuth(0.1,0,0.1,slon)[0]/1000.
-			fh.write("%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))
+			x.append(ins.Receiver(latitude="54", longitude=str(slon), network="LA", station=name ))
+			latdiff = gps2dist_azimuth(54,0,54,slon)[0]/1000.
+			fh.write("%s    lat:     54.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))
 			k+=1	
 	else:
 		for i, slon in enumerate(randrange):
 			name="X"+str(int(i))
-			x.append(ins.Receiver(latitude="0", longitude=slon, network="LA", station=name ))
-			latdiff = gps2dist_azimuth(0.1,0,0.1,slon)[0]/1000.
-			fh.write("%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))		
+			x.append(ins.Receiver(latitude="54", longitude=slon, network="RA", station=name ))
+			latdiff = gps2dist_azimuth(54,0,54,slon)[0]/1000.
+			fh.write("%s    lat:     54.0 lon:     %f elevation:   0.0000 array:RA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))		
 
 st_synth = []    
 for i in range(len(x)):
@@ -459,7 +487,7 @@ with open( invfile, "w") as fh:
 	j=0
 	for i in station_range:
 		slon=i
-		lat=0.0
+		lat=54.0
 		name="X"+str(int(j))
 		fh.write("    <Station code=\"%s\" endDate=\"2011-11-17T23:59:59+00:00\" restrictedStatus=\"open\" startDate=\"2010-01-08T00:00:00+00:00\">\n" % name)
 		fh.write("      <Latitude unit=\"DEGREES\">%f</Latitude>\n" % lat)

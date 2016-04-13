@@ -239,7 +239,7 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 	stream = streamall
 	return(stream, inventory, catalog)
 
-def cat4stream(stream, client_name):
+def cat4stream(stream, client_name, stime=None, etime=None, minmag=None, lat=None, lon=None):
 
 	client = Client(client_name)
 	try:
@@ -255,8 +255,12 @@ def cat4stream(stream, client_name):
 
 		return cat
 	except:
-		print('No Catalog found')
-		return
+		try:
+			cat = client.get_events(starttime=stime, endtime=etime, latitude=lat, longitude=lon, minmagnitude=minmag)
+			return cat
+		except:
+			print('No Catalog found')
+			return
 
 	
 
