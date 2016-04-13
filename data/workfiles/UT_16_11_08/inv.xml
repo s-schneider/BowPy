@@ -3,12 +3,402 @@
   <Source>IRIS-DMC</Source>
   <Sender>IRIS-DMC</Sender>
   <Module>IRIS WEB SERVICE: fdsnws-station | version: 1.1.20</Module>
-  <ModuleURI>http://service.iris.edu/fdsnws/station/1/query?endtime=2009-01-01T00%3A00%3A00.000000&amp;network=ZP&amp;starttime=2008-01-01T00%3A00%3A00.000000&amp;format=xml</ModuleURI>
-  <Created>2016-04-13T16:34:31+00:00</Created>
+  <ModuleURI>http://service.iris.edu/fdsnws/station/1/query?endtime=2013-01-01T00%3A00%3A00.000000&amp;network=ZP&amp;starttime=2008-01-01T00%3A00%3A00.000000&amp;format=xml</ModuleURI>
+  <Created>2016-04-13T17:26:19+00:00</Created>
+  <Network code="ZP" endDate="2013-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+    <Description>Africa Array- Uganda/Tanzania</Description>
+    <TotalNumberStations>35</TotalNumberStations>
+    <SelectedNumberStations>35</SelectedNumberStations>
+    <Station code="CHAM" endDate="2011-04-21T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-13T00:00:00+00:00">
+      <Latitude unit="DEGREES">-10.9505</Latitude>
+      <Longitude unit="DEGREES">31.0691</Longitude>
+      <Elevation>1211.0</Elevation>
+      <Site>
+        <Name>Chambesi, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-13T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="CHIM" endDate="2010-08-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-03-29T00:00:00+00:00">
+      <Latitude unit="DEGREES">-8.8263</Latitude>
+      <Longitude unit="DEGREES">34.0284</Longitude>
+      <Elevation>1100.0</Elevation>
+      <Site>
+        <Name>Chimala, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-19T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="GABZ" endDate="2011-08-09T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-11T00:00:00+00:00">
+      <Latitude unit="DEGREES">-12.171</Latitude>
+      <Longitude unit="DEGREES">26.367</Longitude>
+      <Elevation>1393.0</Elevation>
+      <Site>
+        <Name>Solwezi, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-11T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="IRIN" endDate="2010-08-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">-7.762</Latitude>
+      <Longitude unit="DEGREES">35.6864</Longitude>
+      <Elevation>1561.0</Elevation>
+      <Site>
+        <Name>Iringa, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-24T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="ISOK" endDate="2011-08-05T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-04T00:00:00+00:00">
+      <Latitude unit="DEGREES">-10.1708</Latitude>
+      <Longitude unit="DEGREES">32.6457</Longitude>
+      <Elevation>1301.0</Elevation>
+      <Site>
+        <Name>Isoka, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-04T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KAMZ" endDate="2011-05-01T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-13T00:00:00+00:00">
+      <Latitude unit="DEGREES">-14.7948</Latitude>
+      <Longitude unit="DEGREES">24.8044</Longitude>
+      <Elevation>1161.0</Elevation>
+      <Site>
+        <Name>Kaoma, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-13T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KASM" endDate="2011-08-04T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-12T00:00:00+00:00">
+      <Latitude unit="DEGREES">-10.2174</Latitude>
+      <Longitude unit="DEGREES">31.1401</Longitude>
+      <Elevation>1386.0</Elevation>
+      <Site>
+        <Name>Kasama, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-12T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KGMA" endDate="2010-08-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-4.878</Latitude>
+      <Longitude unit="DEGREES">29.633</Longitude>
+      <Elevation>821.0</Elevation>
+      <Site>
+        <Name>Kigoma, Tanzania</Name>
+      </Site>
+      <CreationDate>2007-08-24T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KISH" endDate="2011-08-09T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-05T00:00:00+00:00">
+      <Latitude unit="DEGREES">-12.0219</Latitude>
+      <Longitude unit="DEGREES">29.6123</Longitude>
+      <Elevation>1132.0</Elevation>
+      <Site>
+        <Name>Kaishe, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-05T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KISZ" endDate="2011-08-10T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-17T00:00:00+00:00">
+      <Latitude unit="DEGREES">-12.1116</Latitude>
+      <Longitude unit="DEGREES">25.4952</Longitude>
+      <Elevation>1358.0</Elevation>
+      <Site>
+        <Name>Kisasa, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-17T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KMPZ" endDate="2011-08-11T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-14T00:00:00+00:00">
+      <Latitude unit="DEGREES">-13.4568</Latitude>
+      <Longitude unit="DEGREES">25.8337</Longitude>
+      <Elevation>1251.0</Elevation>
+      <Site>
+        <Name>Kasempa, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-14T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KYLA" endDate="2010-08-05T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-9.5986</Latitude>
+      <Longitude unit="DEGREES">33.8673</Longitude>
+      <Elevation>501.0</Elevation>
+      <Site>
+        <Name>Kyela, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-19T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="LAEL" endDate="2010-08-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-8.566</Latitude>
+      <Longitude unit="DEGREES">32.0591</Longitude>
+      <Elevation>1596.0</Elevation>
+      <Site>
+        <Name>Laela, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-11T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="LOSS" endDate="2010-08-06T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-8.4166</Latitude>
+      <Longitude unit="DEGREES">33.1575</Longitude>
+      <Elevation>1195.0</Elevation>
+      <Site>
+        <Name>Makongolosi, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-27T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="LWNG" endDate="2011-07-10T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-11T00:00:00+00:00">
+      <Latitude unit="DEGREES">-10.2498</Latitude>
+      <Longitude unit="DEGREES">29.921</Longitude>
+      <Elevation>1455.0</Elevation>
+      <Site>
+        <Name>Luwingu, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-11T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MAFI" endDate="2010-08-07T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-8.3057</Latitude>
+      <Longitude unit="DEGREES">35.3132</Longitude>
+      <Elevation>1866.0</Elevation>
+      <Site>
+        <Name>Mafinga, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-24T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MAKA" endDate="2010-08-07T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-8.8465</Latitude>
+      <Longitude unit="DEGREES">34.8302</Longitude>
+      <Elevation>1685.0</Elevation>
+      <Site>
+        <Name>Makambako, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-20T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MANS" endDate="2011-08-10T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-06T00:00:00+00:00">
+      <Latitude unit="DEGREES">-11.14</Latitude>
+      <Longitude unit="DEGREES">28.8749</Longitude>
+      <Elevation>1259.0</Elevation>
+      <Site>
+        <Name>Mansa, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-06T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MAUS" endDate="2010-08-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-2.741</Latitude>
+      <Longitude unit="DEGREES">36.704</Longitude>
+      <Elevation>1334.0</Elevation>
+      <Site>
+        <Name>Longido, Tanzania</Name>
+      </Site>
+      <CreationDate>2007-09-01T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MGOR" endDate="2010-08-04T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-6.8279</Latitude>
+      <Longitude unit="DEGREES">37.6696</Longitude>
+      <Elevation>501.0</Elevation>
+      <Site>
+        <Name>Morogoro, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-23T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MIKU" endDate="2010-08-06T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-7.4035</Latitude>
+      <Longitude unit="DEGREES">36.9902</Longitude>
+      <Elevation>518.0</Elevation>
+      <Site>
+        <Name>Mikumi, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-23T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MKUS" endDate="2011-04-23T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">-13.6035</Latitude>
+      <Longitude unit="DEGREES">29.3791</Longitude>
+      <Elevation>1250.0</Elevation>
+      <Site>
+        <Name>Mkushi, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-08T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MPIK" endDate="2011-08-03T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-06T00:00:00+00:00">
+      <Latitude unit="DEGREES">-11.821</Latitude>
+      <Longitude unit="DEGREES">31.4517</Longitude>
+      <Elevation>1392.0</Elevation>
+      <Site>
+        <Name>Mpika, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-06T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MUFZ" endDate="2011-08-10T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-15T00:00:00+00:00">
+      <Latitude unit="DEGREES">-13.1442</Latitude>
+      <Longitude unit="DEGREES">25.0213</Longitude>
+      <Elevation>1189.0</Elevation>
+      <Site>
+        <Name>Mufumbwe, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-15T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MWEN" endDate="2011-04-23T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-07T00:00:00+00:00">
+      <Latitude unit="DEGREES">-10.0582</Latitude>
+      <Longitude unit="DEGREES">28.7017</Longitude>
+      <Elevation>995.0</Elevation>
+      <Site>
+        <Name>Mwense, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-07T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="NAMA" endDate="2010-08-13T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-7.5094</Latitude>
+      <Longitude unit="DEGREES">31.0414</Longitude>
+      <Elevation>1559.0</Elevation>
+      <Site>
+        <Name>Namanyere, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-16T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="NJOM" endDate="2010-08-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-9.3665</Latitude>
+      <Longitude unit="DEGREES">34.7911</Longitude>
+      <Elevation>1949.0</Elevation>
+      <Site>
+        <Name>Njombe, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-20T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="PNDA" endDate="2010-08-11T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-6.3519</Latitude>
+      <Longitude unit="DEGREES">31.0613</Longitude>
+      <Elevation>1071.0</Elevation>
+      <Site>
+        <Name>Mpanda, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-13T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SERJ" endDate="2011-08-09T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-07T00:00:00+00:00">
+      <Latitude unit="DEGREES">-13.2275</Latitude>
+      <Longitude unit="DEGREES">30.215</Longitude>
+      <Elevation>1388.0</Elevation>
+      <Site>
+        <Name>Serenje, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-07T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SHWG" endDate="2011-08-06T23:59:59+00:00" restrictedStatus="open" startDate="2010-08-05T00:00:00+00:00">
+      <Latitude unit="DEGREES">-11.1925</Latitude>
+      <Longitude unit="DEGREES">31.7397</Longitude>
+      <Elevation>1211.0</Elevation>
+      <Site>
+        <Name>Shiwangandu, Zambia</Name>
+      </Site>
+      <CreationDate>2010-08-05T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SONG" endDate="2010-08-03T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-10.6738</Latitude>
+      <Longitude unit="DEGREES">35.6507</Longitude>
+      <Elevation>1119.0</Elevation>
+      <Site>
+        <Name>Songea, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-18T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SUMB" endDate="2010-08-06T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-7.9531</Latitude>
+      <Longitude unit="DEGREES">31.6195</Longitude>
+      <Elevation>1837.0</Elevation>
+      <Site>
+        <Name>Sumbawanga, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-12T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="TUND" endDate="2010-08-06T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-9.2958</Latitude>
+      <Longitude unit="DEGREES">32.7712</Longitude>
+      <Elevation>1660.0</Elevation>
+      <Site>
+        <Name>Tunduma, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-18T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="UVZA" endDate="2010-08-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-5.1049</Latitude>
+      <Longitude unit="DEGREES">30.3934</Longitude>
+      <Elevation>992.0</Elevation>
+      <Site>
+        <Name>Uvinza, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-03T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="WINO" endDate="2010-08-04T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-9.7576</Latitude>
+      <Longitude unit="DEGREES">35.3001</Longitude>
+      <Elevation>1511.0</Elevation>
+      <Site>
+        <Name>Wino, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-18T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+  </Network>
   <Network code="ZP" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2007-01-01T00:00:00+00:00">
     <Description>Africa Array- Uganda/Tanzania</Description>
     <TotalNumberStations>37</TotalNumberStations>
-    <SelectedNumberStations>27</SelectedNumberStations>
+    <SelectedNumberStations>37</SelectedNumberStations>
     <Station code="BEND" endDate="2008-11-27T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-31T00:00:00+00:00">
       <Latitude unit="DEGREES">0.581</Latitude>
       <Longitude unit="DEGREES">31.392</Longitude>
@@ -97,6 +487,17 @@
       <TotalNumberChannels>21</TotalNumberChannels>
       <SelectedNumberChannels>0</SelectedNumberChannels>
     </Station>
+    <Station code="IRIN" endDate="2009-11-08T23:59:59+00:00" restrictedStatus="open" startDate="2009-01-24T00:00:00+00:00">
+      <Latitude unit="DEGREES">-7.762</Latitude>
+      <Longitude unit="DEGREES">35.6864</Longitude>
+      <Elevation>1561.0</Elevation>
+      <Site>
+        <Name>Iringa, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-24T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
     <Station code="JNJA" endDate="2008-11-25T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-24T00:00:00+00:00">
       <Latitude unit="DEGREES">0.446</Latitude>
       <Longitude unit="DEGREES">33.182</Longitude>
@@ -163,6 +564,50 @@
       <TotalNumberChannels>14</TotalNumberChannels>
       <SelectedNumberChannels>0</SelectedNumberChannels>
     </Station>
+    <Station code="LAEL" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2009-01-11T00:00:00+00:00">
+      <Latitude unit="DEGREES">-8.566</Latitude>
+      <Longitude unit="DEGREES">32.0591</Longitude>
+      <Elevation>1596.0</Elevation>
+      <Site>
+        <Name>Laela, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-11T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="LOSS" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2009-01-27T00:00:00+00:00">
+      <Latitude unit="DEGREES">-8.4166</Latitude>
+      <Longitude unit="DEGREES">33.1575</Longitude>
+      <Elevation>1195.0</Elevation>
+      <Site>
+        <Name>Makongolosi, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-27T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MAFI" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2009-01-24T00:00:00+00:00">
+      <Latitude unit="DEGREES">-8.3057</Latitude>
+      <Longitude unit="DEGREES">35.3132</Longitude>
+      <Elevation>1866.0</Elevation>
+      <Site>
+        <Name>Mafinga, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-24T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MAKA" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2009-01-20T00:00:00+00:00">
+      <Latitude unit="DEGREES">-8.8465</Latitude>
+      <Longitude unit="DEGREES">34.8302</Longitude>
+      <Elevation>1685.0</Elevation>
+      <Site>
+        <Name>Makambako, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-20T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
     <Station code="MALE" endDate="2008-11-25T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-26T00:00:00+00:00">
       <Latitude unit="DEGREES">1.07</Latitude>
       <Longitude unit="DEGREES">34.167</Longitude>
@@ -182,6 +627,28 @@
         <Name>Longido, Tanzania</Name>
       </Site>
       <CreationDate>2007-09-01T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MGOR" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2009-01-23T00:00:00+00:00">
+      <Latitude unit="DEGREES">-6.8279</Latitude>
+      <Longitude unit="DEGREES">37.6696</Longitude>
+      <Elevation>501.0</Elevation>
+      <Site>
+        <Name>Morogoro, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-23T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MIKU" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2009-01-23T00:00:00+00:00">
+      <Latitude unit="DEGREES">-7.4035</Latitude>
+      <Longitude unit="DEGREES">36.9902</Longitude>
+      <Elevation>518.0</Elevation>
+      <Site>
+        <Name>Mikumi, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-23T00:00:00+00:00</CreationDate>
       <TotalNumberChannels>7</TotalNumberChannels>
       <SelectedNumberChannels>0</SelectedNumberChannels>
     </Station>
@@ -273,6 +740,17 @@
       <TotalNumberChannels>7</TotalNumberChannels>
       <SelectedNumberChannels>0</SelectedNumberChannels>
     </Station>
+    <Station code="SONG" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2009-01-18T00:00:00+00:00">
+      <Latitude unit="DEGREES">-10.6738</Latitude>
+      <Longitude unit="DEGREES">35.6507</Longitude>
+      <Elevation>1119.0</Elevation>
+      <Site>
+        <Name>Songea, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-18T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
     <Station code="SULU" endDate="2008-12-01T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-22T00:00:00+00:00">
       <Latitude unit="DEGREES">-4.573</Latitude>
       <Longitude unit="DEGREES">30.087</Longitude>
@@ -281,6 +759,17 @@
         <Name>Kasulu, Tanzania</Name>
       </Site>
       <CreationDate>2007-08-22T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SUMB" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2009-01-12T00:00:00+00:00">
+      <Latitude unit="DEGREES">-7.9531</Latitude>
+      <Longitude unit="DEGREES">31.6195</Longitude>
+      <Elevation>1837.0</Elevation>
+      <Site>
+        <Name>Sumbawanga, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-12T00:00:00+00:00</CreationDate>
       <TotalNumberChannels>7</TotalNumberChannels>
       <SelectedNumberChannels>0</SelectedNumberChannels>
     </Station>
@@ -304,6 +793,17 @@
       </Site>
       <CreationDate>2008-12-03T00:00:00+00:00</CreationDate>
       <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="WINO" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2009-01-18T00:00:00+00:00">
+      <Latitude unit="DEGREES">-9.7576</Latitude>
+      <Longitude unit="DEGREES">35.3001</Longitude>
+      <Elevation>1511.0</Elevation>
+      <Site>
+        <Name>Wino, Tanzania</Name>
+      </Site>
+      <CreationDate>2009-01-18T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
       <SelectedNumberChannels>0</SelectedNumberChannels>
     </Station>
   </Network>
