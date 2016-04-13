@@ -274,7 +274,7 @@ def find_closest_station(inventory, stream, latitude, longitude,
 	z = absolute_height_in_km
 
 	for network in inventory:
-		for i, station in enumerate(etwork):
+		for i, station in enumerate(network):
 			distance = np.sqrt( ((gps2dist_azimuth(lats[i], lngs[i], x, y)[0]) / 1000.0) ** 2  + ( np.abs( np.abs(z) - np.abs(hgt[i]))) ** 2 )
 
 			if min_distance is None or distance < min_distance:
@@ -389,7 +389,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 	:param event: Eventdata
 
 	:param phase: Phase to align the traces on
-	:type phase: str
+	:type phase: list
 
 	:param ref: name or index of reference station, to which the others are aligned
 	:type ref: int or str
@@ -438,7 +438,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 		delta 	  = trace.stats.delta
 
 	# Calculating reference arriving time/index of phase.
-	ref_t = origin + m.get_travel_times(depth, ref_dist, phase_list=[phase])[0].time - ref_start
+	ref_t = origin + m.get_travel_times(depth, ref_dist, phase_list=phase)[0].time - ref_start
 	ref_n = int(ref_t/delta)
 	
 	for no_x, data_x in enumerate(data):
@@ -446,7 +446,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 			continue
 	
 		dist = st_tmp[no_x].stats.distance
-		t 	 = m.get_travel_times(depth, dist, phase_list=[phase])[0].time
+		t 	 = m.get_travel_times(depth, dist, phase_list=phase)[0].time
 
 		# Calculate arrivals, and shift times/indicies.
 		phase_time 				= origin + t - st_tmp[no_x].stats.starttime

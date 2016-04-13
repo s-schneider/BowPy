@@ -64,7 +64,23 @@ def array2stream(ArrayData, st_original=None, network=None):
 			trace.meta.station = network[0].code
 
 
-	return(stream)
+	return stream
+
+def array2trace(ArrayData, st_original=None):
+	if ArrayData.ndim != 1:
+		try:
+			stream = array2stream(ArrayData, st_original)
+			return stream
+		except:
+			msg='Dimension do not fit'
+			raise IOError(msg)
+	else:		
+		trace = obspy.core.trace.Trace(ArrayData)
+
+	trace.stats = st_original[0].stats
+
+	return trace
+
 def read_file(stream, inventory, catalog, array=False):
 	"""
 	function to read data files, such as MSEED, station-xml and quakeml, in a way of obspy.read

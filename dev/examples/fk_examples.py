@@ -25,6 +25,7 @@ from obspy.taup import TauPyModel
 from obspy import read as read_st
 from obspy import read_inventory as read_inv
 from obspy import read_events as read_cat
+from obspy import UTCDateTime
 
 import sipy
 import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS

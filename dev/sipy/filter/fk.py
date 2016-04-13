@@ -17,14 +17,15 @@ import scipy.signal as signal
 from scipy import sparse
 from scipy.optimize import fmin_cg
 
-from sipy.util.array_util import array2stream, stream2array, epidist2nparray, attach_epidist2coords, alignon
+from sipy.util.array_util import array2stream, stream2array, epidist2nparray, attach_epidist2coords, alignon, stack
 from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array,\
 							find_peaks, slope_distribution, makeMask, create_iFFT2mtx, cg_solver, lstsqs, pocs
 from sipy.util.base import nextpow2
 from sipy.util.picker import get_polygon
 
 def fk_filter(st, inv=None, event=None, ftype='eliminate-polygon', fshape=['spike'], phase=None, polygon=12, normalize=True, SSA=False,
-					slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], peakinput=False):
+					slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], 
+					order=4., peakinput=False):
 	"""
 	Import stream, the function applies an 2D FFT, removes a certain window around the
 	desired phase to surpress a slownessvalue corresponding to a wavenumber and applies an 2d iFFT.
@@ -177,6 +178,17 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate-polygon', fshape=['spik
 		else:
 			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
 			array_filtered_fk = line_cut(array_fk, shape=fshape)
+
+		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF)).real
+
+
+		# Convert to Trace object.
+		array_filtered = array_filtered[0:ix, 0:it]
+		stacked_array = stack(array_filtered, order)
+
+		stream_filtered = array2trace(stacked_array, st_original=st.copy())
+
+		return stream_filtered
 	
 	elif ftype in ("eliminate-polygon"):
 		array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
@@ -210,6 +222,17 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate-polygon', fshape=['spik
 		else:
 			array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
 												yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
+
+		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF)).real
+
+
+		# Convert to Trace object.
+		array_filtered = array_filtered[0:ix, 0:it]
+		stacked_array = stack(array_filtered, order)
+
+		stream_filtered = array2trace(stacked_array, st_original=st.copy())
+
+		return stream_filtered
 
 	elif ftype in ("mask"):
 		array_fk = np.fft.fft2(ArrayData)
