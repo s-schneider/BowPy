@@ -1,0 +1,310 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<FDSNStationXML schemaVersion="1.0" xmlns="http://www.fdsn.org/xml/station/1">
+  <Source>IRIS-DMC</Source>
+  <Sender>IRIS-DMC</Sender>
+  <Module>IRIS WEB SERVICE: fdsnws-station | version: 1.1.20</Module>
+  <ModuleURI>http://service.iris.edu/fdsnws/station/1/query?endtime=2009-01-01T00%3A00%3A00.000000&amp;network=ZP&amp;starttime=2008-01-01T00%3A00%3A00.000000&amp;format=xml</ModuleURI>
+  <Created>2016-04-13T16:34:31+00:00</Created>
+  <Network code="ZP" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2007-01-01T00:00:00+00:00">
+    <Description>Africa Array- Uganda/Tanzania</Description>
+    <TotalNumberStations>37</TotalNumberStations>
+    <SelectedNumberStations>27</SelectedNumberStations>
+    <Station code="BEND" endDate="2008-11-27T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-31T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.581</Latitude>
+      <Longitude unit="DEGREES">31.392</Longitude>
+      <Elevation>1351.0</Elevation>
+      <Site>
+        <Name>Mubende, Uganda</Name>
+      </Site>
+      <CreationDate>2007-08-31T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="BIHA" endDate="2008-12-04T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-11T00:00:00+00:00">
+      <Latitude unit="DEGREES">-2.638</Latitude>
+      <Longitude unit="DEGREES">31.316</Longitude>
+      <Elevation>1459.0</Elevation>
+      <Site>
+        <Name>Bihalamulo, Tanzania</Name>
+      </Site>
+      <CreationDate>2007-08-11T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="BKBA" endDate="2008-12-06T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-13T00:00:00+00:00">
+      <Latitude unit="DEGREES">-1.364</Latitude>
+      <Longitude unit="DEGREES">31.812</Longitude>
+      <Elevation>1274.0</Elevation>
+      <Site>
+        <Name>Bukoba, Tanzania</Name>
+      </Site>
+      <CreationDate>2007-08-13T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="BUTI" endDate="2008-11-26T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-29T00:00:00+00:00">
+      <Latitude unit="DEGREES">1.819</Latitude>
+      <Longitude unit="DEGREES">31.326</Longitude>
+      <Elevation>623.0</Elevation>
+      <Site>
+        <Name>Butiaba, Uganda</Name>
+      </Site>
+      <CreationDate>2007-08-29T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="CHIM" endDate="2009-12-27T14:00:00+00:00" restrictedStatus="open" startDate="2008-12-19T00:00:00+00:00">
+      <Latitude unit="DEGREES">-8.8263</Latitude>
+      <Longitude unit="DEGREES">34.0284</Longitude>
+      <Elevation>1100.0</Elevation>
+      <Site>
+        <Name>Chimala, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-19T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="FOPO" endDate="2008-11-30T23:59:59+00:00" restrictedStatus="open" startDate="2007-09-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.663</Latitude>
+      <Longitude unit="DEGREES">30.282</Longitude>
+      <Elevation>1535.0</Elevation>
+      <Site>
+        <Name>Fort Portal, Uganda</Name>
+      </Site>
+      <CreationDate>2007-09-01T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="GEIT" endDate="2008-12-07T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-09T00:00:00+00:00">
+      <Latitude unit="DEGREES">-2.881</Latitude>
+      <Longitude unit="DEGREES">32.217</Longitude>
+      <Elevation>1281.0</Elevation>
+      <Site>
+        <Name>Geita, Tanzania</Name>
+      </Site>
+      <CreationDate>2007-08-09T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="HAMA" endDate="2008-12-01T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-28T00:00:00+00:00">
+      <Latitude unit="DEGREES">-3.832</Latitude>
+      <Longitude unit="DEGREES">32.642</Longitude>
+      <Elevation>1227.0</Elevation>
+      <Site>
+        <Name>Kahama, Tanzania</Name>
+      </Site>
+      <CreationDate>2007-08-28T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>21</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="JNJA" endDate="2008-11-25T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-24T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.446</Latitude>
+      <Longitude unit="DEGREES">33.182</Longitude>
+      <Elevation>1133.0</Elevation>
+      <Site>
+        <Name>Jinja, Uganda</Name>
+      </Site>
+      <CreationDate>2007-08-24T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KATE" endDate="2008-12-01T23:59:59+00:00" restrictedStatus="open" startDate="2007-09-02T00:00:00+00:00">
+      <Latitude unit="DEGREES">-0.138</Latitude>
+      <Longitude unit="DEGREES">29.871</Longitude>
+      <Elevation>950.0</Elevation>
+      <Site>
+        <Name>Katwe, Uganda</Name>
+      </Site>
+      <CreationDate>2007-09-02T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KBLE" endDate="2008-12-02T23:59:59+00:00" restrictedStatus="open" startDate="2007-09-06T00:00:00+00:00">
+      <Latitude unit="DEGREES">-1.254</Latitude>
+      <Longitude unit="DEGREES">29.992</Longitude>
+      <Elevation>1876.0</Elevation>
+      <Site>
+        <Name>Kabale, Uganda</Name>
+      </Site>
+      <CreationDate>2007-09-06T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KGMA" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-24T00:00:00+00:00">
+      <Latitude unit="DEGREES">-4.878</Latitude>
+      <Longitude unit="DEGREES">29.633</Longitude>
+      <Elevation>821.0</Elevation>
+      <Site>
+        <Name>Kigoma, Tanzania</Name>
+      </Site>
+      <CreationDate>2007-08-24T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>32</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KIBO" endDate="2008-12-04T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-17T00:00:00+00:00">
+      <Latitude unit="DEGREES">-3.583</Latitude>
+      <Longitude unit="DEGREES">30.713</Longitude>
+      <Elevation>1485.0</Elevation>
+      <Site>
+        <Name>Kibondo, Tanzania</Name>
+      </Site>
+      <CreationDate>2007-08-17T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KYLA" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2008-12-19T00:00:00+00:00">
+      <Latitude unit="DEGREES">-9.5986</Latitude>
+      <Longitude unit="DEGREES">33.8673</Longitude>
+      <Elevation>501.0</Elevation>
+      <Site>
+        <Name>Kyela, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-19T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MALE" endDate="2008-11-25T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-26T00:00:00+00:00">
+      <Latitude unit="DEGREES">1.07</Latitude>
+      <Longitude unit="DEGREES">34.167</Longitude>
+      <Elevation>1127.0</Elevation>
+      <Site>
+        <Name>Mbale, Uganda</Name>
+      </Site>
+      <CreationDate>2007-08-26T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MAUS" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2007-09-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">-2.741</Latitude>
+      <Longitude unit="DEGREES">36.704</Longitude>
+      <Elevation>1334.0</Elevation>
+      <Site>
+        <Name>Longido, Tanzania</Name>
+      </Site>
+      <CreationDate>2007-09-01T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MKRE" endDate="2008-12-03T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-21T00:00:00+00:00">
+      <Latitude unit="DEGREES">-4.282</Latitude>
+      <Longitude unit="DEGREES">30.424</Longitude>
+      <Elevation>1175.0</Elevation>
+      <Site>
+        <Name>Makere, Tanzania</Name>
+      </Site>
+      <CreationDate>2007-08-21T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MLBA" endDate="2008-12-05T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-12T00:00:00+00:00">
+      <Latitude unit="DEGREES">-1.838</Latitude>
+      <Longitude unit="DEGREES">31.67</Longitude>
+      <Elevation>1337.0</Elevation>
+      <Site>
+        <Name>Muleba, Tanzania</Name>
+      </Site>
+      <CreationDate>2007-08-12T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="NAMA" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2008-12-16T00:00:00+00:00">
+      <Latitude unit="DEGREES">-7.5094</Latitude>
+      <Longitude unit="DEGREES">31.0414</Longitude>
+      <Elevation>1559.0</Elevation>
+      <Site>
+        <Name>Namanyere, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-16T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="NJOM" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2008-12-20T00:00:00+00:00">
+      <Latitude unit="DEGREES">-9.3665</Latitude>
+      <Longitude unit="DEGREES">34.7911</Longitude>
+      <Elevation>1949.0</Elevation>
+      <Site>
+        <Name>Njombe, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-20T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="PIGI" endDate="2008-11-29T23:59:59+00:00" restrictedStatus="open" startDate="2007-07-13T00:00:00+00:00">
+      <Latitude unit="DEGREES">0.231</Latitude>
+      <Longitude unit="DEGREES">32.319</Longitude>
+      <Elevation>1252.0</Elevation>
+      <Site>
+        <Name>Mpigi, Uganda</Name>
+      </Site>
+      <CreationDate>2007-07-13T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="PNDA" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2008-12-13T00:00:00+00:00">
+      <Latitude unit="DEGREES">-6.3519</Latitude>
+      <Longitude unit="DEGREES">31.0613</Longitude>
+      <Elevation>1071.0</Elevation>
+      <Site>
+        <Name>Mpanda, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-13T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="ROTI" endDate="2008-11-25T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-26T00:00:00+00:00">
+      <Latitude unit="DEGREES">1.626</Latitude>
+      <Longitude unit="DEGREES">33.6</Longitude>
+      <Elevation>1108.0</Elevation>
+      <Site>
+        <Name>Soroti, Uganda</Name>
+      </Site>
+      <CreationDate>2007-08-26T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SAKA" endDate="2008-11-28T23:59:59+00:00" restrictedStatus="open" startDate="2007-09-05T00:00:00+00:00">
+      <Latitude unit="DEGREES">-0.315</Latitude>
+      <Longitude unit="DEGREES">31.737</Longitude>
+      <Elevation>1263.0</Elevation>
+      <Site>
+        <Name>Masaka, Uganda</Name>
+      </Site>
+      <CreationDate>2007-09-05T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SULU" endDate="2008-12-01T23:59:59+00:00" restrictedStatus="open" startDate="2007-08-22T00:00:00+00:00">
+      <Latitude unit="DEGREES">-4.573</Latitude>
+      <Longitude unit="DEGREES">30.087</Longitude>
+      <Elevation>1359.0</Elevation>
+      <Site>
+        <Name>Kasulu, Tanzania</Name>
+      </Site>
+      <CreationDate>2007-08-22T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="TUND" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2008-12-18T00:00:00+00:00">
+      <Latitude unit="DEGREES">-9.2958</Latitude>
+      <Longitude unit="DEGREES">32.7712</Longitude>
+      <Elevation>1660.0</Elevation>
+      <Site>
+        <Name>Tunduma, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-18T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="UVZA" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2008-12-03T00:00:00+00:00">
+      <Latitude unit="DEGREES">-5.1049</Latitude>
+      <Longitude unit="DEGREES">30.3934</Longitude>
+      <Elevation>992.0</Elevation>
+      <Site>
+        <Name>Uvinza, Tanzania</Name>
+      </Site>
+      <CreationDate>2008-12-03T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+  </Network>
+</FDSNStationXML>

@@ -1,0 +1,627 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<FDSNStationXML schemaVersion="1.0" xmlns="http://www.fdsn.org/xml/station/1">
+  <Source>IRIS-DMC</Source>
+  <Sender>IRIS-DMC</Sender>
+  <Module>IRIS WEB SERVICE: fdsnws-station | version: 1.1.20</Module>
+  <ModuleURI>http://service.iris.edu/fdsnws/station/1/query?endtime=2000-01-01T00%3A00%3A00.000000&amp;network=XD&amp;starttime=1999-01-01T00%3A00%3A00.000000&amp;format=xml</ModuleURI>
+  <Created>2016-04-13T16:23:13+00:00</Created>
+  <Network code="XD" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-01-01T00:00:00+00:00">
+    <Description>Woodlark - D_Entrecasteaux Rift, PNG</Description>
+    <TotalNumberStations>19</TotalNumberStations>
+    <SelectedNumberStations>19</SelectedNumberStations>
+    <Station code="BBU" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-20T04:54:02+00:00">
+      <Comment>
+        <Value>Clock is Unlocked.</Value>
+        <BeginEffectiveTime>1999-10-09T21:00:01+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-26T21:07:17+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-01T06:46:44+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-09-01T06:53:49+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-14T09:06:03+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-14T09:14:23+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-14T08:54:51+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-14T09:01:59+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-11-26T21:07:17+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-26T21:11:13+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-9.376595</Latitude>
+      <Longitude unit="DEGREES">150.362054</Longitude>
+      <Elevation>137.0</Elevation>
+      <Site>
+        <Name>Bolu Bolu, Goodenough Island</Name>
+      </Site>
+      <CreationDate>1999-07-20T04:54:02+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="EBM" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-08-14T02:59:57+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-04T03:35:03+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-09-04T03:49:15+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-11-29T01:58:38+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-29T02:14:48+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Clock is Unlocked.</Value>
+        <BeginEffectiveTime>2000-01-27T00:56:02+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-19T01:28:18+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-10.604326</Latitude>
+      <Longitude unit="DEGREES">150.653543</Longitude>
+      <Elevation>102.0</Elevation>
+      <Site>
+        <Name>Ebuma Island</Name>
+      </Site>
+      <CreationDate>1999-08-14T02:59:57+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="ECP" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-08-05T05:38:04+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-18T16:45:12+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-31T06:22:23+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-16T22:02:36+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-16T23:26:03+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-09T02:36:04+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-09T02:46:29+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-25T10:54:38+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-26T02:17:45+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-10.227249</Latitude>
+      <Longitude unit="DEGREES">150.875363</Longitude>
+      <Elevation>97.0</Elevation>
+      <Site>
+        <Name>East Cape, Main land PNG</Name>
+      </Site>
+      <CreationDate>1999-08-05T05:38:04+00:00</CreationDate>
+      <TotalNumberChannels>13</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="EGM" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-10-18T20:52:04+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-10-20T16:20:00+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-12-18T02:23:30+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-9.385922</Latitude>
+      <Longitude unit="DEGREES">151.939443</Longitude>
+      <Elevation>100.0</Elevation>
+      <Site>
+        <Name>Egum Atoll</Name>
+      </Site>
+      <CreationDate>1999-10-18T20:52:04+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="ESA" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-19T02:22:29+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-01T23:30:38+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-09-02T00:38:15+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-01T23:25:04+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-09-01T23:29:20+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-03T09:46:39+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-03T10:47:38+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-15T01:16:32+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-15T01:17:03+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-15T00:42:49+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-15T01:15:18+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-10T02:51:13+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-10T02:51:40+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-11-27T22:59:08+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-10T02:49:31+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-9.739139</Latitude>
+      <Longitude unit="DEGREES">150.811984</Longitude>
+      <Elevation>133.0</Elevation>
+      <Site>
+        <Name>Esa-Ala,  Normanby Island</Name>
+      </Site>
+      <CreationDate>1999-07-19T02:22:29+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="GAM" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-21T04:38:28+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-04T23:55:38+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-09-01T10:37:13+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-14T03:40:01+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-14T04:02:18+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-14T03:27:46+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-14T03:39:56+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-14T03:23:59+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-14T03:24:00+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-11-27T02:15:34+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-27T02:36:11+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Clock is Unlocked.</Value>
+        <BeginEffectiveTime>2000-05-30T21:58:58+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-06-04T02:02:02+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Clock is Unlocked.</Value>
+        <BeginEffectiveTime>2000-02-22T19:40:55+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-14T03:24:02+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-9.422573</Latitude>
+      <Longitude unit="DEGREES">150.800167</Longitude>
+      <Elevation>118.0</Elevation>
+      <Site>
+        <Name>Gameta, Fergusson Island</Name>
+      </Site>
+      <CreationDate>1999-07-21T04:38:28+00:00</CreationDate>
+      <TotalNumberChannels>16</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KIR" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-23T00:51:21+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-22T12:01:40+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-12-10T06:02:23+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-07-24T17:43:47+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-09-10T00:07:47+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-05-28T06:17:40+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-06-05T22:34:41+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-04-06T03:04:48+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-04-14T06:29:45+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-12T23:38:44+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-12T23:38:45+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-12T23:13:00+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-12T23:36:20+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-12T00:47:02+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-12T01:04:26+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-12T00:13:56+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-12T00:32:36+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-11T23:06:32+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-12T00:05:49+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-11T22:52:33+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-11T23:01:59+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-8.507367</Latitude>
+      <Longitude unit="DEGREES">151.084944</Longitude>
+      <Elevation>88.0</Elevation>
+      <Site>
+        <Name>Losuia, Kiriwina Island</Name>
+      </Site>
+      <CreationDate>1999-07-23T00:51:21+00:00</CreationDate>
+      <TotalNumberChannels>16</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KUL1" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-26T01:46:38+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-11-05T08:10:51+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-05T22:02:40+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-10-18T00:01:25+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-10-18T00:06:46+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-04T02:30:42+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-10-17T23:30:09+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-07-28T01:18:14+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-07-28T02:08:37+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-12-19T01:23:17+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-12-19T02:05:15+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-9.088609</Latitude>
+      <Longitude unit="DEGREES">152.715421</Longitude>
+      <Elevation>126.0</Elevation>
+      <Site>
+        <Name>Kulumwadao #1, Woodlark Island</Name>
+      </Site>
+      <CreationDate>1999-07-26T01:46:38+00:00</CreationDate>
+      <TotalNumberChannels>22</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KUL2" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-26T01:07:10+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-07-31T06:36:00+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-10-17T23:04:06+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-07-28T01:39:43+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-07-28T01:47:28+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-10-31T14:11:00+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-12-19T02:21:30+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-9.088606</Latitude>
+      <Longitude unit="DEGREES">152.715451</Longitude>
+      <Elevation>123.0</Elevation>
+      <Site>
+        <Name>Kulumwadao #2, Woodlark Island</Name>
+      </Site>
+      <CreationDate>1999-07-26T01:07:10+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MGO" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-17T08:05:11+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-07-28T03:15:04+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-07-28T04:01:46+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-11-25T01:18:36+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-25T01:46:58+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-30T02:49:22+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-30T07:35:30+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-04T04:56:52+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-04T05:02:54+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-04T04:39:34+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-04T04:53:56+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Clock is Unlocked.</Value>
+        <BeginEffectiveTime>1999-09-20T17:41:00+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-25T01:18:00+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-10.402871</Latitude>
+      <Longitude unit="DEGREES">150.303689</Longitude>
+      <Elevation>108.0</Elevation>
+      <Site>
+        <Name>Manago Village, Alotau</Name>
+      </Site>
+      <CreationDate>1999-07-17T08:05:11+00:00</CreationDate>
+      <TotalNumberChannels>14</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MISA" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-25T04:32:52+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-01T09:40:32+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-07T01:25:27+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-11-19T23:14:05+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-19T23:48:06+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-10.665967</Latitude>
+      <Longitude unit="DEGREES">152.801611</Longitude>
+      <Elevation>359.0</Elevation>
+      <Site>
+        <Name>Misima Mines A, Misima Island</Name>
+      </Site>
+      <CreationDate>1999-07-25T04:32:52+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MISB" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-25T07:03:06+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-07T02:38:51+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-07T02:43:38+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-06T04:20:55+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-06T04:37:49+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-10.653481</Latitude>
+      <Longitude unit="DEGREES">152.797666</Longitude>
+      <Elevation>345.0</Elevation>
+      <Site>
+        <Name>Misima Mines B, Misima Island</Name>
+      </Site>
+      <CreationDate>1999-07-25T07:03:06+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="MISC" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-25T01:42:32+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-06T23:09:57+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-06T23:47:26+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-07T21:01:30+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-10-19T22:06:44+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-10.674984</Latitude>
+      <Longitude unit="DEGREES">152.784114</Longitude>
+      <Elevation>292.0</Elevation>
+      <Site>
+        <Name>Misima Mines C, Misima Island</Name>
+      </Site>
+      <CreationDate>1999-07-25T01:42:32+00:00</CreationDate>
+      <TotalNumberChannels>13</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SEHA" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-20T00:48:40+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-07-20T02:06:14+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-07-20T01:16:32+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-07-26T03:32:16+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-07-31T06:39:00+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-07-20T01:16:32+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-07-20T02:06:14+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-15T05:47:10+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-15T06:03:00+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-11-09T06:26:58+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-28T01:59:52+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-02T06:26:47+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-09-02T06:34:49+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-04T00:53:24+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-04T01:42:40+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-15T06:18:26+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-15T06:25:25+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>2000-03-15T06:09:23+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2000-03-15T06:13:31+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-9.961867</Latitude>
+      <Longitude unit="DEGREES">151.163423</Longitude>
+      <Elevation>115.0</Elevation>
+      <Site>
+        <Name>Sehulea (Hilltop), Normanby Island</Name>
+      </Site>
+      <CreationDate>1999-07-20T00:48:40+00:00</CreationDate>
+      <TotalNumberChannels>13</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SEHB" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-20T07:56:37+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-02T03:55:02+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-09-02T04:06:19+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-04T05:18:18+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-04T05:35:22+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-11-27T07:35:46+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-27T07:36:26+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-11-27T07:20:25+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-27T07:35:39+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-9.969559</Latitude>
+      <Longitude unit="DEGREES">151.161596</Longitude>
+      <Elevation>84.0</Elevation>
+      <Site>
+        <Name>Sehulea (Airstrip), Normanby Island</Name>
+      </Site>
+      <CreationDate>1999-07-20T07:56:37+00:00</CreationDate>
+      <TotalNumberChannels>16</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SEHC" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-21T06:44:51+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-02T05:41:43+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-09-02T05:49:50+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-07-31T09:22:55+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-04T02:53:36+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-9.955982</Latitude>
+      <Longitude unit="DEGREES">151.177919</Longitude>
+      <Elevation>103.0</Elevation>
+      <Site>
+        <Name>Sehulea (Sipupu Village), Normanby Island</Name>
+      </Site>
+      <CreationDate>1999-07-21T06:44:51+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SEHD" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-21T06:45:40+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-10-19T21:28:25+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-10-19T22:03:20+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-06T23:08:21+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-10-19T21:23:19+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-08-02T07:20:37+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-04T04:15:28+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-11-10T08:53:48+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-11-28T03:38:02+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-9.941298</Latitude>
+      <Longitude unit="DEGREES">151.188124</Longitude>
+      <Elevation>83.0</Elevation>
+      <Site>
+        <Name>Sehulea (Bwaruada Village), Normanby Island</Name>
+      </Site>
+      <CreationDate>1999-07-21T06:45:40+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SEHE" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-07-21T23:09:56+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-03T01:42:44+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-09-03T03:24:27+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-02T03:03:37+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-09-02T03:19:36+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-07-28T05:52:33+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-08-04T07:04:04+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>Clock is Unlocked.</Value>
+        <BeginEffectiveTime>1999-08-07T04:50:00+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-09-03T03:41:00+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-9.98866</Latitude>
+      <Longitude unit="DEGREES">151.152981</Longitude>
+      <Elevation>91.0</Elevation>
+      <Site>
+        <Name>Sehulea (Weioko Village), Normanby Island</Name>
+      </Site>
+      <CreationDate>1999-07-21T23:09:56+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="SEHF" endDate="2000-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-09-03T10:53:53+00:00">
+      <Comment>
+        <Value>Data outage occurred - between configurations</Value>
+        <BeginEffectiveTime>1999-09-06T12:13:40+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>1999-12-01T23:40:00+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">-9.967582</Latitude>
+      <Longitude unit="DEGREES">151.180812</Longitude>
+      <Elevation>257.0</Elevation>
+      <Site>
+        <Name>Sehulea (Kesipwa Village), Normanby Island</Name>
+      </Site>
+      <CreationDate>1999-09-03T10:53:53+00:00</CreationDate>
+      <TotalNumberChannels>7</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+  </Network>
+</FDSNStationXML>
