@@ -19,12 +19,12 @@ def stream2array(stream, normalize=False):
 			x[i,j]=data
 
 	if normalize:
-		if x.max()=0
-			print('Maximum value is 0")
+		if x.max()==0:
+			print('Maximum value is 0')
 			return(x)
 		else:
 			x = x / x.max()
-			return(x)
+	return(x)
 
 def array2stream(ArrayData, st_original=None, network=None):
 	"""

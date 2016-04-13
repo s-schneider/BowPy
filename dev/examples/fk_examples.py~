@@ -34,6 +34,7 @@ import sipy.util.fkutil as fku
 import sipy.util.base as base
 import sipy.util.array_util as au
 
+from sipy.filter.fk import pocs_recon
 from sipy.util.data_request import data_request
 from sipy.filter.fk import fk_filter, fktrafo, fk_reconstruct
 from sipy.util.fkutil import  nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx

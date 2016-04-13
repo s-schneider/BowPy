@@ -273,14 +273,15 @@ def find_closest_station(inventory, stream, latitude, longitude,
 	y = longitude
 	z = absolute_height_in_km
 
-	for i, station in enumerate(inventory[0]):
-		distance = np.sqrt( ((gps2dist_azimuth(lats[i], lngs[i], x, y)[0]) / 1000.0) ** 2  + ( np.abs( np.abs(z) - np.abs(hgt[i]))) ** 2 )
+	for network in inventory:
+		for i, station in enumerate(etwork):
+			distance = np.sqrt( ((gps2dist_azimuth(lats[i], lngs[i], x, y)[0]) / 1000.0) ** 2  + ( np.abs( np.abs(z) - np.abs(hgt[i]))) ** 2 )
 
-		if min_distance is None or distance < min_distance:
-			if station.code in used_stations:
+			if min_distance is None or distance < min_distance:
+				if station.code in used_stations:
 
-				min_distance 		 = distance
-				min_distance_station = station.code
+					min_distance 		 = distance
+					min_distance_station = station.code
 
 	return min_distance_station
 	
@@ -1019,7 +1020,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 		plt.show()
 		plt.ioff()
 
-	return vespa
+	return vespa, taxis, urange
 
 def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak135'):
 	"""
@@ -1342,4 +1343,11 @@ def plot_gcp(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefig
 		plt.draw()
 		plt.show()
 		plt.ioff()
+
+def rm(stream, tracelist):
+	for trace in stream:
+		if trace.stats.station in tracelist:
+			stream.remove(trace)
+
+	return stream
 

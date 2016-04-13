@@ -89,6 +89,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 	#check for Data input
 	if not isinstance(st, Stream):
 		if not isinstance(st, Trace):
+			print('here')
 			try:
 				plot_data(st, zoom=zoom, clr=clr, newfigure=newfigure, savefig=savefig)
 				return
