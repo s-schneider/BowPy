@@ -89,9 +89,10 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 	#check for Data input
 	if not isinstance(st, Stream):
 		if not isinstance(st, Trace):
-			print('here')
 			try:
-				plot_data(st, zoom=zoom, clr=clr, newfigure=newfigure, savefig=savefig)
+				if isinstance(yinfo,bool):
+					yinfo = 1
+				plot_data(st, zoom=zoom, y_dist=yinfo, clr=clr, newfigure=newfigure, savefig=savefig)
 				return
 			except:
 				msg = "Wrong data input, must be Stream or Trace"
@@ -342,7 +343,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			plt.show()
 			plt.ioff()
 
-def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, savefig=False):
+def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, savefig=False, xlabel=None, ylabel=None, t_axis=None, fs=15):
 	"""
 	Alpha Version!
 	Time axis has no time-ticks --> Working on right now
@@ -356,24 +357,59 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 					or import epidist-list via epidist
 	type y_dist:	int or list
 	"""
-	if newfigure: plt.figure()
+	if newfigure: 
+		fig, ax = plt.subplots()
+		ax.set_xlabel(xlabel, fontsize=fs)
+		ax.set_ylabel(ylabel, fontsize=fs)
+		ax.tick_params(axis='both', which='major', labelsize=fs)
 
 	for i, trace in enumerate(data):
 		if isinstance(y_dist,int):
-			if i == 0:
-				plt.plot(zoom*trace+ y_dist*i, color=clr, label=label)
-			else:
-				plt.plot(zoom*trace+ y_dist*i, color=clr)
+			try:
+				if i == 0:
+					ax.plot(t_axis, zoom*trace+ y_dist*i, color=clr, label=label)
+				else:
+					ax.plot(t_axis,zoom*trace+ y_dist*i, color=clr)
+			except:
+				if i == 0:
+					ax.plot(zoom*trace+ y_dist*i, color=clr, label=label)
+				else:
+					ax.plot(zoom*trace+ y_dist*i, color=clr)					
 
 	if savefig:
-		plt.savefig(savefig)
-		plt.close("all")
+		fig.set_size_inches(8,7)
+		fig.savefig(savefig, dpi=300)
+		plt.close('all')
 	else:
 		plt.ion()
 		plt.draw()
+		ax.legend()
 		plt.show()
-		plt.legend()
 		plt.ioff()
+
+def plotfk(data, fs, savefig=False):
+	fig, ax = plt.subplots()
+	ax.set_xlabel('Normalized Wavenumber', fontsize=fs)
+	ax.set_ylabel('Normalized Frequency', fontsize=fs)
+	ax.xaxis.tick_top()
+	ax.xaxis.set_ticks((-0.5, 0.0, 0.5))
+	ax.xaxis.set_label_position('top')
+	ax.tick_params(axis='both', which='major', labelsize=fs)
+
+	ax.imshow(np.flipud(abs(np.fft.fftshift(data.transpose(), axes=1))), aspect='auto', extent=(-0.5, 0.5, 0, 0.5))
+	plt.gca().invert_yaxis()
+
+	if savefig:
+		fig.set_size_inches(7,8)
+		fig.savefig(savefig, dpi=300)
+		plt.close('all')
+	else:
+		plt.ion()
+		plt.draw()
+		ax.legend()
+		plt.show()
+		plt.ioff()
+
 
 def kill(data, stat):
 	"""
