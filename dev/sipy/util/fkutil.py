@@ -4,7 +4,7 @@ import numpy as np
 import math
 
 import sys
-import matplotlib
+import matplotlib as mpl
 # If using a Mac Machine, otherwitse comment the next line out:
 #matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -361,7 +361,9 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 		fig, ax = plt.subplots()
 		ax.set_xlabel(xlabel, fontsize=fs)
 		ax.set_ylabel(ylabel, fontsize=fs)
-		ax.tick_params(axis='both', which='major', labelsize=fs)
+		ax.tick_params(axis='both', which='major', labelsize=fs)	
+		ticks = mpl.ticker.FuncFormatter(lambda r, pos: '{0:g}'.format(r/y_dist))
+		ax.yaxis.set_major_formatter(ticks)
 
 	for i, trace in enumerate(data):
 		if isinstance(y_dist,int):
@@ -369,7 +371,7 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 				if i == 0:
 					ax.plot(t_axis, zoom*trace+ y_dist*i, color=clr, label=label)
 				else:
-					ax.plot(t_axis,zoom*trace+ y_dist*i, color=clr)
+					ax.plot(t_axis, zoom*trace+ y_dist*i, color=clr)
 			except:
 				if i == 0:
 					ax.plot(zoom*trace+ y_dist*i, color=clr, label=label)
