@@ -314,13 +314,14 @@ from sipy.filter.fk import fk_filter
 import sipy.util.fkutil as fku
 import instaseis as ins
 
-uniform=True
+uniform=False
+real=True
 db = ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
 
-tofe = obspy.UTCDateTime(2011,03,11,05,47,32,76)
-lat = 37.5
-lon = 143.1
-depth = 20000
+tofe = obspy.UTCDateTime(2009, 10, 24, 14, 40, 44, 770000)
+lat = -6.1165
+lon = 130.429
+depth = 140300
 aperture=20
 no_of_stations=20
 # in degrees
@@ -338,29 +339,14 @@ catfile = "SYNTH_OUT_cat.xml"
 
 source = ins.Source(
 latitude=lat, longitude=lon, depth_in_m=depth,
-m_rr = 1.73e29 / 1E7,
-m_tt = -2.81e28 / 1E7,
-m_pp = -1.45e29 / 1E7,
-m_rt = 2.12e+29 / 1E7,
-m_rp = 4.55e+29 / 1E7,
-m_tp = -6.57e+28 / 1E7,
+m_rr = 0.526e26 / 1E7,
+m_tt = -2.1e26 / 1E7,
+m_pp = -1.58e26 / 1E7,
+m_rt = 1.08e+26 / 1E7,
+m_rp = 2.05e+26 / 1E7,
+m_tp = 0.607e+26 / 1E7,
 origin_time=tofe
 )
-
-"""
-	origin time      : 2011-03-11T05:47:32.760000Z
-	Longitude        :  143.1 deg
-	Latitude         :   37.5 deg
-	Depth            : 2.0e+01 km
-	Moment Magnitude :   13.82
-	Scalar Moment    :   5.31e+29 Nm
-	Mrr              :   1.73e+29 Nm
-	Mtt              :  -2.81e+28 Nm
-	Mpp              :  -1.45e+29 Nm
-	Mrt              :   2.12e+29 Nm
-	Mrp              :   4.55e+29 Nm
-	Mtp              :  -6.57e+28 Nm
-"""
 
 x = []
 station_range = np.linspace(0,aperture-1,no_of_stations) + 100.
@@ -384,7 +370,6 @@ randrange = np.array([ 100.        ,  101.74222711,  102.8608334 ,  104.13732881
 
 
 
-
 with open( qstfile, "w") as fh:
 	if uniform:
 		k=0
@@ -395,7 +380,11 @@ with open( qstfile, "w") as fh:
 			x.append(ins.Receiver(latitude="54", longitude=str(slon), network="LA", station=name ))
 			latdiff = gps2dist_azimuth(54,0,54,slon)[0]/1000.
 			fh.write("%s    lat:     54.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))
-			k+=1	
+			k+=1
+	elif real:
+
+		for station in network:
+			x.append(ins.Receiver(latitude=str(station.latitude), longitude=str(station.latitude), network=str(network.code), station=str(station.code) ))
 	else:
 		for i, slon in enumerate(randrange):
 			name="X"+str(int(i))
@@ -406,6 +395,7 @@ with open( qstfile, "w") as fh:
 st_synth = []    
 for i in range(len(x)):
     st_synth.append(db.get_seismograms(source=source, receiver=x[i]))
+
 
 
 stream=st_synth[0]

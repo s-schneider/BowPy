@@ -297,7 +297,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			y_dist = st.stats.distance
 		except:
 			print("No distance information attached to trace, no phases are calculated!")
-			markphases=False
+			markphase=False
 
 		if markphase:
 			origin = event.origins[0]['time']

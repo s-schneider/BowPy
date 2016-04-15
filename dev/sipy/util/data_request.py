@@ -272,3 +272,61 @@ def inv4stream(network, client_name, start, end):
 
 	return inv
 
+def create_insta_from_invcat(network, event):
+	import obspy
+	from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
+	from obspy import read as read_st
+	from obspy import read_inventory as read_inv
+	from obspy import read_events as read_cat
+	from obspy.taup import TauPyModel
+
+	import numpy
+	import numpy as np
+	import matplotlib.pyplot as plt
+	import matplotlib as mpl
+	import scipy as sp
+	import scipy.signal as signal
+	from numpy import genfromtxt
+
+	from sipy.util.array_util import get_coords
+
+	import os
+	import datetime
+
+	import sipy.filter.fk as fk
+	from sipy.filter.fk import fk_filter
+	import sipy.util.fkutil as fku
+	import instaseis as ins
+
+
+	db 		= ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
+
+	tofe 	= event.origins[0].time
+	lat 	= event.origins[0].latitude 
+	lon 	= event.origins[0].longitude
+	depth 	= event.origins[0].depth
+
+	source = ins.Source(
+	latitude=lat, longitude=lon, depth_in_m=depth,
+	m_rr = 0.526e26 / 1E7,
+	m_tt = -2.1e26 / 1E7,
+	m_pp = -1.58e26 / 1E7,
+	m_rt = 1.08e+26 / 1E7,
+	m_rp = 2.05e+26 / 1E7,
+	m_tp = 0.607e+26 / 1E7,
+	origin_time=tofe
+	)
+
+	stream = Stream()
+	tmp = []
+	for station in network:
+		rec = ins.Receiver(latitude=str(station.latitude), longitude=str(station.longitude), network=str(network.code), station=str(station.code) )
+		tmp.append(db.get_seismograms(source=source, receiver=rec))
+
+	for x in tmp:
+		stream += x
+
+	return stream
+
+
+

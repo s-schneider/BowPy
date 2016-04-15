@@ -18,7 +18,7 @@ import matplotlib.ticker as ticker
 from mpl_toolkits.basemap import Basemap
 from matplotlib.ticker import MaxNLocator
 
-from obspy import UTCDateTime, Stream, Inventory
+from obspy import UTCDateTime, Stream, Inventory, Trace 
 from obspy.core.event.event import Event
 from obspy.core.inventory.network import Network
 from obspy.core import AttribDict
@@ -110,12 +110,20 @@ def attach_network_to_traces(stream, inventory):
 	"""
 	Attaches the network-code of the inventory to each trace of the stream
 	"""
-	for trace in stream:
+	if isinstance(stream, Stream):
+		for trace in stream:
+			for network in inventory:
+				for station in network:
+					if station.code != trace.meta.station:
+						continue
+					trace.meta.network = network.code
+
+	elif isinstance(stream, Trace):
 		for network in inventory:
 			for station in network:
-				if station.code != trace.meta.station:
+				if station.code != stream.meta.station:
 					continue
-				trace.meta.network = network.code
+				stream.meta.network = network.code
 
 def attach_coordinates_to_traces(stream, inventory, event=None):
 	"""
@@ -155,19 +163,34 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 			value["depth"] = event_dpt
 
 	# Attach the information to the traces.
-	for trace in stream:
+	if isinstance(stream, Stream):
+		for trace in stream:
+			try:
+				station = ".".join(trace.id.split(".")[:2])
+				value = coords[station]
+				trace.stats.coordinates = AttribDict()
+				trace.stats.coordinates.latitude = value["latitude"]
+				trace.stats.coordinates.longitude = value["longitude"]
+				trace.stats.coordinates.elevation = value["elevation"]
+				if event:
+					trace.stats.distance = value["distance"]
+					trace.stats.depth = value["depth"]
+			except:
+				continue
+
+	elif isinstance(stream, Trace):
 		try:
-			station = ".".join(trace.id.split(".")[:2])
+			station = ".".join(stream.id.split(".")[:2])
 			value = coords[station]
-			trace.stats.coordinates = AttribDict()
-			trace.stats.coordinates.latitude = value["latitude"]
-			trace.stats.coordinates.longitude = value["longitude"]
-			trace.stats.coordinates.elevation = value["elevation"]
+			stream.stats.coordinates = AttribDict()
+			stream.stats.coordinates.latitude = value["latitude"]
+			stream.stats.coordinates.longitude = value["longitude"]
+			stream.stats.coordinates.elevation = value["elevation"]
 			if event:
-				trace.stats.distance = value["distance"]
-				trace.stats.depth = value["depth"]
+				stream.stats.distance = value["distance"]
+				stream.stats.depth = value["depth"]
 		except:
-			continue
+			return		
 
 def attach_epidist2coords(inventory, event, stream=None):
 	"""
@@ -608,18 +631,19 @@ def stack(data, order=None):
 	Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
 	"""
 
-	i, j = data.shape
 	vNth = 0
 	v 	 = 0
 	# if order is not None	
 	try:
- 		order = float(order)
+		order = float(order)
 		
 		datasgn = np.sign(data)
 		dataNth = abs(data)**(1./order)
+
 		for i,trNth in enumerate(dataNth):
 			vNth = vNth + datasgn[i] * trNth
 
+		vNth = vNth / data.shape[0]
 		vsgn 	= np.sign(vNth)
 		v 		= vsgn * abs(vNth)**order		
 
@@ -940,9 +964,9 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	# Plotting routine
 	if plot:
 		fig, ax = plt.subplots()
-		if st[0].stats.aligned:
+		try:
 			refphase = st[0].stats.aligned
-		else:
+		except:
 			refphase = None
 
 		RE 		= 6371.0
@@ -957,7 +981,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 		# Labels of the plot.
 		# Check if it is a relative plot to an aligned Phase.
 		try:
-			p_ref = m.get_travel_times(depth, dist, [refphase])[0].ray_param_sec_degree
+			p_ref = m.get_travel_times(depth, dist, refphase)[0].ray_param_sec_degree
 			
 			ax.set_ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=12)
 			try:
@@ -999,8 +1023,8 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 
 		# Plot all the traces of the Vespagram.
 		else:
-			ax.ylim(urange[0]-0.5, urange[urange.size-1]+0.5)
-			ax.xticks(np.arange(taxis[0], taxis[taxis.size-1], 100))
+			ax.set_ylim(urange[0]-0.5, urange[urange.size-1]+0.5)
+			ax.set_xticks(np.arange(taxis[0], taxis[taxis.size-1], 100))
 			for i, trace in enumerate(vespa):
 				ax.plot(taxis, trace+ urange[i], color='black')
 
@@ -1021,6 +1045,103 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 		plt.ioff()
 
 	return vespa, taxis, urange
+
+def plot_vespa(st, inv, event, data, markphases=['ttall', 'P^410P', 'P^660P'], plot=True):
+
+	center 	= geometrical_center(inv)
+	
+	cstat 	= find_closest_station(inv, st, center['latitude'], center['longitude'])
+	
+	for i, trace in enumerate(st):
+		if not trace.stats.station in [cstat]:
+			continue
+		else:
+			sref=i
+
+	vespa = data[0]
+	taxis = data[1]
+	urange = data[2]
+
+	fig, ax = plt.subplots()
+	try:
+		refphase = st[0].stats.aligned
+	except:
+		refphase = None
+
+	RE 		= 6371.0
+	REdeg 	= kilometer2degrees(RE)
+	origin 	= event.origins[0]['time']
+	depth 	= event.origins[0]['depth']/1000.
+	m 		= TauPyModel('ak135')
+	dist 	= st[sref].stats.distance
+	arrival =  m.get_travel_times(depth, dist, phase_list=markphases)
+
+
+	# Labels of the plot.
+	# Check if it is a relative plot to an aligned Phase.
+	try:
+		p_ref = m.get_travel_times(depth, dist, refphase)[0].ray_param_sec_degree
+		
+		ax.set_ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=12)
+		try:
+			ax.set_title(r'Relative %ith root Vespagram' %(power), fontsize=12 )
+		except:
+			ax.set_title(r'Relative linear Vespagram', fontsize=12 )
+	except:
+		p_ref = 0
+		ax.set_ylabel(r'$p$ in $\frac{deg}{s}$')
+		try:
+			ax.set_title(r'%ith root Vespagram' %(power), fontsize=12 )
+		except:
+			ax.set_title(r'Linear Vespagram', fontsize=12 )
+	
+	
+
+	
+	ax.set_xlabel(r'Time in s', fontsize=15)
+	
+	# Do the contour plot of the Vespagram.
+	if plot in ['contour', 'Contour']:
+		cax = ax.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()), origin='lower')
+
+		for phase in arrival:
+			t 			= phase.time
+			phase_time 	= origin + t - st[sref].stats.starttime
+			Phase_npt 	= int(phase_time/st[sref].stats.delta)
+			tPhase 		= Phase_npt * st[sref].stats.delta
+			name 		= phase.name
+			sloPhase 	= phase.ray_param_sec_degree - p_ref
+			if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
+				continue
+			ax.autoscale(False)
+			ax.plot(tPhase, sloPhase, 'x')
+			ax.annotate('%s' % name, xy=(tPhase,sloPhase))
+
+		fig.colorbar(cax)
+
+	# Plot all the traces of the Vespagram.
+	else:
+		ax.set_ylim(urange[0]-0.5, urange[urange.size-1]+0.5)
+		ax.set_xticks(np.arange(taxis[0], taxis[taxis.size-1], 100))
+		for i, trace in enumerate(vespa):
+			ax.plot(taxis, trace+ urange[i], color='black')
+
+		for phase in arrival:
+			t 			= phase.time
+			phase_time 	= origin + t - st[sref].stats.starttime
+			Phase_npt 	= int(phase_time/st[sref].stats.delta)
+			tPhase 		= Phase_npt * st[sref].stats.delta
+			name 		= phase.name
+			sloPhase 	= phase.ray_param_sec_degree - p_ref
+			if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
+				continue
+			ax.plot(tPhase, sloPhase, 'x')
+			ax.annotate('%s' % name, xy=(tPhase+1,sloPhase))
+	plt.ion()
+	plt.draw()
+	plt.show()
+	plt.ioff()
+
 
 def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak135'):
 	"""
