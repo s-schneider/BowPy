@@ -45,7 +45,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphase=None, norm=None, clr='black', clrtrace=None, newfigure=True, savefig=False):
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphase=None, norm=None, clr='black', 
+		clrtrace=None, newfigure=True, savefig=False, xlabel=None, ylabel=None, t_axis=None, fs=15):
 	"""
 	Alpha Version!
 	
@@ -92,13 +93,13 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			try:
 				if isinstance(yinfo,bool):
 					yinfo = 1
-				plot_data(st, zoom=zoom, y_dist=yinfo, clr=clr, newfigure=newfigure, savefig=savefig)
+				plot_data(st, zoom=zoom, y_dist=yinfo, clr=clr, newfigure=newfigure, savefig=savefig, xlabel=xlabel, ylabel=ylabel, t_axis=t_axis, fs=fs)
 				return
 			except:
 				msg = "Wrong data input, must be Stream or Trace"
 				raise TypeError(msg)
 	if newfigure:
-		plt.figure()
+		fig, ax = plt.subplots()
 
 	if isinstance(st, Stream):
 		t_axis = np.linspace(0,st[0].stats.delta * st[0].stats.npts, st[0].stats.npts)
@@ -107,7 +108,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 		spacing=2.
 
 		# Set axis information and bools.
-		plt.xlabel("Time in s")
+		ax.set_xlabel("Time in s")
 		isinv = False
 		isevent = False
 		cclr = clr
@@ -185,8 +186,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					return
 
 				if yinfo:
-					plt.ylabel("Distance in deg")
-					plt.xlabel("Time in s")
+					ax.set_ylabel("Distance in deg")
+					ax.set_xlabel("Time in s")
 
 					try:
 						if j in clrtrace: 
@@ -196,14 +197,14 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					except:
 						cclr = clr
 
-					plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-					plt.plot(t_axis,zoom*trace+ y_dist, color=cclr)
-					plt.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color='red' )
+					ax.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
+					ax.plot(t_axis,zoom*trace+ y_dist, color=cclr)
+					ax.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color='red' )
 					for time, key in enumerate(timetable[0]):
-						plt.annotate('%s' % key, xy=(timetable[1][time],y_dist))
+						ax.annotate('%s' % key, xy=(timetable[1][time],y_dist))
 				else:
-					plt.ylabel("No. of trace")
-					plt.xlabel("Time in s")
+					ax.set_ylabel("No. of trace")
+					ax.set_xlabel("Time in s")
 
 					try:
 						if j in clrtrace: 
@@ -213,12 +214,12 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					except:
 						cclr = clr
 
-					plt.gca().yaxis.set_major_locator(plt.NullLocator())
-					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-					plt.plot(t_axis,zoom*trace+ spacing*j, color=cclr)
-					plt.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color='red' )
+					fig.gca().yaxis.set_major_locator(plt.NullLocator())
+					ax.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
+					ax.plot(t_axis,zoom*trace+ spacing*j, color=cclr)
+					ax.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color='red' )
 					for time, key in enumerate(timetable[0]):
-						plt.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
+						ax.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
 
 			elif markphase and not isinv:
 				msg='Markphase needs Inventory Information, not found.'
@@ -230,8 +231,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 				
 			elif type(epidistances) == numpy.ndarray or type(epidistances)==list:
 				y_dist = epidistances
-				plt.ylabel("Distance in deg")
-				plt.xlabel("Time in s")
+				ax.set_ylabel("Distance in deg")
+				ax.set_xlabel("Time in s")
 				try:
 					if j in clrtrace: 
 						cclr = clrtrace[j]
@@ -239,14 +240,14 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 						cclr = clr
 				except:
 					cclr = clr
-				plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist[j]+0.1))
-				plt.plot(t_axis, zoom*trace + y_dist[j], color=cclr)
+				ax.annotate('%s' % st[j].stats.station, xy=(1,y_dist[j]+0.1))
+				ax.plot(t_axis, zoom*trace + y_dist[j], color=cclr)
 
 			else:
 				if yinfo:
 					try:
-						plt.ylabel("Distance in deg")
-						plt.xlabel("Time in s")
+						ax.set_ylabel("Distance in deg")
+						ax.set_xlabel("Time in s")
 						try:
 							if j in clrtrace: 
 								cclr = clrtrace[j]
@@ -254,15 +255,15 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 								cclr = clr
 						except:
 							cclr = clr
-						plt.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-						plt.plot(t_axis,zoom*trace+ y_dist, color=cclr)
+						ax.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
+						ax.plot(t_axis,zoom*trace+ y_dist, color=cclr)
 				
 					except:
 						msg='Oops, something not found.'
 						raise IOError(msg)
 				else:
-					plt.ylabel("No. of trace")
-					plt.xlabel("Time in s")
+					ax.set_ylabel("No. of trace")
+					ax.set_xlabel("Time in s")
 					try:
 						if j in clrtrace: 
 							cclr = clrtrace[j]
@@ -271,13 +272,14 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					except:
 						cclr = clr
 
-					plt.gca().yaxis.set_major_locator(plt.NullLocator())
-					plt.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-					plt.plot(t_axis,zoom*trace+ spacing*j, color=cclr)			
+					fig.gca().yaxis.set_major_locator(plt.NullLocator())
+					ax.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
+					ax.plot(t_axis,zoom*trace+ spacing*j, color=cclr)			
 			
 			yold = y_dist
 		if savefig:
-			plt.savefig(savefig)
+			fig.set_size_inches(8,7)
+			fig.savefig(savefig, dpi=300)
 			plt.close("all")
 		else:
 			plt.ion()
@@ -318,21 +320,21 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					timetable[0].append(phase_name)
 					timetable[1].append(Phase)
 
-			plt.ylabel("Amplitude")
-			plt.xlabel("Time in s")
+			ax.set_ylabel("Amplitude")
+			ax.set_xlabel("Time in s")
 			title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
-			plt.title(title)
+			ax.set_title(title)
 			#plt.gca().yaxis.set_major_locator(plt.NullLocator())
-			plt.plot(t_axis,zoom*data, color=clr)
-			plt.plot( (timetable[1],timetable[1]),(-0.5,0.5), color='red' )
+			ax.plot(t_axis,zoom*data, color=clr)
+			ax.plot( (timetable[1],timetable[1]),(-0.5,0.5), color='red' )
 			for time, key in enumerate(timetable[0]):
-				plt.annotate('%s' % key, xy=(timetable[1][time]+5,0.55))
+				ax.annotate('%s' % key, xy=(timetable[1][time]+5,0.55))
 		else:
-			plt.ylabel("Amplitude")
-			plt.xlabel("Time in s")
+			ax.set_ylabel("Amplitude")
+			ax.set_xlabel("Time in s")
 			title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
-			plt.title(title)
-			plt.plot(t_axis, zoom*data, color=clr)
+			ax.set_title(title)
+			ax.plot(t_axis, zoom*data, color=clr)
 
 		if savefig:
 			plt.savefig(savefig)
@@ -393,13 +395,16 @@ def plotfk(data, fs, savefig=False):
 	fig, ax = plt.subplots()
 	ax.set_xlabel('Normalized Wavenumber', fontsize=fs)
 	ax.set_ylabel('Normalized Frequency', fontsize=fs)
-	ax.xaxis.tick_top()
+	#ax.xaxis.tick_top()
 	ax.xaxis.set_ticks((-0.5, 0.0, 0.5))
-	ax.xaxis.set_label_position('top')
+	#ax.xaxis.set_label_position('top')
 	ax.tick_params(axis='both', which='major', labelsize=fs)
 
-	ax.imshow(np.flipud(abs(np.fft.fftshift(data.transpose(), axes=1))), aspect='auto', extent=(-0.5, 0.5, 0, 0.5))
-	plt.gca().invert_yaxis()
+	im = ax.imshow(np.flipud(abs(np.fft.fftshift(data.transpose(), axes=1))), aspect='auto', extent=(-0.5, 0.5, 0, 0.5))
+	cbar = fig.colorbar(im)
+	cbar.ax.tick_params(labelsize=fs)
+	cbar.ax.set_ylabel('R', fontsize=fs)
+	#plt.gca().invert_yaxis()
 
 	if savefig:
 		fig.set_size_inches(7,8)
@@ -719,12 +724,13 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0,
 	Mt = M.conj().transpose()
 	fk_shift =	np.zeros(M.shape).astype('complex')
 	
+	pnorm = 1/2. * ( float(M.shape[0])/float(M.shape[1]) )
+
 	pmin = prange[0]
 	pmax = prange[1]
 	N = abs(pmax - pmin) / pdelta + 1
 	MD = np.zeros(N)
-	pnorm = 1/2. * ( float(M.shape[0])/float(M.shape[1]) )
-	srange = np.linspace(pmin,pmax,N)/pnorm
+	srange = np.linspace(pmin,pmax,N)
 
 	rend = float( len(srange) )
 	for i, delta in enumerate(srange):
