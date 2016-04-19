@@ -100,6 +100,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 				raise TypeError(msg)
 	if newfigure:
 		fig, ax = plt.subplots()
+	else:
+		ax 	= plt.gca()
+		fig = plt.gcf()
 
 	if isinstance(st, Stream):
 		t_axis = np.linspace(0,st[0].stats.delta * st[0].stats.npts, st[0].stats.npts)
@@ -366,6 +369,10 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 		ax.tick_params(axis='both', which='major', labelsize=fs)	
 		ticks = mpl.ticker.FuncFormatter(lambda r, pos: '{0:g}'.format(r/y_dist))
 		ax.yaxis.set_major_formatter(ticks)
+
+	else:
+		ax 	= plt.gca()
+		fig = plt.gcf()
 
 	for i, trace in enumerate(data):
 		if isinstance(y_dist,int):
