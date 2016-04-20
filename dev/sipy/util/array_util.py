@@ -437,7 +437,8 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 	
 	# Calculate depth and distance of receiver and event.
 	# Set some variables.
-	attach_coordinates_to_traces(st_tmp, inv, event)
+	if isinstance(inv, Inventory):
+		attach_coordinates_to_traces(st_tmp, inv, event)
 	depth 	= event.origins[0]['depth']/1000.
 	origin 	= event.origins[0]['time']
 	m 		= TauPyModel(taup_model)
@@ -459,6 +460,10 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 
 		ref_start = trace.stats.starttime
 		delta 	  = trace.stats.delta
+	
+	if isinstance(maxtimewindow, list):
+		maxtimewindow = np.array(maxtimewindow)	
+
 
 	# Calculating reference arriving time/index of phase.
 	ref_t = origin + m.get_travel_times(depth, ref_dist, phase_list=phase)[0].time - ref_start
@@ -467,17 +472,20 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 	for no_x, data_x in enumerate(data):
 		if no_x == iref:
 			continue
-	
+		
 		dist = st_tmp[no_x].stats.distance
 		t 	 = m.get_travel_times(depth, dist, phase_list=phase)[0].time
 
 		# Calculate arrivals, and shift times/indicies.
 		phase_time 				= origin + t - st_tmp[no_x].stats.starttime
 		phase_n 				= int(phase_time/delta)
-		datashift, shift_index 	= shift2ref(data[no_x,:], ref_n, phase_n, mtw=maxtimewindow/delta, method=shiftmethod)
+		if not isinstance(maxtimewindow, np.ndarray):
+			datashift, shift_index 	= shift2ref(data[no_x,:], ref_n, phase_n, mtw=int( float(maxtimewindow)/float(delta)), method=shiftmethod)
+		elif isinstance(maxtimewindow, np.ndarray):
+			datashift, shift_index 	= shift2ref(data[no_x,:], ref_n, phase_n, mtw= maxtimewindow/delta , method=shiftmethod)
+
 		shifttimes[no_x] 		= delta*shift_index
 		data[no_x,:] 			= datashift
-
 		# Positive shift_index indicates positive shift in time and vice versa.	
 		if shift_index > 0 and shift_index > tmin: tmin = shift_index
 		if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
@@ -517,21 +525,56 @@ def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 	"""
 
 	trace=array.copy()
-	# if mtw is set 
-	if mtw != 0:
-		tmin 		= tref - int(mtw/2.)
-		tmax 		= tref + int(mtw/2.)
-		stmax 		= trace[tref]
-		mtw_index 	= tref
-		for k in range(tmin,tmax+1):
-			if trace[k] > stmax:
-					stmax 		= trace[k]
-					mtw_index 	= k
-		shift_value = tref - mtw_index
+	# if mtw is set
+	if isinstance(mtw, float) or isinstance(mtw, int):
+		if mtw > 0:
+			tmin 		= tshift - int(abs(mtw)/2.)
+			tmax 		= tshift + int(abs(mtw)/2.)
+			stmax 		= trace[tshift]
+			mtw_index 	= tshift
+			for k in range(tmin,tmax+1):
+				if trace[k] > stmax:
+						stmax 		= trace[k]
+						mtw_index 	= k
+			shift_value = tref - mtw_index
 
-	else:
-		shift_value = tref - tshift
+		elif mtw < 0:
+			tmin 		= tshift - int(abs(mtw)/2.)
+			tmax 		= tshift + int(abs(mtw)/2.)
+			stmax 		= trace[tshift]
+			mtw_index 	= tshift
+			for k in range(tmin,tmax+1):
+				if trace[k] < stmax:
+						stmax 		= trace[k]
+						mtw_index 	= k
+			shift_value = tref - mtw_index
+	
+		else:
+			shift_value = tref - tshift
 
+	elif isinstance(mtw, np.ndarray):
+		if mtw[0] > 0:
+			tmin 		= mtw[0]
+			tmax 		= mtw[1]
+			stmax 		= trace[tmin]
+			mtw_index 	= tshift
+			for k in np.arange(tmin,tmax+1).astype('int'):
+				if trace[k] > stmax:
+						stmax 		= trace[k]
+						mtw_index 	= k
+			shift_value = tref - mtw_index	
+
+		elif mtw[0] < 0:
+			tmin 		= abs(mtw[0])
+			tmax 		= abs(mtw[1])
+			stmax 		= trace[tmin]
+			mtw_index 	= tshift
+			for k in np.arange(tmin,tmax+1).astype('int'):
+				if trace[k] < stmax:
+						stmax 		= trace[k]
+						mtw_index 	= k
+			shift_value = tref - mtw_index
+	
 	if method in ("normal", "Normal"):
 		shift_trace = np.roll(trace, shift_value)
 	
