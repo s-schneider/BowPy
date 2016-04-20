@@ -1382,7 +1382,7 @@ def plot_transfer_function(stream, inventory, sx=(-10, 10), sy=(-10, 10), sls=0.
     plt.show()
     plt.ioff()
 
-def plot_gcp(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefigure=None):
+def plot_map(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefigure=None, projection='kav7', colors=None, res='c'):
 	"""
 	Documantation follows, still working on. What kind of information would be useful to plot?
 	Have to add a legend.
@@ -1427,22 +1427,37 @@ def plot_gcp(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefig
 	# resolution = 'c' means use crude resolution coastlines, 'l' means low, 'h' high etc.
 	# zorder is the plotting level, 0 is the lowest, 1 = one level higher ...   
 	# m = Basemap(projection='nsper',lon_0=20, lat_0=25,resolution='c')
-	m 		= Basemap(projection='kav7',lon_0=piercepoints[0][1], resolution='c')   
+	if colors in ['bluemarble']:
+		m 		= Basemap(projection='nsper',lat_0=piercepoints[0][0], lon_0=piercepoints[0][1], resolution=None)
+		m.bluemarble()
+
+	elif colors in ['shadedrelief']:
+		m 		= Basemap(projection='nsper',lat_0=piercepoints[0][0], lon_0=piercepoints[0][1], resolution=None)
+		m.shadedrelief()
+
+	else:
+		m 		= Basemap(projection=projection,lon_0=piercepoints[0][1], resolution=res)
+		m.drawmapboundary(fill_color='#B4FFFF')
+		m.fillcontinents(color='#00CC00',lake_color='#B4FFFF', zorder=0)
+		m.drawcoastlines(zorder=1)
+
+	m.drawparallels(np.arange(-90.,120.,30.), zorder=1)
+	m.drawmeridians(np.arange(0.,420.,60.), zorder=1)
+	plt.title("") 
+
 	sx, sy 	= m(slon, slat)
 	rx, ry 	= m(rlon, rlat)
 	px, py 	= m(plon, plat)
 
 	# import event coordinates, with symbol (* = Star)
-	m.scatter(sx, sy, 80, marker='*', color= '#004BCB', zorder=2)
+	m.scatter(sx, sy, 100, marker='*', color= '#004BCB', zorder=2)
 	# import station coordinates, with symbol (^ = triangle)
-	m.scatter(rx, ry, 80, marker='^', color='red', zorder=2)
+	m.scatter(rx, ry, 100, marker='^', color='red', zorder=2)
 	# import bouncepoints coord.
-	m.scatter(px, py, 10, marker='d', color='yellow', zorder=2)
+	m.scatter(px, py, 100, marker='d', color='yellow', zorder=2)
 
 
-	m.drawmapboundary(fill_color='#B4FFFF')
-	m.fillcontinents(color='#00CC00',lake_color='#B4FFFF', zorder=0)
-	m.drawcoastlines(zorder=1)
+
 
 	# Greatcirclepath drawing from station to event
 	# Check if qlat has a length
@@ -1453,12 +1468,10 @@ def plot_gcp(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefig
 	m.drawgreatcircle(slon, slat, rlon, rlat, linewidth = 1, color = 'black', zorder=1)
 
 	# Draw parallels and meridians.
-	m.drawparallels(np.arange(-90.,120.,30.), zorder=1)
-	m.drawmeridians(np.arange(0.,420.,60.), zorder=1)
-	plt.title("")
+
 
 	if savefigure:
-		plt.savefig('plot_gcp.png', format="png", dpi=900)
+		plt.savefig(savefigure, format="png", dpi=900)
 	else:
 		plt.ion()
 		plt.draw()

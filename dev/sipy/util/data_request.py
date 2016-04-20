@@ -9,7 +9,7 @@ from obspy.geodetics import locations2degrees, gps2dist_azimuth
 from obspy.taup import TauPyModel
 import sys
 
-from sipy.util.array_util import center_of_gravity, plot_gcp, attach_network_to_traces, attach_coordinates_to_traces, geometrical_center
+from sipy.util.array_util import center_of_gravity, plot_map, attach_network_to_traces, attach_coordinates_to_traces, geometrical_center
 
 def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ", minlat=None,
                  maxlat=None,minlon=None,maxlon=None, mindepth=None, maxdepth=None, 
