@@ -46,7 +46,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphase=None, norm=None, clr='black', 
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphase=None, phaselabel=True, norm=None, clr='black', 
 		clrtrace=None, newfigure=True, savefig=False, xlabel=None, ylabel=None, t_axis=None, fs=15):
 	"""
 	Alpha Version!
@@ -116,6 +116,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 		isinv = False
 		isevent = False
 		cclr = clr
+
 		# Check if inventory and catalog is input, then calculate distances etc. 
 		if isinstance(inv, Inventory): isinv   = True
 		if isinstance(event,Event):    isevent = True
@@ -125,27 +126,22 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			# Check if there is a network entry
 			attach_network_to_traces(st,inv)
 			attach_coordinates_to_traces(st, inv, event)
+		else:
+			for trace in st:
+				if not trace.stats.distance:
+					isinv = False
+					break
+				else:
+					isinv = True
 		
 		if isevent:	depth = event.origins[0]['depth']/1000.
 		
-		# If no inventory or catalog as input, check if coordinates are attached to stream.
-		if not isinv:
+		else:
 			try:
-				for trace in st:
-					if not trace.stats.distance: 
-						isinv 	= False
-						try:
-							attach_coordinates_to_traces(st, inv, event)
-							isinv = True
-							break
-						except:
-							isinv = False
-							break
-					else: 
-						isinv 	= True
+				depth = st_tmp[0].stats.depth			
 			except:
-				isinv = False
-
+				print('No depth information found')
+	
 		yold=0
 		
 		# Normalize Data, if set to 'all'
@@ -204,8 +200,12 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					ax.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
 					ax.plot(t_axis,zoom*trace+ y_dist, color=cclr)
 					ax.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color='red' )
-					for time, key in enumerate(timetable[0]):
-						ax.annotate('%s' % key, xy=(timetable[1][time],y_dist))
+					if phaselabel:
+						for time, key in enumerate(timetable[0]):
+							ax.annotate('%s' % key, xy=(timetable[1][time],y_dist))
+					else:
+						continue
+
 				else:
 					ax.set_ylabel("No. of trace")
 					ax.set_xlabel("Time in s")
@@ -222,8 +222,11 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					ax.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
 					ax.plot(t_axis,zoom*trace+ spacing*j, color=cclr)
 					ax.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color='red' )
-					for time, key in enumerate(timetable[0]):
-						ax.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
+					if phaselabel:
+						for time, key in enumerate(timetable[0]):
+							ax.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
+					else:
+						continue
 
 			elif markphase and not isinv:
 				msg='Markphase needs Inventory Information, not found.'
@@ -331,8 +334,10 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			#plt.gca().yaxis.set_major_locator(plt.NullLocator())
 			ax.plot(t_axis,zoom*data, color=clr)
 			ax.plot( (timetable[1],timetable[1]),(-0.5,0.5), color='red' )
-			for time, key in enumerate(timetable[0]):
-				ax.annotate('%s' % key, xy=(timetable[1][time]+5,0.55))
+			if phaselabel:
+				for time, key in enumerate(timetable[0]):
+					ax.annotate('%s' % key, xy=(timetable[1][time]+5,0.55))
+
 		else:
 			ax.set_ylabel("Amplitude")
 			ax.set_xlabel("Time in s")
@@ -1017,10 +1022,6 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None,
 			ADfinal[n] = ADtemp[n].copy()
 
 	elif method in ('ssa'):
-		print(noft)
-		print(dt)
-		print(flow)
-		print(fhigh)
 		for n in noft:
 			data_tmp 		= ArrayData.copy()
 			data_ssa 		= fx_ssa(data_tmp,dt,p,flow,fhigh)

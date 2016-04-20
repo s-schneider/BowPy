@@ -655,7 +655,7 @@ def stack(data, order=None):
 	return v
 
 
-def partial_stack(st, bins, phase, overlap=None, order=0.2, align=True, maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
+def partial_stack(st, bins, phase, overlap=None, order=None, align=True, maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
 	"""
 	Will sort the traces into equally distributed bins and stack the bins.
 	The stacking is just an addition of the traces, more advanced schemes might follow.
@@ -756,10 +756,10 @@ def partial_stack(st, bins, phase, overlap=None, order=0.2, align=True, maxtimew
 		yr_sampleindex = np.zeros(len(y_resample)).astype('int')
 		yi_sampleindex = np.zeros(len(epidist)).astype('int')
 		for i, res_distance in enumerate(y_resample):
-			yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[phase])[0].time / delta)
+			yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=phase)[0].time / delta)
 		
 		for i, epi_distance in enumerate(epidist):
-			yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[phase])[0].time / delta)
+			yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=phase)[0].time / delta)
 
 	# Loop through all bins.
 	for i, bins in enumerate(L):
@@ -1143,7 +1143,7 @@ def plot_vespa(st, inv, event, data, markphases=['ttall', 'P^410P', 'P^660P'], p
 	plt.ioff()
 
 
-def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak135'):
+def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak135', stack=False, refphase=['PP']):
 	"""
 	Function reorganizes the traces in a equidistant manner.
 	"""	
@@ -1169,18 +1169,22 @@ def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak13
 	ymax 		= yinfo.max()
 	ymin 		= yinfo.min()
 	ymeandiff 	= abs(np.diff(yinfo).mean())
-	npts 		= (ymax - ymin)	/ ymeandiff
-	
+	#npts 		= (ymax - ymin)	/ ymeandiff
+	npts 		= data.shape[0]
+
 	yresample 	= np.linspace(ymin, ymax, npts)
 	ilist		= []
 
 	# Shifting takes place
 	for no, trace in enumerate(st_tmp):
 
-		index_resampled = np.abs(yresample - trace.stats.distance).argmin()
-		
-		torg 		= m.get_travel_times(trace.stats.depth, trace.stats.distance, phase_list=['P'])[0].time
-		tres 		= m.get_travel_times(trace.stats.depth, yresample[index_resampled], phase_list=['P'])[0].time
+		if stack:
+			index_resampled = np.abs(yresample - trace.stats.distance).argmin()
+		else:
+			index_resampled = no
+
+		torg 		= m.get_travel_times(trace.stats.depth, trace.stats.distance, phase_list=refphase)[0].time
+		tres 		= m.get_travel_times(trace.stats.depth, yresample[index_resampled], phase_list=refphase)[0].time
 		tdelta 		= tres - torg 
 		shiftvalue 	= int(tdelta / trace.stats.delta)
 
@@ -1188,23 +1192,25 @@ def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak13
 		trace.stats.starttime	= trace.stats.starttime + tdelta
 
 		# Doublettes are stacked
-		if index_resampled in ilist:
-			stacks = [trace.data]
-			for i, stacktraces in enumerate(stream_resample):
-				if stacktraces.stats.distance == yresample[index_resampled]:
-					stacks.append(stacktraces.data)
-			stream_resample[i].data  = stack(np.array(stacks)) 
-			continue
+		if stack:
+			if index_resampled in ilist:
+				stacks = [trace.data]
+				for i, stacktraces in enumerate(stream_resample):
+					if stacktraces.stats.distance == yresample[index_resampled]:
+						stacks.append(stacktraces.data)
+				stream_resample[i].data  = stack(np.array(stacks)) 
+				continue
 
 		# If Distance is resonable, shift trace and correct time information.
-		if np.abs(yresample - trace.stats.distance).min() <= ymeandiff:
+		#if np.abs(yresample - trace.stats.distance).min() <= ymeandiff:
 
-			trace.stats.distance = yresample[index_resampled]
-			stream_resample 	+= trace
-			ilist.append(index_resampled)
+		trace.stats.distance = yresample[index_resampled]
+		trace.stats.processing.append(u'resampled')
+		stream_resample 	+= trace
+		ilist.append(index_resampled)
 
-		else:
-			print("Do something, difference is too big")
+		#else:
+		#	print("Do something, difference is too big")
 
 
 

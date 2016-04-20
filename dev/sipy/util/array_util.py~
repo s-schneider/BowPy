@@ -18,7 +18,7 @@ import matplotlib.ticker as ticker
 from mpl_toolkits.basemap import Basemap
 from matplotlib.ticker import MaxNLocator
 
-from obspy import UTCDateTime, Stream, Inventory
+from obspy import UTCDateTime, Stream, Inventory, Trace 
 from obspy.core.event.event import Event
 from obspy.core.inventory.network import Network
 from obspy.core import AttribDict
@@ -110,12 +110,20 @@ def attach_network_to_traces(stream, inventory):
 	"""
 	Attaches the network-code of the inventory to each trace of the stream
 	"""
-	for trace in stream:
+	if isinstance(stream, Stream):
+		for trace in stream:
+			for network in inventory:
+				for station in network:
+					if station.code != trace.meta.station:
+						continue
+					trace.meta.network = network.code
+
+	elif isinstance(stream, Trace):
 		for network in inventory:
 			for station in network:
-				if station.code != trace.meta.station:
+				if station.code != stream.meta.station:
 					continue
-				trace.meta.network = network.code
+				stream.meta.network = network.code
 
 def attach_coordinates_to_traces(stream, inventory, event=None):
 	"""
@@ -155,19 +163,34 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 			value["depth"] = event_dpt
 
 	# Attach the information to the traces.
-	for trace in stream:
+	if isinstance(stream, Stream):
+		for trace in stream:
+			try:
+				station = ".".join(trace.id.split(".")[:2])
+				value = coords[station]
+				trace.stats.coordinates = AttribDict()
+				trace.stats.coordinates.latitude = value["latitude"]
+				trace.stats.coordinates.longitude = value["longitude"]
+				trace.stats.coordinates.elevation = value["elevation"]
+				if event:
+					trace.stats.distance = value["distance"]
+					trace.stats.depth = value["depth"]
+			except:
+				continue
+
+	elif isinstance(stream, Trace):
 		try:
-			station = ".".join(trace.id.split(".")[:2])
+			station = ".".join(stream.id.split(".")[:2])
 			value = coords[station]
-			trace.stats.coordinates = AttribDict()
-			trace.stats.coordinates.latitude = value["latitude"]
-			trace.stats.coordinates.longitude = value["longitude"]
-			trace.stats.coordinates.elevation = value["elevation"]
+			stream.stats.coordinates = AttribDict()
+			stream.stats.coordinates.latitude = value["latitude"]
+			stream.stats.coordinates.longitude = value["longitude"]
+			stream.stats.coordinates.elevation = value["elevation"]
 			if event:
-				trace.stats.distance = value["distance"]
-				trace.stats.depth = value["depth"]
+				stream.stats.distance = value["distance"]
+				stream.stats.depth = value["depth"]
 		except:
-			continue
+			return		
 
 def attach_epidist2coords(inventory, event, stream=None):
 	"""
@@ -274,7 +297,7 @@ def find_closest_station(inventory, stream, latitude, longitude,
 	z = absolute_height_in_km
 
 	for network in inventory:
-		for i, station in enumerate(etwork):
+		for i, station in enumerate(network):
 			distance = np.sqrt( ((gps2dist_azimuth(lats[i], lngs[i], x, y)[0]) / 1000.0) ** 2  + ( np.abs( np.abs(z) - np.abs(hgt[i]))) ** 2 )
 
 			if min_distance is None or distance < min_distance:
@@ -389,7 +412,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 	:param event: Eventdata
 
 	:param phase: Phase to align the traces on
-	:type phase: str
+	:type phase: list
 
 	:param ref: name or index of reference station, to which the others are aligned
 	:type ref: int or str
@@ -438,7 +461,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 		delta 	  = trace.stats.delta
 
 	# Calculating reference arriving time/index of phase.
-	ref_t = origin + m.get_travel_times(depth, ref_dist, phase_list=[phase])[0].time - ref_start
+	ref_t = origin + m.get_travel_times(depth, ref_dist, phase_list=phase)[0].time - ref_start
 	ref_n = int(ref_t/delta)
 	
 	for no_x, data_x in enumerate(data):
@@ -446,7 +469,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 			continue
 	
 		dist = st_tmp[no_x].stats.distance
-		t 	 = m.get_travel_times(depth, dist, phase_list=[phase])[0].time
+		t 	 = m.get_travel_times(depth, dist, phase_list=phase)[0].time
 
 		# Calculate arrivals, and shift times/indicies.
 		phase_time 				= origin + t - st_tmp[no_x].stats.starttime
@@ -608,18 +631,19 @@ def stack(data, order=None):
 	Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
 	"""
 
-	i, j = data.shape
 	vNth = 0
 	v 	 = 0
 	# if order is not None	
 	try:
- 		order = float(order)
+		order = float(order)
 		
 		datasgn = np.sign(data)
 		dataNth = abs(data)**(1./order)
+
 		for i,trNth in enumerate(dataNth):
 			vNth = vNth + datasgn[i] * trNth
 
+		vNth = vNth / data.shape[0]
 		vsgn 	= np.sign(vNth)
 		v 		= vsgn * abs(vNth)**order		
 
@@ -732,10 +756,10 @@ def partial_stack(st, bins, phase, overlap=None, order=0.2, align=True, maxtimew
 		yr_sampleindex = np.zeros(len(y_resample)).astype('int')
 		yi_sampleindex = np.zeros(len(epidist)).astype('int')
 		for i, res_distance in enumerate(y_resample):
-			yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[phase])[0].time / delta)
+			yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=phase)[0].time / delta)
 		
 		for i, epi_distance in enumerate(epidist):
-			yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[phase])[0].time / delta)
+			yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=phase)[0].time / delta)
 
 	# Loop through all bins.
 	for i, bins in enumerate(L):
@@ -940,9 +964,9 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	# Plotting routine
 	if plot:
 		fig, ax = plt.subplots()
-		if st[0].stats.aligned:
+		try:
 			refphase = st[0].stats.aligned
-		else:
+		except:
 			refphase = None
 
 		RE 		= 6371.0
@@ -957,7 +981,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 		# Labels of the plot.
 		# Check if it is a relative plot to an aligned Phase.
 		try:
-			p_ref = m.get_travel_times(depth, dist, [refphase])[0].ray_param_sec_degree
+			p_ref = m.get_travel_times(depth, dist, refphase)[0].ray_param_sec_degree
 			
 			ax.set_ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=12)
 			try:
@@ -999,8 +1023,8 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 
 		# Plot all the traces of the Vespagram.
 		else:
-			ax.ylim(urange[0]-0.5, urange[urange.size-1]+0.5)
-			ax.xticks(np.arange(taxis[0], taxis[taxis.size-1], 100))
+			ax.set_ylim(urange[0]-0.5, urange[urange.size-1]+0.5)
+			ax.set_xticks(np.arange(taxis[0], taxis[taxis.size-1], 100))
 			for i, trace in enumerate(vespa):
 				ax.plot(taxis, trace+ urange[i], color='black')
 
@@ -1020,9 +1044,106 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 		plt.show()
 		plt.ioff()
 
-	return vespa, taxis
+	return vespa, taxis, urange
 
-def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak135'):
+def plot_vespa(st, inv, event, data, markphases=['ttall', 'P^410P', 'P^660P'], plot=True):
+
+	center 	= geometrical_center(inv)
+	
+	cstat 	= find_closest_station(inv, st, center['latitude'], center['longitude'])
+	
+	for i, trace in enumerate(st):
+		if not trace.stats.station in [cstat]:
+			continue
+		else:
+			sref=i
+
+	vespa = data[0]
+	taxis = data[1]
+	urange = data[2]
+
+	fig, ax = plt.subplots()
+	try:
+		refphase = st[0].stats.aligned
+	except:
+		refphase = None
+
+	RE 		= 6371.0
+	REdeg 	= kilometer2degrees(RE)
+	origin 	= event.origins[0]['time']
+	depth 	= event.origins[0]['depth']/1000.
+	m 		= TauPyModel('ak135')
+	dist 	= st[sref].stats.distance
+	arrival =  m.get_travel_times(depth, dist, phase_list=markphases)
+
+
+	# Labels of the plot.
+	# Check if it is a relative plot to an aligned Phase.
+	try:
+		p_ref = m.get_travel_times(depth, dist, refphase)[0].ray_param_sec_degree
+		
+		ax.set_ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=12)
+		try:
+			ax.set_title(r'Relative %ith root Vespagram' %(power), fontsize=12 )
+		except:
+			ax.set_title(r'Relative linear Vespagram', fontsize=12 )
+	except:
+		p_ref = 0
+		ax.set_ylabel(r'$p$ in $\frac{deg}{s}$')
+		try:
+			ax.set_title(r'%ith root Vespagram' %(power), fontsize=12 )
+		except:
+			ax.set_title(r'Linear Vespagram', fontsize=12 )
+	
+	
+
+	
+	ax.set_xlabel(r'Time in s', fontsize=15)
+	
+	# Do the contour plot of the Vespagram.
+	if plot in ['contour', 'Contour']:
+		cax = ax.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()), origin='lower')
+
+		for phase in arrival:
+			t 			= phase.time
+			phase_time 	= origin + t - st[sref].stats.starttime
+			Phase_npt 	= int(phase_time/st[sref].stats.delta)
+			tPhase 		= Phase_npt * st[sref].stats.delta
+			name 		= phase.name
+			sloPhase 	= phase.ray_param_sec_degree - p_ref
+			if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
+				continue
+			ax.autoscale(False)
+			ax.plot(tPhase, sloPhase, 'x')
+			ax.annotate('%s' % name, xy=(tPhase,sloPhase))
+
+		fig.colorbar(cax)
+
+	# Plot all the traces of the Vespagram.
+	else:
+		ax.set_ylim(urange[0]-0.5, urange[urange.size-1]+0.5)
+		ax.set_xticks(np.arange(taxis[0], taxis[taxis.size-1], 100))
+		for i, trace in enumerate(vespa):
+			ax.plot(taxis, trace+ urange[i], color='black')
+
+		for phase in arrival:
+			t 			= phase.time
+			phase_time 	= origin + t - st[sref].stats.starttime
+			Phase_npt 	= int(phase_time/st[sref].stats.delta)
+			tPhase 		= Phase_npt * st[sref].stats.delta
+			name 		= phase.name
+			sloPhase 	= phase.ray_param_sec_degree - p_ref
+			if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
+				continue
+			ax.plot(tPhase, sloPhase, 'x')
+			ax.annotate('%s' % name, xy=(tPhase+1,sloPhase))
+	plt.ion()
+	plt.draw()
+	plt.show()
+	plt.ioff()
+
+
+def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak135', stack=False, refphase=['PP']):
 	"""
 	Function reorganizes the traces in a equidistant manner.
 	"""	
@@ -1048,18 +1169,22 @@ def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak13
 	ymax 		= yinfo.max()
 	ymin 		= yinfo.min()
 	ymeandiff 	= abs(np.diff(yinfo).mean())
-	npts 		= (ymax - ymin)	/ ymeandiff
-	
+	#npts 		= (ymax - ymin)	/ ymeandiff
+	npts 		= data.shape[0]
+
 	yresample 	= np.linspace(ymin, ymax, npts)
 	ilist		= []
 
 	# Shifting takes place
 	for no, trace in enumerate(st_tmp):
 
-		index_resampled = np.abs(yresample - trace.stats.distance).argmin()
-		
-		torg 		= m.get_travel_times(trace.stats.depth, trace.stats.distance, phase_list=['P'])[0].time
-		tres 		= m.get_travel_times(trace.stats.depth, yresample[index_resampled], phase_list=['P'])[0].time
+		if stack:
+			index_resampled = np.abs(yresample - trace.stats.distance).argmin()
+		else:
+			index_resampled = no
+
+		torg 		= m.get_travel_times(trace.stats.depth, trace.stats.distance, phase_list=refphase)[0].time
+		tres 		= m.get_travel_times(trace.stats.depth, yresample[index_resampled], phase_list=refphase)[0].time
 		tdelta 		= tres - torg 
 		shiftvalue 	= int(tdelta / trace.stats.delta)
 
@@ -1067,23 +1192,25 @@ def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak13
 		trace.stats.starttime	= trace.stats.starttime + tdelta
 
 		# Doublettes are stacked
-		if index_resampled in ilist:
-			stacks = [trace.data]
-			for i, stacktraces in enumerate(stream_resample):
-				if stacktraces.stats.distance == yresample[index_resampled]:
-					stacks.append(stacktraces.data)
-			stream_resample[i].data  = stack(np.array(stacks)) 
-			continue
+		if stack:
+			if index_resampled in ilist:
+				stacks = [trace.data]
+				for i, stacktraces in enumerate(stream_resample):
+					if stacktraces.stats.distance == yresample[index_resampled]:
+						stacks.append(stacktraces.data)
+				stream_resample[i].data  = stack(np.array(stacks)) 
+				continue
 
 		# If Distance is resonable, shift trace and correct time information.
-		if np.abs(yresample - trace.stats.distance).min() <= ymeandiff:
+		#if np.abs(yresample - trace.stats.distance).min() <= ymeandiff:
 
-			trace.stats.distance = yresample[index_resampled]
-			stream_resample 	+= trace
-			ilist.append(index_resampled)
+		trace.stats.distance = yresample[index_resampled]
+		trace.stats.processing.append(u'resampled')
+		stream_resample 	+= trace
+		ilist.append(index_resampled)
 
-		else:
-			print("Do something, difference is too big")
+		#else:
+		#	print("Do something, difference is too big")
 
 
 
@@ -1261,7 +1388,7 @@ def plot_transfer_function(stream, inventory, sx=(-10, 10), sy=(-10, 10), sls=0.
     plt.show()
     plt.ioff()
 
-def plot_gcp(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefigure=None):
+def plot_map(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefigure=None, projection='kav7', colors=None, res='c'):
 	"""
 	Documantation follows, still working on. What kind of information would be useful to plot?
 	Have to add a legend.
@@ -1306,22 +1433,37 @@ def plot_gcp(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefig
 	# resolution = 'c' means use crude resolution coastlines, 'l' means low, 'h' high etc.
 	# zorder is the plotting level, 0 is the lowest, 1 = one level higher ...   
 	# m = Basemap(projection='nsper',lon_0=20, lat_0=25,resolution='c')
-	m 		= Basemap(projection='kav7',lon_0=piercepoints[0][1], resolution='c')   
+	if colors in ['bluemarble']:
+		m 		= Basemap(projection='nsper',lat_0=piercepoints[0][0], lon_0=piercepoints[0][1], resolution=None)
+		m.bluemarble()
+
+	elif colors in ['shadedrelief']:
+		m 		= Basemap(projection='nsper',lat_0=piercepoints[0][0], lon_0=piercepoints[0][1], resolution=None)
+		m.shadedrelief()
+
+	else:
+		m 		= Basemap(projection=projection,lon_0=piercepoints[0][1], resolution=res)
+		m.drawmapboundary(fill_color='#B4FFFF')
+		m.fillcontinents(color='#00CC00',lake_color='#B4FFFF', zorder=0)
+		m.drawcoastlines(zorder=1)
+
+	m.drawparallels(np.arange(-90.,120.,30.), zorder=1)
+	m.drawmeridians(np.arange(0.,420.,60.), zorder=1)
+	plt.title("") 
+
 	sx, sy 	= m(slon, slat)
 	rx, ry 	= m(rlon, rlat)
 	px, py 	= m(plon, plat)
 
 	# import event coordinates, with symbol (* = Star)
-	m.scatter(sx, sy, 80, marker='*', color= '#004BCB', zorder=2)
+	m.scatter(sx, sy, 100, marker='*', color= '#004BCB', zorder=2)
 	# import station coordinates, with symbol (^ = triangle)
-	m.scatter(rx, ry, 80, marker='^', color='red', zorder=2)
+	m.scatter(rx, ry, 100, marker='^', color='red', zorder=2)
 	# import bouncepoints coord.
-	m.scatter(px, py, 10, marker='d', color='yellow', zorder=2)
+	m.scatter(px, py, 100, marker='d', color='yellow', zorder=2)
 
 
-	m.drawmapboundary(fill_color='#B4FFFF')
-	m.fillcontinents(color='#00CC00',lake_color='#B4FFFF', zorder=0)
-	m.drawcoastlines(zorder=1)
+
 
 	# Greatcirclepath drawing from station to event
 	# Check if qlat has a length
@@ -1332,12 +1474,10 @@ def plot_gcp(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefig
 	m.drawgreatcircle(slon, slat, rlon, rlat, linewidth = 1, color = 'black', zorder=1)
 
 	# Draw parallels and meridians.
-	m.drawparallels(np.arange(-90.,120.,30.), zorder=1)
-	m.drawmeridians(np.arange(0.,420.,60.), zorder=1)
-	plt.title("")
+
 
 	if savefigure:
-		plt.savefig('plot_gcp.png', format="png", dpi=900)
+		plt.savefig(savefigure, format="png", dpi=900)
 	else:
 		plt.ion()
 		plt.draw()
