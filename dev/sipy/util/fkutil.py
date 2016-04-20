@@ -20,6 +20,7 @@ from obspy.core.inventory.network import Network
 from sipy.util.base import nextpow2, stream2array
 from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces
 from sipy.util.picker import pick_data, FollowDotCursor
+from sipy.filter.ssa import fx_ssa
 import datetime
 import scipy as sp
 import scipy.signal as signal
@@ -934,7 +935,7 @@ def create_iFFT2mtx(nx, ny):
 	
 	return sparse_iFFT2mtx
 
-def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None, maskshape=None):
+def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None, maskshape=None, dt=None, p=None, flow=None, fhigh=None):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
@@ -1017,8 +1018,8 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None,
 
 	elif method in ('ssa'):
 		for n in noft:
-			data_tmp 	= ArrayData.copy()
-			data_ssa 	= fx_ssa(data_tmp,dt,p,flow,fhigh)
+			data_tmp 		= ArrayData.copy()
+			data_ssa 		= fx_ssa(data_tmp,dt,p,flow,fhigh)
 			ArrayData 		= alpha * ArrayData			
 			ArrayData[n] 	= (1. - alpha) * data_ssa[n]
 

@@ -84,6 +84,11 @@ for i, noisefolder in enumerate(noisefoldlist):
 		Qlinall = []
 		Qbwmaskall = []
 		Qtapermaskall = []
+		
+		if 'original' in PICPATH:
+			DOMETHOD = 'denoise'
+		else:
+			DOMETHOD = 'recon'
 
 		for alpha in alphalist:
 
@@ -91,11 +96,12 @@ for i, noisefolder in enumerate(noisefoldlist):
 			name2 = 'pocs_' + str(noiselevellist[i]) + '-noise_' + '{:01.2}'.format(alpha) + '-alpha_' + 'exp' + '.png'		
 			picpath1 = PICPATH + name1
 			picpath2 = PICPATH + name2
-			plotnameQall = PICPATH + 'pocs_' + str(noiselevellist[i]) + '{:01.2}'.format(alpha) + '-alpha' + 'norm' + 'lin'
-			plotnameQmbwall = PICPATH + 'pocs_' + str(noiselevellist[i]) + '{:01.2}'.format(alpha) + '-alpha' + 'norm' + 'mask_bw'
-			plotnameQmtaperall = PICPATH + 'pocs_' + str(noiselevellist[i]) + '{:01.2}'.format(alpha) + '-alpha' + 'norm' + 'mask_taper'
+			plotnameQall = PICPATH + 'pocs_' + str(noiselevellist[i]) + '{:01.2}'.format(alpha) + '-alpha' + DOMETHOD + 'lin'
+			plotnameQmbwall = PICPATH + 'pocs_' + str(noiselevellist[i]) + '{:01.2}'.format(alpha) + '-alpha' + DOMETHOD + 'mask_bw'
+			plotnameQmtaperall = PICPATH + 'pocs_' + str(noiselevellist[i]) + '{:01.2}'.format(alpha) + '-alpha' + DOMETHOD + 'mask_taper'
 			plotnameQmvaryall = PICPATH + 'pocs_' + str(noiselevellist[i]) + '{:01.2}'.format(alpha) + '-alpha' + 'norm' + 'mask_vary'
 
+			
 			print("##################### CURRENT ALPHA %f  #####################\n" % alpha )
 			for maxiter in maxiterlist:
 
@@ -104,7 +110,7 @@ for i, noisefolder in enumerate(noisefoldlist):
 				print('LINEAR\n')
 				data_org = d0.copy()
 				srs = array2stream(data.copy())
-				st_rec = pocs_recon(srs, maxiter, method='denoise', dmethod='linear', alpha=alpha)
+				st_rec = pocs_recon(srs, maxiter, method=DOMETHOD, dmethod='linear', alpha=alpha)
 				drec = stream2array(st_rec, normalize=True)
 				Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drec,2)**2.
 				Qlin = 10.*np.log(Q)	
@@ -115,7 +121,7 @@ for i, noisefolder in enumerate(noisefoldlist):
 					sys.stdout.flush()
 					data_org = d0.copy()
 					srs = array2stream(data.copy())
-					st_rec = pocs_recon(srs, maxiter, method='denoise', dmethod='mask', alpha=alpha, beta=None, peaks=peaks, maskshape=['butterworth', bws])
+					st_rec = pocs_recon(srs, maxiter, method=DOMETHOD, dmethod='mask', alpha=alpha, beta=None, peaks=peaks, maskshape=['butterworth', bws])
 					drecmask = stream2array(st_rec, normalize=True)
 					Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drecmask,2)**2.
 					
@@ -126,7 +132,7 @@ for i, noisefolder in enumerate(noisefoldlist):
 					sys.stdout.flush()
 					data_org = d0.copy()
 					srs = array2stream(data.copy())
-					st_rec = pocs_recon(srs, maxiter, method='denoise', dmethod='mask', alpha=alpha, beta=None, peaks=peaks, maskshape=['taper', taper])
+					st_rec = pocs_recon(srs, maxiter, method=DOMETHOD, dmethod='mask', alpha=alpha, beta=None, peaks=peaks, maskshape=['taper', taper])
 					drecmask = stream2array(st_rec, normalize=True)
 					Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drecmask,2)**2.
 					
