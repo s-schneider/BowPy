@@ -77,7 +77,10 @@ def array2trace(ArrayData, st_original=None):
 	else:		
 		trace = obspy.core.trace.Trace(ArrayData)
 
-	trace.stats = st_original[0].stats
+	if isinstance(st_original, Stream):
+		trace.stats = st_original[0].stats
+	elif isinstance(st_original, Trace):
+		trace.stats = st_original.stats
 
 	return trace
 

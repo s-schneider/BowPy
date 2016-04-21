@@ -9,6 +9,7 @@ import math
 import fractions
 import scipy as sp
 from scipy.integrate import cumtrapz
+from scipy.signal import correlate
 import warnings
 import datetime
 import obspy
@@ -28,7 +29,7 @@ from obspy.taup import TauPyModel
 from obspy.taup import getTravelTimes
 from obspy.taup.taup_geo import add_geo_to_arrivals
 
-from sipy.util.base import nextpow2, stream2array, array2stream
+from sipy.util.base import nextpow2, stream2array, array2stream, array2trace
 
 """
 Collection of useful functions for processing seismological array data
@@ -376,31 +377,48 @@ def find_equisets(numbers):
 
 def cut(st, tmin, tmax=0):
 
-	st_tmp 		 = st.copy()
-	delta 		 = st_tmp[0].stats.delta
-	npts	 	 = st_tmp[0].stats.npts	
+	if isinstance(st, Stream):
+		istrace 	 = False
+		st_tmp 		 = st.copy()
+		delta 		 = st_tmp[0].stats.delta
+		npts	 	 = st_tmp[0].stats.npts	
 
-	# Check for equal samplingrates and correcting timeinfo.
-	for trace in st_tmp:
-		if trace.stats.delta != delta:
-			print('no equal sampling rate, abort')
-			return
-		else:
-			trace.stats.starttime += tmin 
+		# Check for equal samplingrates and correcting timeinfo.
+		for trace in st_tmp:
+			if trace.stats.delta != delta:
+				print('no equal sampling rate, abort')
+				return
+			else:
+				trace.stats.starttime += tmin
+		data 		 = stream2array(st_tmp)
 
-	data 		 = stream2array(st_tmp)
+	if isinstance(st, Trace):
+		istrace 	 = True
+		st_tmp 		 = st.copy()
+		delta 		 = st_tmp.stats.delta
+		npts	 	 = st_tmp.stats.npts	
+
+		# Check for equal samplingrates and correcting timeinfo.
+		st_tmp.stats.starttime += tmin
+		data 		 			= st_tmp.data
+
+	
 	imin 		 = int(tmin/delta)
 	imax		 = int(tmax/delta)
 
 
-	data_trunc = truncate(data, imin, imax)
+	data_trunc = truncate(data, imin, imax, absolute=True)
 
-	st_new = array2stream(data_trunc, st_tmp)
+	if istrace:
+		st_new = array2trace(data_trunc, st_tmp)
+		st_new.stats.npts = abs(imax-imin)
+	elif not istrace:
+		st_new = array2stream(data_trunc, st_tmp)
 	
 	return st_new
 
 
-def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal', taup_model='ak135'):
+def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod='normal', taup_model='ak135'):
 	"""
 	Aligns traces on a given phase and truncates the starts to the latest beginning and the ends
 	to the earliest end.
@@ -419,7 +437,9 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 
 	:param maxtimewindow: Maximum timewindow in seconds, symmetrical around theoretical phase arrival time, 
 						  in which to pick the maximum amplitude.
-	:type maxtimewindow: int
+						  Also possible to input a list with time before and after the theoretical pick.
+
+	:type maxtimewindow: int, float or string
 	
 	:param taup_model: model used by TauPyModel to calculate arrivals, default is ak135
 	:type taup_model: str
@@ -430,10 +450,10 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 
 	"""
 	# Prepare Array of data.
-	st_tmp = st.copy()
-	data = stream2array(st_tmp)
-	shifttimes=np.zeros(data.shape[0])
-
+	st_tmp 			= st.copy()
+	data 			= stream2array(st_tmp)
+	shifttimes 		= np.zeros(data.shape[0])
+	maxtimewindow 	= float(maxtimewindow)
 	
 	# Calculate depth and distance of receiver and event.
 	# Set some variables.
@@ -459,30 +479,43 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 			iref 	 = i
 
 		ref_start = trace.stats.starttime
-		delta 	  = trace.stats.delta
+		delta 	  = flaot(trace.stats.delta)
 	
 	if isinstance(maxtimewindow, list):
 		maxtimewindow = np.array(maxtimewindow)	
 
 
+
 	# Calculating reference arriving time/index of phase.
 	ref_t = origin + m.get_travel_times(depth, ref_dist, phase_list=phase)[0].time - ref_start
 	ref_n = int(ref_t/delta)
-	
+
+	if xcorr:
+		if isinstance(maxtimewindow, np.ndarray):
+			reftrace_tmp 	= cut(st_tmp[iref], ref_t - maxtimewindow[0], ref_t + maxtimewindow[1])
+			reftrace 		= stream2array(reftrace_tmp)
+
+		elif isinstance(maxtimewindow, float):
+			reftrace_tmp	= cut(st_tmp[iref], ref_t - maxtimewindow, ref_t + maxtimewindow)
+			reftrace 		= reftrace_tmp.data
+
 	for no_x, data_x in enumerate(data):
 		if no_x == iref:
 			continue
-		
+
 		dist = st_tmp[no_x].stats.distance
 		t 	 = m.get_travel_times(depth, dist, phase_list=phase)[0].time
 
 		# Calculate arrivals, and shift times/indicies.
 		phase_time 				= origin + t - st_tmp[no_x].stats.starttime
 		phase_n 				= int(phase_time/delta)
-		if not isinstance(maxtimewindow, np.ndarray):
-			datashift, shift_index 	= shift2ref(data[no_x,:], ref_n, phase_n, mtw=int( float(maxtimewindow)/float(delta)), method=shiftmethod)
-		elif isinstance(maxtimewindow, np.ndarray):
-			datashift, shift_index 	= shift2ref(data[no_x,:], ref_n, phase_n, mtw= maxtimewindow/delta , method=shiftmethod)
+
+		if not xcorr:
+			if isinstance(maxtimewindow, float) or isinstance(maxtimewindow, int) or isinstance(maxtimewindow, np.ndarray):
+				datashift, shift_index 	= shift2ref(data[no_x,:], ref_n, phase_n, mtw= maxtimewindow/delta, method=shiftmethod)
+
+		if xcorr:
+			datashift, shift_index 	= shift2ref(data[no_x,:], ref_n, phase_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
 
 		shifttimes[no_x] 		= delta*shift_index
 		data[no_x,:] 			= datashift
@@ -505,7 +538,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, shiftmethod='normal'
 	return st_align
 
 
-def shift2ref(array, tref, tshift, mtw=0, method='normal'):
+def shift2ref(array, tref, tshift, ref_array=None, mtw=0, method='normal', xcorr=False):
 	"""
 	Shifts the trace in array to the order of tref - tshift. If mtw is given, tshift
 	will be calculated depdending on the maximum amplitude of array in the give
@@ -513,7 +546,7 @@ def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 
 	:param array: array-like trace, 1D
 
-	:param tref: Reference index, to be shifted
+	:param tref: Reference index, to be shifted, if crosscorrelation is needed, 
 
 	:param tshift: Nondimensional shift value
 
@@ -526,7 +559,7 @@ def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 
 	trace=array.copy()
 	# if mtw is set
-	if isinstance(mtw, float) or isinstance(mtw, int):
+	if isinstance(mtw, float) and not xcorr:
 		if mtw > 0:
 			tmin 		= tshift - int(abs(mtw)/2.)
 			tmax 		= tshift + int(abs(mtw)/2.)
@@ -549,10 +582,9 @@ def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 						mtw_index 	= k
 			shift_value = tref - mtw_index
 	
-		else:
-			shift_value = tref - tshift
 
-	elif isinstance(mtw, np.ndarray):
+
+	elif isinstance(mtw, np.ndarray) and not xcorr:
 		if mtw[0] > 0:
 			tmin 		= mtw[0]
 			tmax 		= mtw[1]
@@ -574,6 +606,22 @@ def shift2ref(array, tref, tshift, mtw=0, method='normal'):
 						stmax 		= trace[k]
 						mtw_index 	= k
 			shift_value = tref - mtw_index
+
+	elif xcorr:
+		if not isinstance(ref_array, np.ndarray):
+			msg('No reference Trace for X-Correlation found!')
+			raise IOError(msg)
+
+		if isinstance(mtw, float):
+			tw = truncate(trace, tref - mtw, tref + mtw, absolute=True)
+	
+		elif isinstance(mtw, np.ndarray):
+			tw = truncate(trace, tref - mtw[0], tref + mtw[1], absolute=True)
+
+		shift_value = correlate(ref_array, tw).argmax()+1 - tw.size 
+		
+	else:
+		shift_value = tref - tshift		
 	
 	if method in ("normal", "Normal"):
 		shift_trace = np.roll(trace, shift_value)
@@ -635,7 +683,7 @@ def corr_stat(stream, inv, phase):
 	
 	return stream_corr
 
-def truncate(data, tmin, tmax):
+def truncate(data, tmin, tmax, absolute=False):
 	"""
 	Truncates the data array on the left to tmin, on the right to right-end  - tmax.
 
@@ -645,19 +693,35 @@ def truncate(data, tmin, tmax):
 
 	:param tmax: difference of the ending indicies
 	"""
-	if data.ndim > 1:
-		trunc_n 	= data.shape[1] - tmin - tmax
-		trunc_data 	= np.zeros( (data.shape[0], trunc_n) )
+	if absolute:
+		if data.ndim > 1:
+			trunc_n 	= tmax - tmin
+			trunc_data 	= np.zeros( (data.shape[0], trunc_n) )
 
-		for i,trace in enumerate(data):
-			trunc_data[i,:] = trace[tmin:trace.size - tmax]
+			for i,trace in enumerate(data):
+				trunc_data[i,:] = trace[tmin:tmax]
+
+		else:
+			trunc_n 	= tmax - tmin
+			trunc_data 	= np.array( trunc_n )
+
+			for x in data:
+				trunc_data = data[tmin:tmax]	
 
 	else:
-		trunc_n 	= data.size - tmin - tmax
-		trunc_data 	= np.array( trunc_n )
+		if data.ndim > 1:
+			trunc_n 	= data.shape[1] - tmin - tmax
+			trunc_data 	= np.zeros( (data.shape[0], trunc_n) )
 
-		for x in data:
-			trunc_data = data[tmin:data.size - tmax]
+			for i,trace in enumerate(data):
+				trunc_data[i,:] = trace[tmin:trace.size - tmax]
+
+		else:
+			trunc_n 	= data.size - tmin - tmax
+			trunc_data 	= np.array( trunc_n )
+
+			for x in data:
+				trunc_data = data[tmin:data.size - tmax]
 
 	return trunc_data
 
