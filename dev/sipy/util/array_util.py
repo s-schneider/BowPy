@@ -698,7 +698,7 @@ def stack(data, order=None):
 	return v
 
 
-def partial_stack(st, bins, phase, overlap=None, order=None, align=True, maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
+def partial_stack(st, bins, phase, overlap=None, order=None, align=False, maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
 	"""
 	Will sort the traces into equally distributed bins and stack the bins.
 	The stacking is just an addition of the traces, more advanced schemes might follow.
@@ -783,27 +783,40 @@ def partial_stack(st, bins, phase, overlap=None, order=None, align=True, maxtime
 		bin_distribution = np.zeros(len(y_resample))
 
 	# Preallocate some space in memory.
-	bin_data = np.zeros((len(y_resample),data.shape[1]))
+	bin_data 		= np.zeros((len(y_resample),data.shape[1]))
+	m 				= TauPyModel(taup_model)
+	depth 			= st_tmp[0].stats.depth
+	delta 			= st_tmp[0].stats.delta
 
-	m 		= TauPyModel(taup_model)
-	depth 	= st_tmp[0].meta.depth
-	delta 	= st_tmp[0].meta.delta
+	# Find newstarttimes.
+	nst_min			= st_tmp[0].stats.starttime
+	nst_max			= st_tmp[0].stats.starttime
+	for trace in st_tmp:
+		if trace.stats.starttime < nst_min: nst_min	= trace.stats.starttime
+		if trace.stats.starttime > nst_max: nst_max	= trace.stats.starttime
+
+	nst_delta = abs(nst_max - nst_min)
+	nst = []
+	
+	for i, time in enumerate(L):
+		nst.append(nst_min + i*nst_delta/float(len(L)-1.))
 
 	if maxtimewindow:
 		mtw = maxtimewindow/delta
 	else:
 		mtw = 0.
 
-	# Calculate theoretical arrivals if align is enabled.
-	if align:
-		yr_sampleindex = np.zeros(len(y_resample)).astype('int')
-		yi_sampleindex = np.zeros(len(epidist)).astype('int')
-		for i, res_distance in enumerate(y_resample):
-			yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=phase)[0].time / delta)
-		
-		for i, epi_distance in enumerate(epidist):
-			yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=phase)[0].time / delta)
+	# Calculate theoretical arrivals of each bin.
+	yr_sampleindex = np.zeros(len(y_resample)).astype('int')
+	yi_sampleindex = np.zeros(len(epidist)).astype('int')
+	for i, res_distance in enumerate(y_resample):
+		yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=phase)[0].time / delta)
+	
+	for i, epi_distance in enumerate(epidist):
+		yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=phase)[0].time / delta)
 
+
+	
 	# Loop through all bins.
 	for i, bins in enumerate(L):
 
@@ -814,7 +827,7 @@ def partial_stack(st, bins, phase, overlap=None, order=None, align=True, maxtime
 			if i==0 :
 				if epidist[j] <= bins[1]:
 					if align:
-						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw, method=shiftmethod)
+						trace_shift, shif_index = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw, method=shiftmethod)
 					else:
 						trace_shift 	= trace
 					stack_arr 	= np.vstack([bin_data[i],trace_shift])
@@ -823,7 +836,7 @@ def partial_stack(st, bins, phase, overlap=None, order=None, align=True, maxtime
 			# Check if current trace is inside bin-boundaries.
 			if epidist[j] > bins[0] and epidist[j] <= bins[1]:
 				if align:
-					trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw, method=shiftmethod)
+					trace_shift, shif_index = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw, method=shiftmethod)
 				else:
 					trace_shift 	= trace
 
@@ -833,7 +846,7 @@ def partial_stack(st, bins, phase, overlap=None, order=None, align=True, maxtime
 			if overlap:
 				if i == len(L):
 					if align:
-						trace_shift, si = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw, method=shiftmethod)
+						trace_shift, shif_index = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw, method=shiftmethod)
 					else:
 						trace_shift 	= trace
 
@@ -843,12 +856,14 @@ def partial_stack(st, bins, phase, overlap=None, order=None, align=True, maxtime
 	st_binned = array2stream(bin_data)
 	
 	for i, trace in enumerate(st_binned):
-		trace.stats.network			= st[0].stats.network
-		trace.stats.channel			= st[0].stats.channel
-		trace.stats.starttime		= st[0].stats.starttime
-		trace.stats.sampling_rate	= st[0].stats.sampling_rate
-		trace.stats.depth			= st[0].stats.depth
+		trace.stats.network			= st_tmp[0].stats.network
+		trace.stats.channel			= st_tmp[0].stats.channel
+		trace.stats.starttime		= nst[i]
+		trace.stats.sampling_rate	= st_tmp[0].stats.sampling_rate
+		trace.stats.depth			= st_tmp[0].stats.depth
 		trace.stats.distance 		= y_resample[i]
+		trace.stats.processing		= st_tmp[0].stats.processing
+		#trace.stats.processing.append(u'Partial Stacked, overlap %f, aligned on %s' % (overlap, str(align)))
 
 	return st_binned
 
