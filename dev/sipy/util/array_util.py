@@ -501,7 +501,21 @@ def alignon(st, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod
 			reftrace_tmp	= cut(st_tmp[iref], ref_t - maxtimewindow, ref_t + maxtimewindow)
 			reftrace 		= reftrace_tmp.data
 
+
+	# First work on reference Trace:
+	if not xcorr:
+		if isinstance(maxtimewindow, float) or isinstance(maxtimewindow, int) or isinstance(maxtimewindow, np.ndarray):
+			datashift_null, shift_index 	= shift2ref(data[iref,:], ref_n, ref_n, mtw= maxtimewindow/delta, method=shiftmethod)
+
+	if xcorr:
+		datashift_null, shift_index 	= shift2ref(data[iref,:], ref_n, ref_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
+
+	ref_n = ref_n - shift_index
+
 	for no_x, data_x in enumerate(data):
+		if no_x == iref:
+			continue
+
 		dist = st_tmp[no_x].stats.distance
 		t 	 = m.get_travel_times(depth, dist, phase_list=phase)[0].time
 
@@ -516,7 +530,6 @@ def alignon(st, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod
 		if xcorr:
 			datashift, shift_index 	= shift2ref(data[no_x,:], ref_n, phase_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
 
-		print(shift_index)
 		shifttimes[no_x] 		= delta*shift_index
 		data[no_x,:] 			= datashift
 
@@ -529,7 +542,9 @@ def alignon(st, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod
 
 	# Change startime entry and add alignon entry.
 	for i, trace in enumerate(st_align):
-
+		if i == iref:
+			trace.stats.aligned 	= phase
+		else:
 			trace.stats.starttime 	= trace.stats.starttime - shifttimes[i]	+ tmin*delta
 			trace.stats.aligned 	= phase
 
@@ -1606,6 +1621,12 @@ def plot_map(inventory, event, stream=None, phases=['P^410P', 'P^660P'], savefig
 		plt.ioff()
 
 def rm(stream, tracelist):
+	"""
+	Removes all stations in trace list from stream
+
+	:param tracelist: Names of Stations to be removed
+	:type  tracelust: list
+	"""
 	for trace in stream:
 		if trace.stats.station in tracelist:
 			stream.remove(trace)

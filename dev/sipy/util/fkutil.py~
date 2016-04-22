@@ -46,8 +46,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphase=None, phaselabel=True, norm=None, clr='black', 
-		clrtrace=None, newfigure=True, savefig=False, xlabel=None, ylabel=None, t_axis=None, fs=15):
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphase=None, phaselabel=True, phaselabelclr='red', 
+		norm=None, clr='black', clrtrace=None, newfigure=True, savefig=False, xlabel=None, ylabel=None, t_axis=None, fs=15, tw=None):
 	"""
 	Alpha Version!
 	
@@ -104,15 +104,32 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 	else:
 		ax 	= plt.gca()
 		fig = plt.gcf()
+		ax.autoscale(False)
 
 	if isinstance(st, Stream):
-		t_axis = np.linspace(0,st[0].stats.delta * st[0].stats.npts, st[0].stats.npts)
+
+		# Check if just specific timewindow should be plotted.
+		try:
+			tw = np.array(tw)
+			twdelta = tw.max() - tw.min()
+			t_axis = np.linspace(tw.min(),tw.max(), twdelta/float(st[0].stats.delta))
+			npts_min = int(tw.min()/float(st[0].stats.delta))
+			npts_max = int(tw.max()/float(st[0].stats.delta))
+		except:
+			t_axis_max = st[0].stats.delta * st[0].stats.npts
+			t_axis = np.linspace(0,t_axis_max, st[0].stats.npts)
+			tw = np.array([0, t_axis_max])
+			npts_min = 0
+			npts_max = st[0].stats.npts
+
+		
 		data = stream2array(st)
 		
 		spacing=2.
 
 		# Set axis information and bools.
 		ax.set_xlabel("Time in s")
+		ax.set_xlim(tw.min(), tw.max())
 		isinv = False
 		isevent = False
 		cclr = clr
@@ -197,9 +214,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					except:
 						cclr = clr
 
-					ax.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-					ax.plot(t_axis,zoom*trace+ y_dist, color=cclr)
-					ax.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color='red' )
+					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
+					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
+					ax.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color=phaselabelclr )
 					if phaselabel:
 						for time, key in enumerate(timetable[0]):
 							ax.annotate('%s' % key, xy=(timetable[1][time],y_dist))
@@ -219,9 +236,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 						cclr = clr
 
 					fig.gca().yaxis.set_major_locator(plt.NullLocator())
-					ax.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-					ax.plot(t_axis,zoom*trace+ spacing*j, color=cclr)
-					ax.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color='red' )
+					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),spacing*j+0.1))
+					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ spacing*j, color=cclr)
+					ax.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color=phaselabelclr )
 					if phaselabel:
 						for time, key in enumerate(timetable[0]):
 							ax.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
@@ -247,8 +264,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 						cclr = clr
 				except:
 					cclr = clr
-				ax.annotate('%s' % st[j].stats.station, xy=(1,y_dist[j]+0.1))
-				ax.plot(t_axis, zoom*trace + y_dist[j], color=cclr)
+				ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist[j]+0.1))
+				ax.plot(t_axis, zoom*trace[npts_min: npts_max] + y_dist[j], color=cclr)
 
 			else:
 				if yinfo:
@@ -262,8 +279,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 								cclr = clr
 						except:
 							cclr = clr
-						ax.annotate('%s' % st[j].stats.station, xy=(1,y_dist+0.1))
-						ax.plot(t_axis,zoom*trace+ y_dist, color=cclr)
+						ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
+						ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
 				
 					except:
 						msg='Oops, something not found.'
@@ -280,8 +297,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 						cclr = clr
 
 					fig.gca().yaxis.set_major_locator(plt.NullLocator())
-					ax.annotate('%s' % st[j].stats.station, xy=(1,spacing*j+0.1))
-					ax.plot(t_axis,zoom*trace+ spacing*j, color=cclr)			
+					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),spacing*j+0.1))
+					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ spacing*j, color=cclr)			
 			
 			yold = y_dist
 		if savefig:
@@ -333,7 +350,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			ax.set_title(title)
 			#plt.gca().yaxis.set_major_locator(plt.NullLocator())
 			ax.plot(t_axis,zoom*data, color=clr)
-			ax.plot( (timetable[1],timetable[1]),(-0.5,0.5), color='red' )
+			ax.plot( (timetable[1],timetable[1]),(-0.5,0.5), color=phaselabelclr )
 			if phaselabel:
 				for time, key in enumerate(timetable[0]):
 					ax.annotate('%s' % key, xy=(timetable[1][time]+5,0.55))
