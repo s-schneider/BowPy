@@ -453,7 +453,6 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftm
 	st_tmp 			= st.copy()
 	data 			= stream2array(st_tmp)
 	shifttimes 		= np.zeros(data.shape[0])
-	maxtimewindow 	= float(maxtimewindow)
 	
 	# Calculate depth and distance of receiver and event.
 	# Set some variables.
@@ -482,8 +481,9 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftm
 		delta 	  = flaot(trace.stats.delta)
 	
 	if isinstance(maxtimewindow, list):
-		maxtimewindow = np.array(maxtimewindow)	
-
+		maxtimewindow = np.array(maxtimewindow)
+	elif isinstance(maxtimewindow, int):
+		maxtimewindow 	= float(maxtimewindow)
 
 
 	# Calculating reference arriving time/index of phase.
@@ -492,8 +492,8 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftm
 
 	if xcorr:
 		if isinstance(maxtimewindow, np.ndarray):
-			reftrace_tmp 	= cut(st_tmp[iref], ref_t - maxtimewindow[0], ref_t + maxtimewindow[1])
-			reftrace 		= stream2array(reftrace_tmp)
+			reftrace_tmp 	= cut(st_tmp[iref], ref_t - abs(maxtimewindow[0]), ref_t + maxtimewindow[1])
+			reftrace 		= reftrace_tmp.data
 
 		elif isinstance(maxtimewindow, float):
 			reftrace_tmp	= cut(st_tmp[iref], ref_t - maxtimewindow, ref_t + maxtimewindow)
@@ -502,7 +502,6 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftm
 	for no_x, data_x in enumerate(data):
 		if no_x == iref:
 			continue
-
 		dist = st_tmp[no_x].stats.distance
 		t 	 = m.get_travel_times(depth, dist, phase_list=phase)[0].time
 
@@ -519,20 +518,21 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftm
 
 		shifttimes[no_x] 		= delta*shift_index
 		data[no_x,:] 			= datashift
+
 		# Positive shift_index indicates positive shift in time and vice versa.	
 		if shift_index > 0 and shift_index > tmin: tmin = shift_index
 		if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
 
-		data_trunc = truncate(data, tmin, tmax)
-
+	data_trunc = truncate(data, tmin, tmax)
 	st_align = array2stream(data_trunc, st_tmp)
 
 	# Change startime entry and add alignon entry.
 	for i, trace in enumerate(st_align):
 		if i == iref:
+			trace.stats.starttime 	= trace.stats.starttime	+ tmin*delta
 			trace.stats.aligned = phase
 		else:
-			trace.stats.starttime 	= trace.stats.starttime - shifttimes[i]	
+			trace.stats.starttime 	= trace.stats.starttime - shifttimes[i]	+ tmin*delta
 			trace.stats.aligned 	= phase
 
 	return st_align
@@ -618,8 +618,8 @@ def shift2ref(array, tref, tshift, ref_array=None, mtw=0, method='normal', xcorr
 		elif isinstance(mtw, np.ndarray):
 			tw = truncate(trace, tref - mtw[0], tref + mtw[1], absolute=True)
 
-		shift_value = tw.size - correlate(ref_array, tw).argmax()+1
-		
+		shift_value = correlate(ref_array, tw).argmax()+1 - tw.size 
+
 	else:
 		shift_value = tref - tshift		
 	
