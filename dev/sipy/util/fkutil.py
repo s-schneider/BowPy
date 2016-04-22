@@ -100,9 +100,15 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 				msg = "Wrong data input, must be Stream or Trace"
 				raise TypeError(msg)
 	if newfigure:
+		# Set axis information and bools.
 		fig, ax = plt.subplots()
-		ax.set_xlabel(xlabel, fontsize=fs)
-		ax.set_ylabel(ylabel, fontsize=fs)
+		if xlabel:
+			ax.set_xlabel(xlabel, fontsize=fs)
+		else:
+			ax.set_xlabel("Time(s)")
+		if ylabel:
+			ax.set_ylabel(ylabel, fontsize=fs)
+
 		ax.tick_params(axis='both', which='major', labelsize=fs)	
 
 	else:
@@ -128,11 +134,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 
 		
 		data = stream2array(st)
-		
+	
 		spacing=2.
-
-		# Set axis information and bools.
-		ax.set_xlabel("Time in s")
 		ax.set_xlim(tw.min(), tw.max())
 		isinv = False
 		isevent = False
@@ -149,11 +152,15 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			attach_coordinates_to_traces(st, inv, event)
 		else:
 			for trace in st:
-				if not trace.stats.distance:
-					isinv = False
-					break
-				else:
-					isinv = True
+				try:
+					if not trace.stats.distance:
+						isinv = False
+						break
+					else:
+						isinv = True
+				except:
+						isinv = False
+						break					
 		
 		if isevent:	depth = event.origins[0]['depth']/1000.
 		
@@ -207,8 +214,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					return
 
 				if yinfo:
-					ax.set_ylabel("Distance in deg")
-					ax.set_xlabel("Time in s")
+					if not ylabel: ax.set_ylabel("Distance(deg)")
 
 					try:
 						if j in clrtrace: 
@@ -228,8 +234,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 						continue
 
 				else:
-					ax.set_ylabel("No. of trace")
-					ax.set_xlabel("Time in s")
+					if not ylabel: ax.set_ylabel("No. of trace")
 
 					try:
 						if j in clrtrace: 
@@ -259,8 +264,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 				
 			elif type(epidistances) == numpy.ndarray or type(epidistances)==list:
 				y_dist = epidistances
-				ax.set_ylabel("Distance in deg")
-				ax.set_xlabel("Time in s")
+				if not ylabel: ax.set_ylabel("Distance(deg)")
 				try:
 					if j in clrtrace: 
 						cclr = clrtrace[j]
@@ -274,8 +278,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			else:
 				if yinfo:
 					try:
-						ax.set_ylabel("Distance in deg")
-						ax.set_xlabel("Time in s")
+						if not ylabel: ax.set_ylabel("Distance(deg)")
 						try:
 							if j in clrtrace: 
 								cclr = clrtrace[j]
@@ -290,8 +293,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 						msg='Oops, something not found.'
 						raise IOError(msg)
 				else:
-					ax.set_ylabel("No. of trace")
-					ax.set_xlabel("Time in s")
+					if not ylabel: ax.set_ylabel("No. of trace")
 					try:
 						if j in clrtrace: 
 							cclr = clrtrace[j]
@@ -348,8 +350,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					timetable[0].append(phase_name)
 					timetable[1].append(Phase)
 
-			ax.set_ylabel("Amplitude")
-			ax.set_xlabel("Time in s")
+			if not ylabel: ax.set_ylabel("Amplitude")
 			title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
 			ax.set_title(title)
 			#plt.gca().yaxis.set_major_locator(plt.NullLocator())
@@ -360,8 +361,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					ax.annotate('%s' % key, xy=(timetable[1][time]+5,0.55))
 
 		else:
-			ax.set_ylabel("Amplitude")
-			ax.set_xlabel("Time in s")
+			if not ylabel: ax.set_ylabel("Amplitude")
 			title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
 			ax.set_title(title)
 			ax.plot(t_axis, zoom*data, color=clr)
@@ -415,7 +415,7 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 					ax.plot(zoom*trace+ y_dist*i, color=clr)					
 
 	if savefig:
-		fig.set_size_inches(8,7)
+		fig.set_size_inches(12,10)
 		fig.savefig(savefig, dpi=300)
 		plt.close('all')
 	else:
@@ -425,7 +425,7 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 		plt.show()
 		plt.ioff()
 
-def plotfk(data, fs, savefig=False):
+def plotfk(data, fs=15, savefig=False, hold=False):
 	fig, ax = plt.subplots()
 	ax.set_xlabel('Normalized Wavenumber', fontsize=fs)
 	ax.set_ylabel('Normalized Frequency', fontsize=fs)
@@ -434,7 +434,7 @@ def plotfk(data, fs, savefig=False):
 	#ax.xaxis.set_label_position('top')
 	ax.tick_params(axis='both', which='major', labelsize=fs)
 
-	im = ax.imshow(np.flipud(abs(np.fft.fftshift(data.transpose(), axes=1))), aspect='auto', extent=(-0.5, 0.5, 0, 0.5))
+	im = ax.imshow(np.flipud(abs(np.fft.fftshift(data.transpose(), axes=1))), aspect='auto', extent=(-0.5, 0.5, 0, 0.5), interpolation='none')
 	cbar = fig.colorbar(im)
 	cbar.ax.tick_params(labelsize=fs)
 	cbar.ax.set_ylabel('R', fontsize=fs)
@@ -445,11 +445,14 @@ def plotfk(data, fs, savefig=False):
 		fig.savefig(savefig, dpi=300)
 		plt.close('all')
 	else:
-		plt.ion()
-		plt.draw()
-		ax.legend()
-		plt.show()
-		plt.ioff()
+		if not hold:
+			plt.ion()
+			ax.legend()
+			plt.show()
+			plt.ioff()
+		else:
+			ax.legend()
+			plt.show()
 
 
 def kill(data, stat):
@@ -1006,7 +1009,6 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None,
 	threshold = abs(fkdata.max())
 		
 	ADfinal = ArrayData.copy()
-
 	if method in ('linear', 'exp'):
 		for n in noft:
 			ADtemp = ArrayData.copy()
@@ -1022,6 +1024,8 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None,
 
 				data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
 				ADtemp[n] 	= data_tmp[n]
+				#save = 'pocsdata' + str(i) + '.png'
+				#plot(data_tmp, ylabel='Distance(m)', xlabel='Time(s)', fs=22, yinfo=2, savefig=save)
 			ADfinal[n] = ADtemp[n].copy()
 
 			threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
