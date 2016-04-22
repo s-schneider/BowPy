@@ -262,7 +262,8 @@ def aperture(inventory):
     Method:find the maximum of the calculation of distance of every possible combination of stations
     """
     lats, lngs, hgt = __coordinate_values(inventory)
-    distances = []
+    distances 		= []
+
     for i in range(len(lats)):
         for j in range(len(lats)):
             if lats[i] == lats[j]:
@@ -285,10 +286,11 @@ def find_closest_station(inventory, stream, latitude, longitude,
 	type: float
 	"""
 	used_stations = []
+
 	for trace in stream:
 		used_stations.append(trace.stats.station)
 
-	min_distance = None
+	min_distance 		 = None
 	min_distance_station = None
 
 	lats, lngs, hgt = __coordinate_values(inventory)
@@ -351,10 +353,10 @@ def isuniform(inv, event, stream=None, tolerance=0.5):
 	returns: True or False
 	"""
 
-	distances = epidist2nparray( attach_epidist2coords(inv,event,stream) )
+	distances 		= epidist2nparray( attach_epidist2coords(inv,event,stream) )
 	delta_distances = np.diff(distances)	
-	L = distances.max() - distances.min()
-	ideal_delta = L / (distances.size - 1)
+	L 				= distances.max() - distances.min()
+	ideal_delta 	= L / (distances.size - 1)
 	
 	ubound = ideal_delta * (1. + tolerance)
 	lbound = ideal_delta * (1. - tolerance)
@@ -403,8 +405,8 @@ def cut(st, tmin, tmax=0):
 		data 		 			= st_tmp.data
 
 	
-	imin 		 = int(tmin/delta)
-	imax		 = int(tmax/delta)
+	imin = int(tmin/delta)
+	imax = int(tmax/delta)
 
 
 	data_trunc = truncate(data, imin, imax, absolute=True)
@@ -418,7 +420,7 @@ def cut(st, tmin, tmax=0):
 	return st_new
 
 
-def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod='normal', taup_model='ak135'):
+def alignon(st, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod='normal', taup_model='ak135', inv=None):
 	"""
 	Aligns traces on a given phase and truncates the starts to the latest beginning and the ends
 	to the earliest end.
@@ -450,9 +452,9 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftm
 
 	"""
 	# Prepare Array of data.
-	st_tmp 			= st.copy()
-	data 			= stream2array(st_tmp)
-	shifttimes 		= np.zeros(data.shape[0])
+	st_tmp 		= st.copy()
+	data 		= stream2array(st_tmp)
+	shifttimes 	= np.zeros(data.shape[0])
 	
 	# Calculate depth and distance of receiver and event.
 	# Set some variables.
@@ -483,7 +485,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftm
 	if isinstance(maxtimewindow, list):
 		maxtimewindow = np.array(maxtimewindow)
 	elif isinstance(maxtimewindow, int):
-		maxtimewindow 	= float(maxtimewindow)
+		maxtimewindow = float(maxtimewindow)
 
 
 	# Calculating reference arriving time/index of phase.
@@ -500,8 +502,6 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftm
 			reftrace 		= reftrace_tmp.data
 
 	for no_x, data_x in enumerate(data):
-		if no_x == iref:
-			continue
 		dist = st_tmp[no_x].stats.distance
 		t 	 = m.get_travel_times(depth, dist, phase_list=phase)[0].time
 
@@ -516,6 +516,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftm
 		if xcorr:
 			datashift, shift_index 	= shift2ref(data[no_x,:], ref_n, phase_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
 
+		print(shift_index)
 		shifttimes[no_x] 		= delta*shift_index
 		data[no_x,:] 			= datashift
 
@@ -528,10 +529,7 @@ def alignon(st, inv, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftm
 
 	# Change startime entry and add alignon entry.
 	for i, trace in enumerate(st_align):
-		if i == iref:
-			trace.stats.starttime 	= trace.stats.starttime	+ tmin*delta
-			trace.stats.aligned = phase
-		else:
+
 			trace.stats.starttime 	= trace.stats.starttime - shifttimes[i]	+ tmin*delta
 			trace.stats.aligned 	= phase
 
@@ -556,8 +554,9 @@ def shift2ref(array, tref, tshift, ref_array=None, mtw=0, method='normal', xcorr
 	Author: S. Schneider, 2016
 	Source: Gubbins, D., 2004 Time series analysis and inverse theory for geophysicists
 	"""
-
 	trace=array.copy()
+	if isinstance(mtw, float) and mtw == 0: mtw = None
+
 	# if mtw is set
 	if isinstance(mtw, float) and not xcorr:
 		if mtw > 0:
@@ -585,9 +584,9 @@ def shift2ref(array, tref, tshift, ref_array=None, mtw=0, method='normal', xcorr
 
 
 	elif isinstance(mtw, np.ndarray) and not xcorr:
-		if mtw[0] > 0:
-			tmin 		= mtw[0]
-			tmax 		= mtw[1]
+		if mtw[0] >= 0:
+			tmin 		= tshift - mtw[0]
+			tmax 		= tshift + mtw[1]
 			stmax 		= trace[tmin]
 			mtw_index 	= tshift
 			for k in np.arange(tmin,tmax+1).astype('int'):
@@ -597,8 +596,8 @@ def shift2ref(array, tref, tshift, ref_array=None, mtw=0, method='normal', xcorr
 			shift_value = tref - mtw_index	
 
 		elif mtw[0] < 0:
-			tmin 		= abs(mtw[0])
-			tmax 		= abs(mtw[1])
+			tmin 		= tshift - abs(mtw[0])
+			tmax 		= tshift + abs(mtw[1])
 			stmax 		= trace[tmin]
 			mtw_index 	= tshift
 			for k in np.arange(tmin,tmax+1).astype('int'):
@@ -613,12 +612,12 @@ def shift2ref(array, tref, tshift, ref_array=None, mtw=0, method='normal', xcorr
 			raise IOError(msg)
 
 		if isinstance(mtw, float):
-			tw = truncate(trace, tref - mtw, tref + mtw, absolute=True)
+			tw = truncate(trace, tshift - mtw, tshift + mtw, absolute=True)
 	
 		elif isinstance(mtw, np.ndarray):
-			tw = truncate(trace, tref - mtw[0], tref + mtw[1], absolute=True)
+			tw = truncate(trace, tshift - mtw[0], tshift + mtw[1], absolute=True)
 
-		shift_value = correlate(ref_array, tw).argmax()+1 - tw.size 
+		shift_value = tref - tshift -(correlate(ref_array, tw).argmax()+1 - tw.size) #tref - (correlate(ref_array, tw).argmax()+1 - tw.size)
 
 	else:
 		shift_value = tref - tshift		
