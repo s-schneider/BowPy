@@ -101,6 +101,10 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 				raise TypeError(msg)
 	if newfigure:
 		fig, ax = plt.subplots()
+		ax.set_xlabel(xlabel, fontsize=fs)
+		ax.set_ylabel(ylabel, fontsize=fs)
+		ax.tick_params(axis='both', which='major', labelsize=fs)	
+
 	else:
 		ax 	= plt.gca()
 		fig = plt.gcf()

@@ -530,7 +530,6 @@ def alignon(st, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod
 		if xcorr:
 			datashift, shift_index 	= shift2ref(data[no_x,:], ref_n, phase_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
 
-		print(shift_index)
 		shifttimes[no_x] 		= delta*shift_index
 		data[no_x,:] 			= datashift
 
@@ -777,7 +776,7 @@ def stack(data, order=None):
 	return v
 
 
-def partial_stack(st, bins, phase, overlap=None, order=None, align=False, maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
+def partial_stack(st, bins, overlap=None, order=None, align=False, maxtimewindow=None, shiftmethod='normal', taup_model='ak135'):
 	"""
 	Will sort the traces into equally distributed bins and stack the bins.
 	The stacking is just an addition of the traces, more advanced schemes might follow.
@@ -888,12 +887,19 @@ def partial_stack(st, bins, phase, overlap=None, order=None, align=False, maxtim
 	# Calculate theoretical arrivals of each bin.
 	yr_sampleindex = np.zeros(len(y_resample)).astype('int')
 	yi_sampleindex = np.zeros(len(epidist)).astype('int')
-	for i, res_distance in enumerate(y_resample):
-		yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=phase)[0].time / delta)
+	if not alignon:
+		try:
+			for i, res_distance in enumerate(y_resample):
+				yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=['P'])[0].time / delta)
 	
-	for i, epi_distance in enumerate(epidist):
-		yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=phase)[0].time / delta)
-
+			for i, epi_distance in enumerate(epidist):
+				yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=['P'])[0].time / delta)
+		except:
+			for i, res_distance in enumerate(y_resample):
+				yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=['Pdiff'])[0].time / delta)
+	
+			for i, epi_distance in enumerate(epidist):
+				yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=['Pdiff'])[0].time / delta)
 
 	
 	# Loop through all bins.
