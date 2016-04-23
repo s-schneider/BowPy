@@ -154,40 +154,114 @@ for i, noisefolder in enumerate(noisefoldlist):
 
 #############################################
 
-with open("/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/Qvalues/masklist.dat", 'r') as fh:
-	masklist = np.array(fh.read().split()).astype('str')
+folderlist=[]
 
-with open("/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/Qvalues/linearlist.dat", 'r') as fh:
-	linearlist = np.array(fh.read().split()).astype('str')
+with open("/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/Qvalues/denoisemask_bw_list.dat", 'r') as fh:
+	dmask_bwlist = np.array(fh.read().split()).astype('str')
+	folderlist.append(dmask_bwlist)
 
-FPATH = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/"
+with open("/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/Qvalues/denoisemask_taper_list.dat", 'r') as fh:
+	dmask_taperlist = np.array(fh.read().split()).astype('str')
+	folderlist.append(dmask_taperlist)
 
-for name in masklist:
-	ifile = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/Qvalues/" + name
-	Qraw = np.loadtxt(ifile)
+with open("/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/Qvalues/reconmask_bw_list.dat", 'r') as fh:
+	rmask_bwlist = np.array(fh.read().split()).astype('str')
+	folderlist.append(rmask_bwlist)
 
-	Q=[]
-	for p in Qraw:
-		if not p[2] == np.float64('inf'):
-			Q.append(p)
-	point = np.array(Q).transpose()
+with open("/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/Qvalues/reconmask_taper_list.dat", 'r') as fh:
+	rmask_taperlist = np.array(fh.read().split()).astype('str')
+	folderlist.append(rmask_taperlist)
 
-	fname = name.split('png')[0]
-	plotname = FPATH + fname + 'png'
+with open("/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/Qvalues/SSAlist.dat", 'r') as fh:
+	ssalist = np.array(fh.read().split()).astype('str')
+	folderlist.append(ssalist)
 
-	fig, ax = plt.subplots()	
-	cmap = 'seismic'
-	scat = ax.scatter(point[0], point[1], c=point[2], s=60, cmap=cmap)#, s=50)
-	ax.set_xlim(0.,0.91)
-	ax.set_ylim(0,50)
-	ax.autoscale(False)
-	ax.set_xlabel('Alpha')
-	ax.set_ylabel('No of iterations')
-	scat.set_clim(-10,10)
-	cbar = plt.colorbar(scat)
-	cbar.ax.set_xlabel('Q')
-	plt.savefig(plotname)
-	plt.close("all")
+FPATH = "/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/"
+
+bwlist = [1,2,4]
+taperlist = [2,4,5,8,200]
+
+
+for sublist in folderlist:
+	for name in sublist:
+
+		ifile = "/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/" + name
+		Qraw = np.loadtxt(ifile)
+		
+		if 'bw' in name:
+			for i, bw in enumerate(bwlist):
+				Q=[]
+				for p in Qraw[i::3]:
+					if not p[2] == np.float64('inf'):
+						Q.append(p)
+				point = np.array(Q).transpose()
+
+				fname = name.split('dat')[0]
+				plotname = FPATH + fname + 'bw' + str(bw) + '.png'
+		
+				fig, ax = plt.subplots()	
+				cmap = 'seismic'
+				scat = ax.scatter(point[0], point[1], c=point[2], s=100, cmap=cmap)#, s=50)
+				ax.set_xlim(0.,0.91)
+				ax.set_ylim(0,12)
+				ax.autoscale(False)
+				ax.set_xlabel('Alpha')
+				ax.set_ylabel('No of iterations')
+				scat.set_clim(-10,10)
+				cbar = plt.colorbar(scat)
+				cbar.ax.set_xlabel('Q')
+				plt.savefig(plotname)
+				plt.close("all")
+
+		if 'taper' in name:
+			for i, taper in enumerate(bwlist):
+				Q=[]
+				for p in Qraw[i::5]:
+					if not p[2] == np.float64('inf'):
+						Q.append(p)
+				point = np.array(Q).transpose()
+
+				fname = name.split('dat')[0]
+				plotname = FPATH + fname + 'taper' + str(taper) + '.png'
+		
+				fig, ax = plt.subplots()	
+				cmap = 'seismic'
+				scat = ax.scatter(point[0], point[1], c=point[2], s=100, cmap=cmap)#, s=50)
+				ax.set_xlim(0.,0.91)
+				ax.set_ylim(0,12)
+				ax.autoscale(False)
+				ax.set_xlabel('Alpha')
+				ax.set_ylabel('No of iterations')
+				scat.set_clim(-10,10)
+				cbar = plt.colorbar(scat)
+				cbar.ax.set_xlabel('Q')
+				plt.savefig(plotname)
+				plt.close("all")
+
+		if 'SSA' in name:
+
+			Q=[]
+			for p in Qraw:
+				if not p[2] == np.float64('inf'):
+					Q.append(p)
+			point = np.array(Q).transpose()
+
+			fname = name.split('dat')[0]
+			plotname = FPATH + fname + 'SSA' + '.png'
+	
+			fig, ax = plt.subplots()	
+			cmap = 'seismic'
+			scat = ax.scatter(point[0], point[1], c=point[2], s=100, cmap=cmap)#, s=50)
+			ax.set_xlim(0.,0.91)
+			ax.set_ylim(0,12)
+			ax.autoscale(False)
+			ax.set_xlabel('Alpha')
+			ax.set_ylabel('No of iterations')
+			scat.set_clim(-10,10)
+			cbar = plt.colorbar(scat)
+			cbar.ax.set_xlabel('Q')
+			plt.savefig(plotname)
+			plt.close("all")
 
 for name in linearlist:
 	ifile = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/Qvalues/" + name

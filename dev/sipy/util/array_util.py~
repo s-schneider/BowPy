@@ -1286,7 +1286,7 @@ def plot_vespa(st, inv, event, data, markphases=['ttall', 'P^410P', 'P^660P'], p
 	plt.ioff()
 
 
-def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak135', stack=False, refphase=['PP']):
+def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135', stack=False, refphase=['PP']):
 	"""
 	Function reorganizes the traces in a equidistant manner.
 	"""	
@@ -1328,9 +1328,9 @@ def resample_distance(stream, inv, event, shiftmethod='normal', taup_model='ak13
 
 		torg 		= m.get_travel_times(trace.stats.depth, trace.stats.distance, phase_list=refphase)[0].time
 		tres 		= m.get_travel_times(trace.stats.depth, yresample[index_resampled], phase_list=refphase)[0].time
-		tdelta 		= tres - torg 
+		tdelta 		= torg -tres
 		shiftvalue 	= int(tdelta / trace.stats.delta)
-
+		print(tdelta)
 		trace.data, shift_index = shift2ref(data[no], 0, shiftvalue, method=shiftmethod)
 		trace.stats.starttime	= trace.stats.starttime + tdelta
 

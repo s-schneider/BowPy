@@ -50,7 +50,7 @@ peaks = np.array([[-13.95      ,   6.06      ,  20.07      ],[  8.46648822,   8.
 stri = read_st("../data/test_datasets/ricker/original/SR.QHD")
 stri.normalize(global_max=True)
 data = stream2array(stri) 
-dn = data + 0.8 * noise
+dn = data + 0.3 * noise
 stn = array2stream(dn, stri)
 stn.normalize(global_max=True)
 

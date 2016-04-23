@@ -1047,24 +1047,29 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None,
 			ADfinal[n] = ADtemp[n].copy()
 
 	elif method in ('ssa'):
+
 		for n in noft:
-			data_tmp 		= ArrayData.copy()
-			data_ssa 		= fx_ssa(data_tmp,dt,p,flow,fhigh)
-			ArrayData 		= alpha * ArrayData			
-			ArrayData[n] 	= (1. - alpha) * data_ssa[n]
+			for i in range(maxiter):
+				data_tmp 		= ArrayData.copy()
+				data_ssa 		= fx_ssa(data_tmp,dt,p,flow,fhigh)
+				ArrayData 		= alpha * ArrayData			
+				ArrayData[n] 	= (1. - alpha) * data_ssa[n]
 
 			ADfinal[n] = ArrayData[n].copy()
 
-	elif method in ('update'):
+	elif method in ('average'):
 		threshold = beta * abs(np.fft.fft2(ArrayData, s=(iK,iF)).max())
 		ADtemp = ArrayData.copy()
-		for i in range(maxiter):
-			data_tmp 	= ADtemp.copy()
-			fkdata 		= np.fft.fft2(data_tmp, s=(iK,iF))
-			fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
-			ADtemp 	= alpha*data_tmp + (1. - alpha) * np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it]
+		for n in noft:
+			for i in range(maxiter):
+				data_tmp 	= ADtemp.copy()
+				fkdata 		= np.fft.fft2(data_tmp, s=(iK,iF))
+				fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
 
-		ADfinal = ADtemp.copy()
+				ADtemp 		= alpha*data_tmp + (1. - alpha) * np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it]
+				ADtemp[n] 	= (1. - alpha) * np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it][n]
+
+			ADfinal = ADtemp.copy()
 
 
 	elif method == 'maskvary':
