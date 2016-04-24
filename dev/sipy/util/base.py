@@ -124,10 +124,10 @@ def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
        
     return(data, t)
 
-def create_ricker(nofs, noft, slope, shift, width=2.):
+def create_ricker(nofs, noft, slope, nors = 100., width=2., shift=0):
 	"""
 	Creates noft Traces with a Ricker wavelet
-	:param nofs: No of samples
+	:param nofs: No of samplesw
 	:type  nofs: int
 	
 	:param noft: No of traces
@@ -138,20 +138,36 @@ def create_ricker(nofs, noft, slope, shift, width=2.):
 
 	:param width: Width parameter of Ricker-wavelet, default 2
 	:type  width: float
+
+	:param nors: Number of samples for ricker
+	:type  nors: int
 	"""
+
+	if nofs < nors:
+		msg='Number of tracesamples lower than number of ricker samples'
+		raise IOError(msg)
+
 	data = np.zeros((noft, nofs))	
 
-	delta = int(1. / (slope * float(noft)/float(nofs)))
-	
-	trace = sp.signal.ricker(2*nofs, width)
-	trace = np.roll(trace, trace.argmax() * (int(0.9 * nofs)-shift))/trace.max()
-	if slope > 0:
-		for i in range(data.shape[0]):
-			data[i] = np.roll(trace, i * delta)[:nofs]	
-	elif slope < 0:
-		for i in range(data.shape[0])[::-1]:
-			data[i] = np.roll(trace, -(data.shape[0]-1-i) * delta)[:nofs]	
-	
+	trace = np.zeros(nofs)
+	ricker_tmp = sp.signal.ricker(nors, width)
+	ricker = ricker_tmp/ricker_tmp.max()
+
+	trace[shift:shift+nors] = ricker
+
+	print(trace.max())
+
+	if slope != 0:
+		delta = int(1. / (slope * float(noft)/float(nofs)))
+		if slope > 0:
+			for i in range(data.shape[0]):
+				data[i] = np.roll(trace, i * delta)[:nofs]	
+		elif slope < 0:
+			for i in range(data.shape[0])[::-1]:
+				data[i] = np.roll(trace, -(data.shape[0]-1-i) * delta)[:nofs]	
+	elif slope == 0:	
+		for i, dt in enumerate(data):
+			data[i] = trace	
 
 	return data
 

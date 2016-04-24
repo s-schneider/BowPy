@@ -952,7 +952,7 @@ def partial_stack(st, bins, overlap=None, order=None, align=False, maxtimewindow
 
 	return st_binned
 
-def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, markphases=['ttall', 'P^410P', 'P^660P'], method='fft'):
+def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, plot=False, markphases=['ttall', 'P^410P', 'P^660P'], method='fft'):
 	"""
 	Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
 	and if set a plot.
@@ -1007,11 +1007,25 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	"""
 
 	# Prepare and convert objects.
+	# Find geometrical center station of array. If fails, the first trace is used.
 	st 		= stream.copy()
 	data 	= stream2array(st, normalize=True)
 
-	attach_network_to_traces(st, inv)
-	attach_coordinates_to_traces(st, inv, event)
+	if inv:
+		attach_network_to_traces(st, inv)
+		attach_coordinates_to_traces(st, inv, event)
+
+		center 	= geometrical_center(inv)
+		cstat 	= find_closest_station(inv, st, center['latitude'], center['longitude'])
+		
+		for i, trace in enumerate(st):
+			if not trace.stats.station in [cstat]:
+				continue
+			else:
+				sref=i
+	else:
+		sref=0
+
 
 	epidist = np.zeros(data.shape[0])
 	for i,trace in enumerate(st):
@@ -1022,17 +1036,6 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	dsample = st[0].stats.delta
 	Nsample = st[0].stats.npts
 
-	# Find geometrical center station of array.
-	center 	= geometrical_center(inv)
-	
-	cstat 	= find_closest_station(inv, st, center['latitude'], center['longitude'])
-	
-	for i, trace in enumerate(st):
-		if not trace.stats.station in [cstat]:
-			continue
-		else:
-			sref=i
-
 	# Prepare slownessrange, and allocate space in memory.
 	uN 		= int ((slomax - slomin) / slostep + 1)
 	urange 	= np.linspace(slomin, slomax, uN)
@@ -1040,6 +1043,7 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 	iF 		= int(math.pow(2,nextpow2(it))) 
 	dft 	= np.fft.fft(data, iF, axis=1)
 	vespa = np.zeros( (uN, data.shape[1]) )
+	taxis = np.arange(data.shape[1]) * dsample
 
 	if method in ("fft"):
 		# Calculate timeshift-table as a tensor, see shift2ref method "fft" as guide.
@@ -1112,13 +1116,14 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 		except:
 			refphase = None
 
-		RE 		= 6371.0
-		REdeg 	= kilometer2degrees(RE)
-		origin 	= event.origins[0]['time']
-		depth 	= event.origins[0]['depth']/1000.
-		m 		= TauPyModel('ak135')
-		dist 	= st[sref].stats.distance
-		arrival =  m.get_travel_times(depth, dist, phase_list=markphases)
+		if markphases:
+			RE 		= 6371.0
+			REdeg 	= kilometer2degrees(RE)
+			origin 	= event.origins[0]['time']
+			depth 	= event.origins[0]['depth']/1000.
+			m 		= TauPyModel('ak135')
+			dist 	= st[sref].stats.distance
+			arrival =  m.get_travel_times(depth, dist, phase_list=markphases)
 
 
 		# Labels of the plot.
@@ -1139,28 +1144,25 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 			except:
 				ax.set_title(r'Linear Vespagram', fontsize=12 )
 		
-		
-
-		
 		ax.set_xlabel(r'Time in s', fontsize=15)
-		taxis = np.arange(data.shape[1]) * dsample
 		
 		# Do the contour plot of the Vespagram.
 		if plot in ['contour', 'Contour']:
 			cax = ax.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()), origin='lower')
 
-			for phase in arrival:
-				t 			= phase.time
-				phase_time 	= origin + t - st[sref].stats.starttime
-				Phase_npt 	= int(phase_time/st[sref].stats.delta)
-				tPhase 		= Phase_npt * st[sref].stats.delta
-				name 		= phase.name
-				sloPhase 	= phase.ray_param_sec_degree - p_ref
-				if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
-					continue
-				ax.autoscale(False)
-				ax.plot(tPhase, sloPhase, 'x')
-				ax.annotate('%s' % name, xy=(tPhase,sloPhase))
+			if markphases:
+				for phase in arrival:
+					t 			= phase.time
+					phase_time 	= origin + t - st[sref].stats.starttime
+					Phase_npt 	= int(phase_time/st[sref].stats.delta)
+					tPhase 		= Phase_npt * st[sref].stats.delta
+					name 		= phase.name
+					sloPhase 	= phase.ray_param_sec_degree - p_ref
+					if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
+						continue
+					ax.autoscale(False)
+					ax.plot(tPhase, sloPhase, 'x')
+					ax.annotate('%s' % name, xy=(tPhase,sloPhase))
 
 			fig.colorbar(cax)
 
@@ -1171,17 +1173,18 @@ def vespagram(stream, inv, event, slomin, slomax, slostep, power=4, plot=False, 
 			for i, trace in enumerate(vespa):
 				ax.plot(taxis, trace+ urange[i], color='black')
 
-			for phase in arrival:
-				t 			= phase.time
-				phase_time 	= origin + t - st[sref].stats.starttime
-				Phase_npt 	= int(phase_time/st[sref].stats.delta)
-				tPhase 		= Phase_npt * st[sref].stats.delta
-				name 		= phase.name
-				sloPhase 	= phase.ray_param_sec_degree - p_ref
-				if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
-					continue
-				ax.plot(tPhase, sloPhase, 'x')
-				ax.annotate('%s' % name, xy=(tPhase+1,sloPhase))
+			if markphases:
+				for phase in arrival:
+					t 			= phase.time
+					phase_time 	= origin + t - st[sref].stats.starttime
+					Phase_npt 	= int(phase_time/st[sref].stats.delta)
+					tPhase 		= Phase_npt * st[sref].stats.delta
+					name 		= phase.name
+					sloPhase 	= phase.ray_param_sec_degree - p_ref
+					if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
+						continue
+					ax.plot(tPhase, sloPhase, 'x')
+					ax.annotate('%s' % name, xy=(tPhase+1,sloPhase))
 		plt.ion()
 		plt.draw()
 		plt.show()

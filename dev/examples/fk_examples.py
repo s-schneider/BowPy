@@ -44,7 +44,7 @@ stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_trac
 alignon, partial_stack, gaps_fill_zeros, vespagram, rm, cut
 from sipy.util.picker import get_polygon
 
-noise = np.fromfile('../data/test_datasets/randnumbers/noisearr.txt')
+noise = np.fromfile('../data/test_datasets/randnumbers/PCnoise.dat')
 noise = noise.reshape(20,300)
 peaks = np.array([[-13.95      ,   6.06      ,  20.07      ],[  8.46648822,   8.42680793,   8.23354933]])
 stri = read_st("../data/test_datasets/ricker/original/SR.QHD")
