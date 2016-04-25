@@ -603,8 +603,55 @@ freq = np.fft.fftfreq(len(y), d)
 # will produce fft and its frequencies
 
 
+#### TEST ROUTINE FOR MAINPHASE AND PRECURSOR WITH DIFFERENT DELTA U ###
+from obspy import Stream
+import sys
+n_of_samples 		= 2000
+n_of_traces 		= 20
+delta_traces		= 100
+n_of_ricker_samples	= int(n_of_samples/10.)
+width_of_ricker		= int(n_of_samples/100.)
+shift_of_ricker		= 1000
 
+slope = 0
+MR = base.create_ricker(n_of_samples, n_of_traces, delta_traces, slope, n_of_ricker_samples, width_of_ricker, shift_of_ricker)
 
+PC_u = np.linspace(0,100,101)
+print(PC_u)
+PC = base.create_ricker(n_of_samples, n_of_traces, delta_traces, 0, n_of_ricker_samples, width_of_ricker, shift_of_ricker- 3*n_of_ricker_samples )
+data_org = MR + PC
+st_org = array2stream(data_org)
+
+data_fk_org = fk_filter(st_org, ftype='extract', fshape=['butterworth', 4, 2])
+data_fk_org = data_fk_org.data / data_fk_org.data.max()
+fig, ax = plt.subplots()
+
+allt = Stream()
+allt += st_org
+allsynths = []
+Qall=[]
+for u in PC_u:
+	u = int(u)
+	PC 		= base.create_ricker(n_of_samples, n_of_traces, delta_traces, u, n_of_ricker_samples, width_of_ricker, shift_of_ricker- 3*n_of_ricker_samples )
+	data 	= MR + PC
+
+	allsynths.append(data)
+
+	st_tmp 	= array2stream(data)
+	
+	st_fk 	= fk_filter(st_tmp, ftype='extract', fshape=['butterworth', 4, 2])
+	data_fk = st_fk.data/st_fk.data.max()	
+	allt += st_fk
+
+	Q = np.linalg.norm(data_fk_org,2)**2. / np.linalg.norm(data_fk_org - data_fk,2)**2.
+	Q = 10.*np.log(Q)
+	Qall.append(Q)
+	#ax.set_yscale('log')
+	#ax.set_xscale('log')
+	print('Q = %f, u = %f'% (Q, u/float(delta_traces)),  end="\r")
+	sys.stdout.flush()
+	ax.plot(u,Q, 'ro')
+plt.show()	
 #### PLOTTING ROUTINE FOR REFRESHING ###
 
 fig = plt.figure()

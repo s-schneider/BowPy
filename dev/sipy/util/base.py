@@ -124,47 +124,46 @@ def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
        
     return(data, t)
 
-def create_ricker(nofs, noft, slope, nors = 100., width=2., shift=0):
+def create_ricker(n_of_samples, n_of_traces, delta_traces = 1,  slope=0, n_of_ricker_samples = 100., width_of_ricker=2., shift_of_ricker=0):
 	"""
-	Creates noft Traces with a Ricker wavelet
-	:param nofs: No of samplesw
-	:type  nofs: int
+	Creates n_of_traces Traces with a Ricker wavelet
+	:param n_of_samples: No of samplesw
+	:type  n_of_samples: int
 	
-	:param noft: No of traces
-	:type  noft: int
+	:param n_of_traces: No of traces
+	:type  n_of_traces: int
 
-	:param slope: Indexshift of the traces
+	:param slope: Indexshift of the traces, shift is applied by the relation delta_t = delta_traces * slope
 	:type  slope: int
 
-	:param width: Width parameter of Ricker-wavelet, default 2
-	:type  width: float
+	:param width_of_ricker: width_of_ricker parameter of Ricker-wavelet, default 2
+	:type  width_of_ricker: float
 
-	:param nors: Number of samples for ricker
-	:type  nors: int
+	:param n_of_ricker_samples: Number of samples for ricker
+	:type  n_of_ricker_samples: int
 	"""
 
-	if nofs < nors:
+	if n_of_samples < n_of_ricker_samples:
 		msg='Number of tracesamples lower than number of ricker samples'
 		raise IOError(msg)
 
-	data = np.zeros((noft, nofs))	
+	data = np.zeros((n_of_traces, n_of_samples))	
 
-	trace = np.zeros(nofs)
-	ricker_tmp = sp.signal.ricker(nors, width)
+	trace = np.zeros(n_of_samples)
+	ricker_tmp = sp.signal.ricker(n_of_ricker_samples, width_of_ricker)
 	ricker = ricker_tmp/ricker_tmp.max()
 
-	trace[shift:shift+nors] = ricker
-
-	print(trace.max())
+	trace[shift_of_ricker:shift_of_ricker+n_of_ricker_samples] = ricker
 
 	if slope != 0:
-		delta = int(1. / (slope * float(noft)/float(nofs)))
 		if slope > 0:
 			for i in range(data.shape[0]):
-				data[i] = np.roll(trace, i * delta)[:nofs]	
+				delta = np.floor( i * float(slope) / float(delta_traces)).astype('int')
+				data[i] = np.roll(trace, delta)[:n_of_samples]	
 		elif slope < 0:
 			for i in range(data.shape[0])[::-1]:
-				data[i] = np.roll(trace, -(data.shape[0]-1-i) * delta)[:nofs]	
+				delta = np.floor( i * float(slope) / float(delta_traces)).astype('int')
+				data[i] = np.roll(trace, -(data.shape[0]-1-i) * delta)[:n_of_samples]	
 	elif slope == 0:	
 		for i, dt in enumerate(data):
 			data[i] = trace	

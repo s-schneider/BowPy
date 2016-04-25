@@ -79,7 +79,7 @@ def array2trace(ArrayData, st_original=None):
 
 	if isinstance(st_original, Stream):
 		trace.stats = st_original[0].stats
-	elif isinstance(st_origninal, Trace):
+	elif isinstance(st_original, Trace):
 		trace.stats = st_original.stats
 
 	return trace
@@ -124,34 +124,49 @@ def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
        
     return(data, t)
 
-def create_ricker(nofs, noft, slope, shift, width=2.):
+def create_ricker(n_of_samples, n_of_traces, delta_traces = 1,  slope=0, n_of_ricker_samples = 100., width_of_ricker=2., shift_of_ricker=0):
 	"""
-	Creates noft Traces with a Ricker wavelet
-	:param nofs: No of samples
-	:type  nofs: int
+	Creates n_of_traces Traces with a Ricker wavelet
+	:param n_of_samples: No of samplesw
+	:type  n_of_samples: int
 	
-	:param noft: No of traces
-	:type  noft: int
+	:param n_of_traces: No of traces
+	:type  n_of_traces: int
 
-	:param slope: Indexshift of the traces
+	:param slope: Indexshift of the traces, shift is applied by the relation delta_t = delta_traces * slope
 	:type  slope: int
 
-	:param width: Width parameter of Ricker-wavelet, default 2
-	:type  width: float
-	"""
-	data = np.zeros((noft, nofs))	
+	:param width_of_ricker: width_of_ricker parameter of Ricker-wavelet, default 2
+	:type  width_of_ricker: float
 
-	delta = int(1. / (slope * float(noft)/float(nofs)))
-	
-	trace = sp.signal.ricker(2*nofs, width)
-	trace = np.roll(trace, trace.argmax() * (int(0.9 * nofs)-shift))/trace.max()
-	if slope > 0:
-		for i in range(data.shape[0]):
-			data[i] = np.roll(trace, i * delta)[:nofs]	
-	elif slope < 0:
-		for i in range(data.shape[0])[::-1]:
-			data[i] = np.roll(trace, -(data.shape[0]-1-i) * delta)[:nofs]	
-	
+	:param n_of_ricker_samples: Number of samples for ricker
+	:type  n_of_ricker_samples: int
+	"""
+
+	if n_of_samples < n_of_ricker_samples:
+		msg='Number of tracesamples lower than number of ricker samples'
+		raise IOError(msg)
+
+	data = np.zeros((n_of_traces, n_of_samples))	
+
+	trace = np.zeros(n_of_samples)
+	ricker_tmp = sp.signal.ricker(n_of_ricker_samples, width_of_ricker)
+	ricker = ricker_tmp/ricker_tmp.max()
+
+	trace[shift_of_ricker:shift_of_ricker+n_of_ricker_samples] = ricker
+
+	if slope != 0:
+		if slope > 0:
+			for i in range(data.shape[0]):
+				delta = np.floor( i * float(slope) / float(delta_traces)).astype('int')
+				data[i] = np.roll(trace, delta)[:n_of_samples]	
+		elif slope < 0:
+			for i in range(data.shape[0])[::-1]:
+				delta = np.floor( i * float(slope) / float(delta_traces)).astype('int'))
+				data[i] = np.roll(trace, -(data.shape[0]-1-i) * delta)[:n_of_samples]	
+	elif slope == 0:	
+		for i, dt in enumerate(data):
+			data[i] = trace	
 
 	return data
 
