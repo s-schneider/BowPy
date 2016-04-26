@@ -110,7 +110,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			ax.set_ylabel(ylabel, fontsize=fs)
 
 		ax.tick_params(axis='both', which='major', labelsize=fs)	
-
+		ax.autoscale(False)
 	else:
 		ax 	= plt.gca()
 		fig = plt.gcf()
@@ -168,7 +168,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			try:
 				depth = st_tmp[0].stats.depth			
 			except:
-				print('No depth information found')
+				print()
 	
 		yold=0
 		
@@ -492,18 +492,23 @@ def line_cut(array, shape):
 
 	elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
 		new_array[0] = array[0]
-		for i in range(length/2 +1)[1:]:
+		newrange = np.linspace(1, length, length).astype('int')
+		for i in newrange:
 			new_array[i] = array[i]
 			new_array[new_array.shape[0]-i] = array[new_array.shape[0]-i]			
 		return new_array
 
 	elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
-		fil_lh = create_filter(name, array.shape[0]/2, length/2, kwarg)
+		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
 
-	fil_rh = np.flipud(fil_lh)
+	elif name in ['taper', 'Taper'] and isinstance(length, int):
+		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+		fil_lh = -1. * fil_lh + 1.
+
+	fil_rh = np.flipud(fil_lh)[::-1][1:][::-1]
 	fil = np.zeros(2*fil_lh.size)
 	fil[:fil.size/2] = fil_lh
-	fil[fil.size/2:] = fil_rh
+	fil[fil.size/2+1:] = fil_rh
 
 	new_array = array.transpose() * fil
 	new_array = new_array.transpose()
@@ -529,29 +534,30 @@ def line_set_zero(array, shape):
 	length = shape[2]
 	new_array = array
 
-	if shape[0] in ['spike', 'Spike']:
-		new_array[0] = 0
-		return(new_array)
+	if name in ['spike', 'Spike']:
+		new_array[0] = array[0]
+		return new_array
 
 	elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
-		new_array[0] = 0
-		for i in range(length/2 +1)[1:]:
-			new_array[i] = 0
-			new_array[new_array.shape[0]-i] = 0
-		return(new_array)
+		new_array[0] = array[0]
+		newrange = np.linspace(1, length, length).astype('int')
+		print(newrange)
+		for i in newrange:
+			new_array[i] = array[i]
+			new_array[new_array.shape[0]-i] = array[new_array.shape[0]-i]			
+		return new_array
 
-	elif name in ['butterworth', 'Butterworth'] and isinstance(length, int):
-		fil_lh = create_filter(name, array.shape[0]/2, length/2, kwarg)
-		fil_lh = -1. * fil_lh + 1.
+	elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
+		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
 
 	elif name in ['taper', 'Taper'] and isinstance(length, int):
-		fil_lh = create_filter(name, array.shape[0]/2, length/2, kwarg)
+		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
 		fil_lh = -1. * fil_lh + 1.
 
-	fil_rh = np.flipud(fil_lh)
+	fil_rh = np.flipud(fil_lh)[::-1][1:][::-1]
 	fil = np.zeros(2*fil_lh.size)
 	fil[:fil.size/2] = fil_lh
-	fil[fil.size/2:] = fil_rh
+	fil[fil.size/2+1:] = fil_rh
 	
 	new_array = array.transpose() * fil
 	new_array = new_array.transpose()

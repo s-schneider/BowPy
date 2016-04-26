@@ -159,7 +159,7 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 			ArrayData = stream2array(st_al, normalize)
 			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
 			array_filtered_fk = line_set_zero(array_fk, shape=fshape)
-			
+
 		else:
 			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
 			array_filtered_fk = line_set_zero(array_fk, shape=fshape)
@@ -188,7 +188,7 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 
 		stream_filtered = array2trace(stacked_array, st_original=st.copy())
 
-		return stream_filtered
+		return stream_filtered, array_filtered_fk
 	
 	elif ftype in ("eliminate-polygon"):
 		array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
