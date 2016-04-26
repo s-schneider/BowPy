@@ -70,7 +70,7 @@ def test(x, case, nf=True):
 	st_org = Trace(data_fk_org)
 	
 
-	bw_length = np.linspace(0, n_of_traces/2., n_of_traces/2.+1).astype('int')#[::2]
+	bw_length = np.linspace(1, n_of_traces/2., n_of_traces/2.).astype('int')#[::2]
 	bw_slope = np.linspace(1, 100., 100).astype('int')
 	allt = Stream()
 	allt += st_org
@@ -90,18 +90,23 @@ def test(x, case, nf=True):
 				if length == 0:
 					st_fk 	= fk_filter(st_tmp, ftype='extract', fshape=['spike'])[0]
 				else:
-					if case == 2:
-						st_fk 	= fk_filter(st_tmp, ftype='extract', fshape=['butterworth', slope, length])[0]
-					elif case == 1:
+					if case == 1:
 						st_fk 	= fk_filter(st_tmp, ftype='extract', fshape=['boxcar', None, length])[0]
+					elif case == 2:
+						st_fk 	= fk_filter(st_tmp, ftype='extract', fshape=['butterworth', slope, length])[0]
+					elif case == 3:
+						st_fk 	= fk_filter(st_tmp, ftype='extract', fshape=['taper', slope, length])[0]
 				data_fk = st_fk.data/st_fk.data.max()	
 				allt += st_fk
 
 				Q = np.linalg.norm(data_fk_org,2)**2. / np.linalg.norm(data_fk_org - data_fk,2)**2.
-				Q = 10.*np.lo(Q)
+				Q = 10.*np.log(Q)
 				Qall.append([length, slope, Q])
-				print('Q = %f, u = %f, k length = %f' % (Q, u/float(delta_traces), length),  end="\r")
+				print('Q = %f, length = %f, slope = %f' % (Q,length, slope),  end="\r")
 				sys.stdout.flush()
+
+	
+	np.savetxt('../Qtlist.dat', Qall)
 
 	fs = 22
 	if nf:
@@ -127,9 +132,68 @@ ofile = '../Q_k-window_compare_bw4.png'
 fig.savefig(ofile, dpi=200)
 
 #fku.plot(allt, zoom=5, savefig=ofile_stream)
+with open('../Qtlist.dat') as fh:
+    D = np.array(fh.read().split()).astype('float')
+
+Qtemp= D.reshape(1000,3)
+Qtt = Qtemp.transpose()
+Qtt[1] -= 1
+Qtt[0] -= 1
+Qtemp = Qtt.transpose()
+xrange = np.linspace(0,99, 100)
+yrange = np.linspace(0,9,10)
+Qmat = np.zeros((100,10))
+for x in xrange:
+	for y in yrange:
+		for i, item in enumerate(Qtemp):
+			if item[1] == x and item[0]==y:
+				print('%i, %i, %f, %i' % (x, y, item[2], i))
+				Qmat[x,y] = item[2]
+
+#plt.imshow(Qmat, aspect='auto', origin='lower', interpolation='none')
+import matplotlib as mpl
+from matplotlib import ticker
+fig, ax = plt.subplots(frameon=False)
+
+Qplot = np.zeros((100, 9))
+Qplot = Qmat[:,1:]
+#Qplot=Qmat
+maxindex = Qplot.argmax()
+Qmax=np.zeros(Qplot.shape)
+Qmax= np.float64('nan')
+Qmax[np.unravel_index(maxindex, (100,9))] = 1
+
+extent =(1,10, 1,100)
+im1 = ax.imshow(Qplot, aspect='auto', origin='lower', interpolation='none',cmap='Blues', extent=extent)
+ax.set_ylabel('Slope m', fontsize=fs)
+ax.set_xlabel('Windowlength(k)', fontsize=fs)
+ax.tick_params(axis='both', which='both', labelsize=fs)
+ax.xaxis.labelpad = 0.5
+cbar = fig.colorbar(im)
+cbar.ax.set_ylabel('Q', fontsize=fs)
+cbar.ax.tick_params(labelsize=fs)
+
+#ax.xaxis.set_minor_formatter(ticker.NullFormatter())
+
+# Customize minor tick labels
+ax.xaxis.set_major_locator(ticker.FixedLocator(np.linspace(1.5,9.5,9)))
+ax.xaxis.set_major_formatter(ticker.FixedFormatter(np.linspace(1,9,9).astype('int')))
+
+#ax.yaxis.set_major_formatter(ticker.NullFormatter())
+#ax.yaxis.set_major_locator(ticker.NullLocator())
+# Customize minor tick labels
+ax.yaxis.set_major_locator(ticker.FixedLocator([1.5, 10.5, 20.5, 30.5, 40.5, 50.5, 60.5, 70.5, 80.5, 90.5]))#np.linspace(1.5,99.5,9)))
+ax.yaxis.set_major_formatter(ticker.FixedFormatter([ 1, 10, 20, 30, 40, 50, 60, 70, 80, 90]))
 
 
 
+plt.hold(True)
+
+im2 = ax.imshow(Qmax, aspect='auto', alpha = .6, origin='lower', interpolation='none', extent=extent)
+
+
+
+###################################
 noise = np.fromfile('../data/test_datasets/randnumbers/PCnoise.dat')
 noise = noise.reshape(20,300)
 peaks = np.array([[-13.95      ,   6.06      ,  20.07      ],[  8.46648822,   8.42680793,   8.23354933]])
@@ -760,3 +824,5 @@ ax.set_xlim(-0.5,0.5)
 ax.set_ylim(-0.1, 1.5)
 ax.legend()
 fig.savefig('../../../ScieBo/Master/Thesis/Thesis/inputs/methods/images/bwfilter.png', dpi=300)
+
+
