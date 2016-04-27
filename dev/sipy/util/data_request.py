@@ -12,9 +12,11 @@ import sys
 from sipy.util.array_util import center_of_gravity, plot_map, attach_network_to_traces, attach_coordinates_to_traces, geometrical_center
 
 def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ", minlat=None,
-                 maxlat=None,minlon=None,maxlon=None, mindepth=None, maxdepth=None, 
-                 radialcenterlat=None, radialcenterlon=None, minrad=None, maxrad=None, 
-                 azimuth=None, baz=False, radialsearch=False, savefile=False):
+                 maxlat=None,minlon=None,maxlon=None, station_minlat=None,
+                 station_maxlat=None, station_minlon=None, station_maxlon=None, mindepth=None, maxdepth=None, 
+                 radialcenterlat=None, radialcenterlon=None, minrad=None, maxrad=None,
+                 station_radialcenterlat=None, station_radialcenterlon=None, station_minrad=None, station_maxrad=None,
+                 azimuth=None, baz=False, savefile=False, format=None):
 	"""
 	Searches in a given Database for seismic data. Restrictions in terms of starttime, endtime, network etc can be made.
 	If data is found it returns a stream variable, with the waveforms, an inventory with all station and network information
@@ -57,13 +59,12 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 	:param baz: Desired range of back-azimuths of event, station couples in deg as a list [minimum back azimuth, maximum back azimuth]
 	:type  baz: list
 
-	:param radialsearch: Sets radialsearch on or off
-	:type  radialsearch: bool
+	:param savefile: if True, Stream, Inventory and Catalog will be saved local, in the current directory.
+	:type  savefile: bool
 
-	:param savefile: if True, Stream, Inventory and Catalog will be saved local, default directory is the current.
-	:type  savefile: bool.
-
-
+	:param format: File-format of the data, for supported formats see: https://docs.obspy.org/packages/autogen/obspy.core.stream.Stream.write.html#obspy.core.stream.Stream.write
+	:type  format: string
+	
 	returns
 
 	:param: Stream, Inventory, Catalog
@@ -88,11 +89,8 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 	client = Client(client_name)
 
 	try:
-		if radialsearch:
-			print("Doing a radial search..")
-			catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, maxdepth=maxdepth, mindepth=mindepth, latitude=radialcenterlat, longitude=radialcenterlon, minradius=minrad, maxradius=maxrad)
-		else:
-			catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, maxdepth=maxdepth, mindepth=mindepth)
+		catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, maxdepth=maxdepth, mindepth=mindepth, latitude=radialcenterlat, longitude=radialcenterlon, minradius=minrad, maxradius=maxrad)
+
 	except:
 		print("No events found for given parameters.")
 		return
@@ -113,7 +111,9 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 		station_etime = UTCDateTime(origin_t + 3600*24)
 
 		try:
-			inventory = client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime, minlatitude=minlat, maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
+			inventory = client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
+			 								minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
+			 								latitude=station_radialcenterlat, longitude=station_radialcenterlon, minradius=station_minrad, maxradius=station_maxrad)
 			print(inventory)
 		except:
 			print("No Inventory found for given parameters")
@@ -167,13 +167,13 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 						stream 		   += streamreq
 						try:
 							if inventory_used:
-								inventory_used 	+= client.get_stations(network=network.code, station=station.code, level="station", 
-																	starttime=station_stime, endtime=station_etime, minlatitude=minlat, 
-																	maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
+								inventory_used 	+= client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
+			 								minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
+			 								latitude=station_radialcenterlat, longitude=station_radialcenterlon, minradius=station_minrad, maxradius=station_maxrad)
 						except:
-								inventory_used 	 = client.get_stations(network=network.code, station=station.code, level="station", 
-																	starttime=station_stime, endtime=station_etime, minlatitude=minlat, 
-																	maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
+								inventory_used 	 = client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
+			 								minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
+			 								latitude=station_radialcenterlat, longitude=station_radialcenterlon, minradius=station_minrad, maxradius=station_maxrad)
 					except:
 						print("\n")
 						print("No data for station %s ... " % station.code, end='\r' )
@@ -200,13 +200,13 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 							stream 		+= streamreq
 							try:
 								if inventory_used:
-									inventory_used 	+= client.get_stations(network=network.code, station=station.code, level="station", 
-																		starttime=station_stime, endtime=station_etime, minlatitude=minlat, 
-																		maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
+									inventory_used 	+= client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
+			 								minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
+			 								latitude=station_radialcenterlat, longitude=station_radialcenterlon, minradius=station_minrad, maxradius=station_maxrad)
 							except:
-									inventory_used 	 = client.get_stations(network=network.code, station=station.code, level="station", 
-																		starttime=station_stime, endtime=station_etime, minlatitude=minlat, 
-																		maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
+									inventory_used 	 = client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
+			 								minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
+			 								latitude=station_radialcenterlat, longitude=station_radialcenterlon, minradius=station_minrad, maxradius=station_maxrad)
 						except:
 							print("No data for station %s ... " % station.code, end='\r' )
 							sys.stdout.flush()
