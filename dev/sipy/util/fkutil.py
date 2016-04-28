@@ -46,7 +46,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphase=None, phaselabel=True, phaselabelclr='red', 
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphases=None, phaselabel=True, phaselabelclr='red', 
 		norm=None, clr='black', clrtrace=None, newfigure=True, savefig=False, xlabel=None, ylabel=None, t_axis=None, fs=15, tw=None):
 	"""
 	Alpha Version!
@@ -68,8 +68,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 	param yinfo:	Plotting with y info as distance of traces
 	type  yinfo:		bool
 
-	param markphase: Phases, that should be marked in the plot, default is "None"
-	type  markphase: list
+	param markphases: Phases, that should be marked in the plot, default is "None"
+	type  markphases: list
 
 	param norm: Depiction of traces; unprocessed or normalized. Normalization options are:
 				all - normalized on biggest value of all traces
@@ -110,11 +110,10 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			ax.set_ylabel(ylabel, fontsize=fs)
 
 		ax.tick_params(axis='both', which='major', labelsize=fs)	
-		ax.autoscale(False)
 	else:
 		ax 	= plt.gca()
 		fig = plt.gcf()
-		ax.autoscale(False)
+
 
 	if isinstance(st, Stream):
 
@@ -188,10 +187,10 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			except:
 				y_dist = yold + 1
 			
-			if markphase and isinv and isevent:
+			if markphases and isinv and isevent:
 				origin = event.origins[0]['time']
 				m = TauPyModel('ak135')
-				arrivals = m.get_travel_times(depth, y_dist, phase_list=markphase)
+				arrivals = m.get_travel_times(depth, y_dist, phase_list=markphases)
 				timetable = [ [], [] ]
 
 				for k, phase in enumerate(arrivals):
@@ -254,12 +253,12 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					else:
 						continue
 
-			elif markphase and not isinv:
-				msg='Markphase needs Inventory Information, not found.'
+			elif markphases and not isinv:
+				msg='markphases needs Inventory Information, not found.'
 				raise IOError(msg)	
 	
-			elif markphase and not isevent:
-				msg='Markphase needs Event Information, not found.'
+			elif markphases and not isevent:
+				msg='markphases needs Event Information, not found.'
 				raise IOError(msg)		
 				
 			elif type(epidistances) == numpy.ndarray or type(epidistances)==list:
@@ -305,7 +304,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					fig.gca().yaxis.set_major_locator(plt.NullLocator())
 					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),spacing*j+0.1))
 					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ spacing*j, color=cclr)			
-			
+
 			yold = y_dist
 		if savefig:
 			fig.set_size_inches(8,7)
@@ -329,13 +328,13 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			y_dist = st.stats.distance
 		except:
 			print("No distance information attached to trace, no phases are calculated!")
-			markphase=False
+			markphases=False
 
-		if markphase:
+		if markphases:
 			origin = event.origins[0]['time']
 			depth = event.origins[0]['depth']/1000.
 			m = TauPyModel('ak135')
-			arrivals = m.get_travel_times(depth, y_dist, phase_list=markphase)
+			arrivals = m.get_travel_times(depth, y_dist, phase_list=markphases)
 			timetable = [ [], [] ]
 			for k, phase in enumerate(arrivals):
 				phase_name = phase.name
@@ -970,7 +969,7 @@ def create_iFFT2mtx(nx, ny):
 	
 	return sparse_iFFT2mtx
 
-def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None, maskshape=None, dt=None, p=None, flow=None, fhigh=None):
+def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', dmethod='denoise', peaks=None, maskshape=None, dt=None, p=None, flow=None, fhigh=None, slidingwindow=False, overlap=0.5):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
@@ -1014,27 +1013,92 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', peaks=None,
 	fkdata = np.fft.fft2(ArrayData, s=(iK,iF))
 	threshold = abs(fkdata.max())
 		
-	ADfinal = ArrayData.copy()
+	ADold = ArrayData.copy()
+	ADnew = ArrayData.copy()
+	ADfinal = np.zeros(ArrayData.shape).astype('complex')
+
 	if method in ('linear', 'exp'):
-		for n in noft:
-			ADtemp = ArrayData.copy()
-			for i in range(maxiter):
-				data_tmp 	= ADtemp.copy()
-				fkdata 		= np.fft.fft2(data_tmp, s=(iK,iF))
-				fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
+		if slidingwindow:
+			if dmethod in ('reconstruct'):
+				w_length = int(data.shape[1] / 3.)
+				swh = np.hanning(w_length)
 
-				if method in ('linear'):
-					threshold 	= threshold * alpha
-				elif method in ('exp'):
-					threshold 	= threshold * sp.exp(-(i+1) * alpha)
+				loc = 0.
+				inside = True
+				while inside:
+					curr_win = int(loc)
+					ADtemp = ArrayData[:,curr_win:curr_win+w_length].copy()
+						
+					for i in range(maxiter):
+						data_tmp 	= ADtemp.copy()
+						fkdata 		= np.fft.fft2(data_tmp, s=(iK,iF))
+						fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
 
-				data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
-				ADtemp[n] 	= data_tmp[n]
-				#save = 'pocsdata' + str(i) + '.png'
-				#plot(data_tmp, ylabel='Distance(m)', xlabel='Time(s)', fs=22, yinfo=2, savefig=save)
-			ADfinal[n] = ADtemp[n].copy()
+						if method in ('linear'):
+							threshold 	= threshold * alpha
+						elif method in ('exp'):
+							threshold 	= threshold * sp.exp(-(i+1) * alpha)
 
-			threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
+						data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
+						ADtemp[noft] 	= data_tmp[noft][:,curr_win:curr_win+w_length].copy()
+
+					
+
+					if loc == 0.:
+						ADfinal[:,curr_win:curr_win+w_length] = ADtemp.copy()
+					else:
+						ADfinal[:,curr_win:curr_win+w_length] = ADfinal[:,curr_win:curr_win+w_length] + ADtemp
+						ADfinal[:,curr_win-int(overlap*w_length):int(curr_win)] = ( ADold[:,int((1-overlap)*w_length):] + ADtemp[:,:int(overlap*w_length)] ) / 2.
+
+					ADold = ADtemp.copy()
+					threshold = abs(np.fft.fft2(ADold, s=(iK,iF)).max())
+
+					loc += overlap * w_length
+					print(loc)
+					if loc >= data.shape[1]: inside=False
+	
+		else:
+			if dmethod in ('reconstruct'):
+				print('here')
+				ADtemp = ArrayData.copy()
+				for i in range(maxiter):
+					data_tmp 	= ADtemp.copy()
+					fkdata 		= np.fft.fft2(data_tmp, s=(iK,iF))
+					fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
+
+					if method in ('linear'):
+						threshold 	= threshold * alpha
+					elif method in ('exp'):
+						threshold 	= threshold * sp.exp(-(i+1) * alpha)
+
+					data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
+					ADtemp[noft] 	= data_tmp[noft]
+					#save = 'pocsdata' + str(i) + '.png'
+					#plot(data_tmp, ylabel='Distance(m)', xlabel='Time(s)', fs=22, yinfo=2, savefig=save)
+				ADfinal = ADtemp.copy()
+
+				threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
+			
+			elif dmethod in ('denoise', 'de-noise'):
+				for n in noft:
+					ADtemp = ArrayData.copy()
+					for i in range(maxiter):
+						data_tmp 	= ADtemp.copy()
+						fkdata 		= np.fft.fft2(data_tmp, s=(iK,iF))
+						fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
+
+						if method in ('linear'):
+							threshold 	= threshold * alpha
+						elif method in ('exp'):
+							threshold 	= threshold * sp.exp(-(i+1) * alpha)
+
+						data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
+						ADtemp[n] 	= data_tmp[n]
+						#save = 'pocsdata' + str(i) + '.png'
+						#plot(data_tmp, ylabel='Distance(m)', xlabel='Time(s)', fs=22, yinfo=2, savefig=save)
+					ADfinal = ADtemp.copy()
+
+				threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
 
 	elif method in ('mask'):
 		W 		= makeMask(fkdata, peaks[0], maskshape)

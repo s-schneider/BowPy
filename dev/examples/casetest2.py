@@ -54,18 +54,18 @@ noise = noise.reshape(20,300)
 with open("../data/test_datasets/ricker/rickerlist.dat", 'r') as fh:
         rickerlist = np.array(fh.read().split()).astype('str')
 
-noisefoldlist = ["no_noise","10pct_noise", "20pct_noise", "50pct_noise", "60pct_noise", "80pct_noise"]
-noiselevellist = np.array([0., 0.1, 0.2, 0.5, 0.6, 0.8]) 
+noisefoldlist = ["no_noise"] #,"10pct_noise", "20pct_noise", "50pct_noise", "60pct_noise", "80pct_noise"]
+noiselevellist = np.array([0.]) #, 0.1, 0.2, 0.5, 0.6, 0.8]) 
 alphalist = np.linspace(0.01, 0.9, 10)
 maxiterlist = np.arange(11)[1:]
 bwlist = [1,2,4]
 taperlist = [2,4,5,8,200]
 
-
-
+stream_org = read_st('/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/original/SR.QHD')
+d0 = stream2array(stream_org.copy(), normalize=True)
 peaks = np.array([[-13.95      ,   6.06      ,  20.07      ],[  8.46648822,   8.42680793,   8.23354933]])
 errors = []
-FPATH = '/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/'
+FPATH = '/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/'
 for i, noisefolder in enumerate(noisefoldlist):
     print("##################### NOISELVL %i %% #####################\n" % int(noiselevellist[i] * 100.) )
     for filein in rickerlist:
@@ -78,7 +78,6 @@ for i, noisefolder in enumerate(noisefoldlist):
 	            os.mkdir(PICPATH)
 	    PATH = filein
 	    stream = read_st(PATH)
-	    d0 = stream2array(stream.copy(), normalize=True)
 	    data = stream2array(stream.copy(), normalize=True) + noiselevellist[i] * noise
 	    srs = array2stream(data)
 	    Qlinall = []
@@ -106,37 +105,16 @@ for i, noisefolder in enumerate(noisefoldlist):
 	        print("##################### CURRENT ALPHA %f  #####################\n" % alpha )
 	        for maxiter in maxiterlist:
 
-	            print('SSA RECON WITH %i ITERATIONS' % maxiter, end="\r")
+	            print('POCS RECON WITH %i ITERATIONS' % maxiter, end="\r")
 	            sys.stdout.flush()
 	            data_org = d0.copy()
 	            srs = array2stream(data.copy())
-	            st_rec = pocs_recon(srs, maxiter, method=DOMETHOD, dmethod='ssa', alpha=alpha, dt=1, p=3, flow=0.01, fhigh=0.5)
-	            drecmask = stream2array(st_rec, normalize=True)
-	            Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drecmask,2)**2.                  
-	            QSSAall.append([alpha, maxiter, 10.*np.log(Q)])
+	            st_rec = pocs_recon(srs, maxiter, dmethod='recon', method='linear', alpha=alpha)
+	            drec = stream2array(st_rec, normalize=True)
+	            Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drec,2)**2.                  
+	            Qlinall.append([alpha, maxiter, 10.*np.log(Q)])
 
-				for bws in bwlist:
-					print('USING BW, %i, MASK' % int(bws), end="\r")
-					sys.stdout.flush()
-					data_org = d0.copy()
-					srs = array2stream(data.copy())
-					st_rec = pocs_recon(srs, maxiter, method=DOMETHOD, dmethod='mask', alpha=alpha, beta=None, peaks=peaks, maskshape=['butterworth', bws])
-					drecmask = stream2array(st_rec, normalize=True)
-					Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drecmask,2)**2.
 
-					Qbwmaskall.append([alpha, maxiter, 10.*np.log(Q), bws])
-
-				for taper in taperlist:
-					print('USING TAPER, %i, MASK' % int(taper), end="\r")
-					sys.stdout.flush()
-					data_org = d0.copy()
-					srs = array2stream(data.copy())
-					st_rec = pocs_recon(srs, maxiter, method=DOMETHOD, dmethod='mask', alpha=alpha, beta=None, peaks=peaks, maskshape=['taper', taper])
-					drecmask = stream2array(st_rec, normalize=True)
-					Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drecmask,2)**2.
-
-					Qtapermaskall.append([alpha, maxiter, 10.*np.log(Q), taper])
-
-                savepath = plotnameQSSAall + '.dat'
-                np.savetxt(savepath, QSSAall)
+                savepath = plotnameQall + '.dat'
+                np.savetxt(savepath, Qlinall)
 
