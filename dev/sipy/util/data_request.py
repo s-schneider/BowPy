@@ -16,7 +16,7 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
                  station_maxlat=None, station_minlon=None, station_maxlon=None, mindepth=None, maxdepth=None, 
                  radialcenterlat=None, radialcenterlon=None, minrad=None, maxrad=None,
                  station_radialcenterlat=None, station_radialcenterlon=None, station_minrad=None, station_maxrad=None,
-                 azimuth=None, baz=False, savefile=False, file_format='SAC', min1=1, min2=9):
+                 azimuth=None, baz=False, t_before_first_arrival=1, t_after_first_arrival=9, savefile=False, file_format='SAC'):
 	"""
 	Searches in a given Database for seismic data. Restrictions in terms of starttime, endtime, network etc can be made.
 	If data is found it returns a stream variable, with the waveforms, an inventory with all station and network information
@@ -59,6 +59,10 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 	:param baz: Desired range of back-azimuths of event, station couples in deg as a list [minimum back azimuth, maximum back azimuth]
 	:type  baz: list
 
+	:param t_before_first_arrival, t_before_after_arrival: Length of the seismograms, startingpoint, minutes before 1st arrival and
+															minutes after 1st arrival.
+	:type  t_before_first_arrival, t_before_after_arrival: float, int
+	
 	:param savefile: if True, Stream, Inventory and Catalog will be saved local, in the current directory.
 	:type  savefile: bool
 
@@ -142,8 +146,8 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 				P_arrival_time = arrivaltime[0]
 
 				Ptime = P_arrival_time.time
-				tstart = UTCDateTime(event.origins[0].time + Ptime - min1 * 60)
-				tend = UTCDateTime(event.origins[0].time + Ptime + min2 * 60)
+				tstart = UTCDateTime(event.origins[0].time + Ptime - t_before_first_arrival * 60)
+				tend = UTCDateTime(event.origins[0].time + Ptime + t_after_first_arrival * 60)
 
 
 				center = geometrical_center(inv)
@@ -176,8 +180,8 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 					P_arrival_time = arrivaltime[0]
 
 					Ptime = P_arrival_time.time
-					tstart = UTCDateTime(event.origins[0].time + Ptime - min1 * 60)
-					tend = UTCDateTime(event.origins[0].time + Ptime + min2 * 60)
+					tstart = UTCDateTime(event.origins[0].time + Ptime - t_before_first_arrival * 60)
+					tend = UTCDateTime(event.origins[0].time + Ptime + t_after_first_arrival * 60)
 
 					try:
 						streamreq = client.get_waveforms(network=network.code, station=station.code, location='*', channel=channels, starttime=tstart, endtime=tend, attach_response=True)
@@ -210,8 +214,8 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 					P_arrival_time = arrivaltime[0]
 
 					Ptime = P_arrival_time.time
-					tstart = UTCDateTime(event.origins[0].time + Ptime - min1 * 60)
-					tend = UTCDateTime(event.origins[0].time + Ptime + min2 * 60)
+					tstart = UTCDateTime(event.origins[0].time + Ptime - t_before_first_arrival * 60)
+					tend = UTCDateTime(event.origins[0].time + Ptime + t_after_first_arrival * 60)
 
 					fit = False
 					if azimuth:
