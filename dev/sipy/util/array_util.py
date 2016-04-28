@@ -1289,7 +1289,7 @@ def plot_vespa(st, inv, event, data, markphases=['ttall', 'P^410P', 'P^660P'], p
 	plt.ioff()
 
 
-def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135', stack=False, refphase=['PP']):
+def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135', stacking=False, refphase=['PP']):
 	"""
 	Function reorganizes the traces in a equidistant manner.
 	"""	
@@ -1324,7 +1324,7 @@ def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135',
 	# Shifting takes place
 	for no, trace in enumerate(st_tmp):
 
-		if stack:
+		if stacking:
 			index_resampled = np.abs(yresample - trace.stats.distance).argmin()
 		else:
 			index_resampled = no
@@ -1337,7 +1337,7 @@ def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135',
 		trace.stats.starttime	= trace.stats.starttime + tdelta
 
 		# Doublettes are stacked
-		if stack:
+		if stacking:
 			if index_resampled in ilist:
 				stacks = [trace.data]
 				for i, stacktraces in enumerate(stream_resample):
@@ -1368,7 +1368,19 @@ def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135',
 			newtrace.stats.zerotrace 	 = "True"
 			stream_resample 			+= newtrace
 
-	return stream_resample
+	#sort traces by distance
+
+	yinfo_res = []
+	for index, trace in enumerate(stream_resample):
+		yinfo_res.append([trace.stats.distance, index])
+	yinfo_res.sort()	
+
+	stream_res = Stream()	
+
+	for i in yinfo_res:
+		stream_res += stream_resample[i[1]]
+
+	return stream_res
 
 def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 	"""
@@ -1390,8 +1402,8 @@ def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 	d 		= 0.
 	try:
 		yinfo = epidist2nparray(attach_epidist2coords(inv, event, stream))
-		attach_network_to_traces(stream, inv)
-		attach_coordinates_to_traces(stream, inv, event)
+		attach_network_to_traces(st_tmp, inv)
+		attach_coordinates_to_traces(st_tmp, inv, event)
 	except:
 		try:
 			yinfo = []
@@ -1410,7 +1422,9 @@ def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 	
 	decimal_res = float(decimal_res)
 	# Find biggest value for y-ticks.
+	#Rework this, with minum distance etc...
 	mind 		= int(round(np.diff(yinfo).min() * decimal_res))
+	if mind == 0: mind = 1
 	maxd 		= int(round(np.diff(yinfo).max() * decimal_res))
 	grd_delta 	= fractions.gcd(mind, maxd)/decimal_res
 	N 			= (grd_max - grd_min)/grd_delta + 1

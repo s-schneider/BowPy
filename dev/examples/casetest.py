@@ -121,7 +121,7 @@ for i, noisefolder in enumerate(noisefoldlist):
 					sys.stdout.flush()
 					data_org = d0.copy()
 					srs = array2stream(data.copy())
-					st_rec = pocs_recon(srs, maxiter, method=DOMETHOD, dmethod='mask', alpha=alpha, beta=None, peaks=peaks, maskshape=['butterworth', bws])
+					st_rec = pocs_recon(srs, maxiter, method=DOMETHOD, dmethod='linear', alpha=alpha, beta=None, peaks=peaks)
 					drecmask = stream2array(st_rec, normalize=True)
 					Q = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drecmask,2)**2.
 					
@@ -176,6 +176,9 @@ with open("/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/Qvalues/SSAli
 	ssalist = np.array(fh.read().split()).astype('str')
 	folderlist.append(ssalist)
 
+with open("/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/reconlin_list.dat", 'r') as fh:
+	linearlist = np.array(fh.read().split()).astype('str')
+	folderlist.append(linearlist)
 FPATH = "/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/"
 
 bwlist = [1,2,4]
@@ -265,7 +268,7 @@ for sublist in folderlist:
 			plt.close("all")
 
 for name in linearlist:
-	ifile = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/Qvalues/" + name
+	ifile = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/" + name
 	Qraw = np.loadtxt(ifile)
 
 	Q=[]
@@ -319,8 +322,10 @@ for sublist in folderlist:
 				fname = name.split('dat')[0]
 				plotname = FPATH + fname + 'bw' + str(bw) + '.png'
 				rmname =FPATH + fname + 'bw_imshow' + str(bw) + '.png'
-				os.remove(rmname)
-
+				try:
+					os.remove(rmname)
+				except:
+					print()
 				fig, ax = plt.subplots(frameon=False)
 				Qplot = Qmat.copy()
 				maxindex = Qmat.argmax()
@@ -361,7 +366,10 @@ for sublist in folderlist:
 				fname = name.split('dat')[0]
 				plotname = FPATH + fname + 'taper' + str(bw) + '.png'
 				rmname = FPATH + fname + 'taper_imshow' + str(bw) + '.png'
-				os.remove(rmname)
+				try:
+					os.remove(rmname)
+				except:
+					print()
 
 				fig, ax = plt.subplots(frameon=False)
 				Qplot = Qmat.copy()
@@ -403,7 +411,10 @@ for sublist in folderlist:
 			fname = name.split('dat')[0]
 			plotname = FPATH + fname + 'SSA' + '.png'
 			rmname = FPATH + fname + 'SSA_imshow' + str(bw) + '.png'	
-			os.remove(rmname)
+			try:
+				os.remove(rmname)
+			except:
+				print()
 
 			fig, ax = plt.subplots(frameon=False)
 			Qplot = Qmat.copy()
@@ -434,32 +445,51 @@ for sublist in folderlist:
 			fig.savefig(plotname, dpi=300)
 			plt.close("all")
 
-for name in linearlist:
-	ifile = "/home/s_schn42/dev/FK-filter/data/test_datasets/ricker/Qvalues/" + name
-	Qraw = np.loadtxt(ifile)
+#################### LINEAR POCS #####################
+import os
+yrange = np.linspace(0.01, 0.9, 10)
+yextent = np.zeros(yrange.size)
+xrange = np.arange(11)[1:]
+for dlist in folderlist:
+	for name in dlist:
+		ifile = "/home/s_schn42/dev/FK-Toolbox/data/test_datasets/ricker/" + name
+		Qraw = np.loadtxt(ifile)
+		Qmat = np.zeros((10,10))
+		for xi, x in enumerate(xrange):
+			for yi, y in enumerate(yrange):
+				for j, item in enumerate(Qraw[i::]):
+					if item[1] == x and item[0]==y:
+						Qmat[xi,yi] = item[2]
 
-	Q=[]
-	for p in Qraw:
-		if not p[2] == np.float64('inf'):
-			if not p[0] == 0:
-				if not p[1] ==0:
-					Q.append(p)
-	point = np.array(Q).transpose()
+		fname = name.split('dat')[0]
+		plotname = FPATH + fname + 'linear' + '.png'
 
-	fname = name.split('png')[0]
-	plotname = FPATH + fname + 'png'
+		fig, ax = plt.subplots(frameon=False)
+		Qplot = Qmat.copy()
+		maxindex = Qmat.argmax()
+		Qmax=np.zeros(Qplot.shape)
+		#Qmax[:,:]= np.float64('nan')
+		Qmax[np.unravel_index(maxindex, Qmat.shape)] = 10000
 
-	fig, ax = plt.subplots()	
-	cmap = 'seismic'
-	scat = ax.scatter(point[0], point[1], c=point[3], s=60, cmap=cmap)#, s=50)
-	ax.set_xlim(0.,0.91)
-	ax.set_ylim(0,50)
-	ax.autoscale(False)
-	ax.set_xlabel('Alpha')
-	ax.set_ylabel('No of iterations')
-	scat.set_clim(-10,10)
-	cbar = plt.colorbar(scat)
-	cbar.ax.set_xlabel('Q')
-	plt.savefig(plotname)
-	plt.close("all")
+		extent =(0.01, 1, 1,11)
+		im = ax.imshow(Qplot, aspect='auto', origin='lower', interpolation='none',cmap='Blues', extent=extent)
+		ax.set_ylabel('No of iterations', fontsize=fs)
+		ax.set_xlabel(r'$\alpha$', fontsize=fs)
+		ax.tick_params(axis='both', which='both', labelsize=fs)
+		cbar = fig.colorbar(im)
+		cbar.ax.set_ylabel('Q', fontsize=fs)
+		cbar.ax.tick_params(labelsize=fs)
+
+		# Customize major tick labels
+
+		ax.yaxis.set_major_locator(ticker.FixedLocator(np.linspace(1.5,10.5,10)))
+		ax.yaxis.set_major_formatter(ticker.FixedFormatter(np.linspace(1,10,10).astype('int')))
+
+		for vi, value in enumerate(yrange):
+			yextent[vi] = "{:.2f}".format(value)
+		ax.xaxis.set_major_locator(ticker.FixedLocator(np.linspace(.05,.95,10)))#np.linspace(1.5,99.5,9)))
+		ax.xaxis.set_major_formatter(ticker.FixedFormatter(yextent))
+		fig.set_size_inches(12,10)
+		fig.savefig(plotname, dpi=300)
+		plt.close("all")
 

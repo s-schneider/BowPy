@@ -625,7 +625,8 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	else:
 		return st_rec #, x[8], x[4]
 
-def pocs_recon(st, maxiter, method='denoise', dmethod='linear', alpha=0.9, beta=None, peaks=None, maskshape=None, dt=None, p=None, flow=None, fhigh=None):
+def pocs_recon(st, maxiter, dmethod='denoise', method='linear', alpha=0.9, beta=None, peaks=None, maskshape=None, 
+			   dt=None, p=None, flow=None, fhigh=None, slidingwindow=False):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
@@ -652,7 +653,7 @@ def pocs_recon(st, maxiter, method='denoise', dmethod='linear', alpha=0.9, beta=
 	ArrayData 	= stream2array(st_tmp, normalize=True)
 	recon_list 	= []
 
-	if method in ('recon'):
+	if dmethod in ('reconstruct'):
 		for i, trace in enumerate(st_tmp):
 			try:
 				if trace.stats.zerotrace in ['True']:
@@ -667,10 +668,10 @@ def pocs_recon(st, maxiter, method='denoise', dmethod='linear', alpha=0.9, beta=
 		
 		noft = recon_list
 		
-	elif method in ('denoise'):
+	elif dmethod in ('denoise', 'de-noise'):
 		noft = range(ArrayData.shape[0])
 	
-	ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta,  dmethod, peaks, maskshape, dt, p, flow, fhigh)
+	ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
 
 	#datap = ADfinal.copy()
 
