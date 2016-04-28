@@ -11,12 +11,12 @@ import sys
 
 from sipy.util.array_util import center_of_gravity, plot_map, attach_network_to_traces, attach_coordinates_to_traces, geometrical_center
 
-def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ", minlat=None,
+def data_request(client_name, start, end, minmag, net=None, scode="*", channels="*", minlat=None,
                  maxlat=None,minlon=None,maxlon=None, station_minlat=None,
                  station_maxlat=None, station_minlon=None, station_maxlon=None, mindepth=None, maxdepth=None, 
                  radialcenterlat=None, radialcenterlon=None, minrad=None, maxrad=None,
                  station_radialcenterlat=None, station_radialcenterlon=None, station_minrad=None, station_maxrad=None,
-                 azimuth=None, baz=False, savefile=False, format=None):
+                 azimuth=None, baz=False, savefile=False, file_format='SAC', min1=1, min2=9):
 	"""
 	Searches in a given Database for seismic data. Restrictions in terms of starttime, endtime, network etc can be made.
 	If data is found it returns a stream variable, with the waveforms, an inventory with all station and network information
@@ -67,7 +67,7 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 	
 	returns
 
-	:param: Stream, Inventory, Catalog
+	:param: list_of_stream, Inventory, Catalog
 	:type: list, obspy, obspy 
 
 	### Example ###
@@ -75,12 +75,17 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 	from obspy import UTCDateTime
 	start = UTCDateTime(2003,1,1,0,0)
 	end = UTCDateTime(2013,12,31,0,0)
-	stream, inventory, cat = data_request('IRIS', start, end, 8.6, 'TA', minlat=34., maxlat=50., minlon=-125., maxlon=-116.)
+	list_of_stream, inventory, cat = data_request('IRIS', start, end, 8.6, 'TA', minlat=34., maxlat=50., minlon=-125., maxlon=-116.)
 	
-	st = stream[2]
+	st = list_of_stream[2]
 	st.normalize()
 	inv = inventory[2]
 
+	from obspy import UTCDateTime
+	start = UTCDateTime(2016,01,01,0,0)
+	end = UTCDateTime(2016,04,27,0,0)
+	list_of_stream, inventory, cat = data_request('IRIS', start, end, 3.5, station_radialcenterlat=54., 
+	station_radialcenterlon=-117., station_minrad=0., station_maxrad=2., minlat=49., maxlat=59., minlon=-125., maxlon=-110.)
 	"""
 
 	data =[]
@@ -89,7 +94,7 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 	client = Client(client_name)
 
 	try:
-		catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, maxdepth=maxdepth, mindepth=mindepth, latitude=radialcenterlat, longitude=radialcenterlon, minradius=minrad, maxradius=maxrad)
+		catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, maxdepth=maxdepth, mindepth=mindepth, latitude=radialcenterlat, longitude=radialcenterlon, minradius=minrad, maxradius=maxrad,minlatitude=minlat, maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
 
 	except:
 		print("No events found for given parameters.")
@@ -98,7 +103,7 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 	print("Following events found: \n")
 	print(catalog)
 	m = TauPyModel(model="ak135")
-	Plist = ["P", "Pdiff"]
+	Plist = ["P", "Pdiff", "p"]
 	for event in catalog:
 		print("\n")
 		print("########################################")
@@ -120,23 +125,27 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 			return
 		
 		for network in inventory:
-			cog=center_of_gravity(network)
-			slat = cog['latitude']
-			slon = cog['longitude']
+
 			elat = event.origins[0].latitude
 			elon = event.origins[0].longitude
 			depth = event.origins[0].depth/1000.
-			epidist = locations2degrees(slat,slon,elat,elon)
-			
-			arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist,
-						                        phase_list=Plist)
-			P_arrival_time = arrivaltime[0]
-			Ptime = P_arrival_time.time
-			tstart = UTCDateTime(event.origins[0].time + Ptime - 3 * 60)
-			tend = UTCDateTime(event.origins[0].time + Ptime + 10 * 60)
 
 			array_fits = True
 			if azimuth or baz:
+				cog=center_of_gravity(network)
+				slat = cog['latitude']
+				slon = cog['longitude']			
+				epidist = locations2degrees(slat,slon,elat,elon)
+				arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist,
+							                        phase_list=Plist)
+
+				P_arrival_time = arrivaltime[0]
+
+				Ptime = P_arrival_time.time
+				tstart = UTCDateTime(event.origins[0].time + Ptime - min1 * 60)
+				tend = UTCDateTime(event.origins[0].time + Ptime + min2 * 60)
+
+
 				center = geometrical_center(inv)
 				clat = center['latitude']
 				clon = center['longitude']
@@ -159,8 +168,19 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 			if array_fits:
 
 				for station in network:
+
+					epidist = locations2degrees(station.latitude,station.longitude,elat,elon)
+					arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist,
+								                        phase_list=Plist)
+
+					P_arrival_time = arrivaltime[0]
+
+					Ptime = P_arrival_time.time
+					tstart = UTCDateTime(event.origins[0].time + Ptime - min1 * 60)
+					tend = UTCDateTime(event.origins[0].time + Ptime + min2 * 60)
+
 					try:
-						streamreq	    = client.get_waveforms(network.code, station.code, '*', channels,tstart, tend)
+						streamreq = client.get_waveforms(network=network.code, station=station.code, location='*', channel=channels, starttime=tstart, endtime=tend, attach_response=True)
 						no_of_stations += 1
 						print("Downloaded data for %i of %i available stations!" % (no_of_stations, network.selected_number_of_stations), end='\r' )
 						sys.stdout.flush()
@@ -170,20 +190,29 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 								inventory_used 	+= client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
 			 								minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
 			 								latitude=station_radialcenterlat, longitude=station_radialcenterlon, minradius=station_minrad, maxradius=station_maxrad)
+									
 						except:
 								inventory_used 	 = client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
 			 								minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
 			 								latitude=station_radialcenterlat, longitude=station_radialcenterlon, minradius=station_minrad, maxradius=station_maxrad)
 					except:
-						print("\n")
-						print("No data for station %s ... " % station.code, end='\r' )
-						sys.stdout.flush()
 						continue
 
 
 			# If not checking each station individually.
 			else:
 				for station in network:
+					epidist = locations2degrees(station.latitude,station.longitude,elat,elon)
+					arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist,
+								                        phase_list=Plist)
+
+
+					P_arrival_time = arrivaltime[0]
+
+					Ptime = P_arrival_time.time
+					tstart = UTCDateTime(event.origins[0].time + Ptime - min1 * 60)
+					tend = UTCDateTime(event.origins[0].time + Ptime + min2 * 60)
+
 					fit = False
 					if azimuth:
 						stat_az = gps2dist_azimuth(station.latitude, station.longitude, elat, elon)[1]
@@ -193,7 +222,7 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 						if stat_baz > baz[1] and stat_baz < baz[0]: fit = True
 					if fit:
 						try:
-							streamreq = client.get_waveforms(network.code, station.code, '*', channels,tstart, tend)
+							streamreq = client.get_waveforms(network = network.code, station = station.code, location='*', channel = channels, startime = tstart, endtime = tend, attach_response = True)
 							no_of_stations += 1
 							print("Downloaded data for %i of %i available stations!" % (no_of_stations, network.selected_number_of_stations), end='\r' )
 							sys.stdout.flush()
@@ -208,8 +237,7 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 			 								minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
 			 								latitude=station_radialcenterlat, longitude=station_radialcenterlon, minradius=station_minrad, maxradius=station_maxrad)
 						except:
-							print("No data for station %s ... " % station.code, end='\r' )
-							sys.stdout.flush()
+
 							continue
 
 		try:
@@ -227,17 +255,17 @@ def data_request(client_name, start, end, minmag, net, scode="*", channels="BHZ"
 		 stname = str(origin_t).split('.')[0] + ".MSEED"
 		 invname = stname + "_inv.xml"
 		 catname = stname + "_cat.xml"
-		 stream.write(stname, format="MSEED")
+		 stream.write(stname, format=file_format)
 		 inventory.write(invname, format="STATIONXML")
 		 catalog.write(catname, format="QUAKEML")
 
 	plt.ion()
-	invall.plot()
-	catalog.plot()
+	#invall.plot()
+	#catalog.plot()
 	plt.ioff()
 	inventory = invall
-	stream = streamall
-	return(stream, inventory, catalog)
+	list_of_stream = streamall
+	return(list_of_stream, inventory, catalog)
 
 def cat4stream(stream, client_name, stime=None, etime=None, minmag=None, lat=None, lon=None):
 
