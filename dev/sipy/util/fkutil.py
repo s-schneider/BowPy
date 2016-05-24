@@ -1059,7 +1059,7 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', dmethod='de
 	
 		else:
 			if dmethod in ('reconstruct'):
-				print('here')
+				print(maxiter)
 				ADtemp = ArrayData.copy()
 				for i in range(maxiter):
 					data_tmp 	= ADtemp.copy()

@@ -23,7 +23,7 @@ from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array,
 from sipy.util.base import nextpow2, array2stream, array2trace, stream2array
 from sipy.util.picker import get_polygon
 
-def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase=None, polygon=12, normalize=True, SSA=False,
+def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase=None, polygon=12, normalize=True, stack=True,
 					slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], 
 					order=4., peakinput=False):
 	"""
@@ -47,6 +47,7 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 				 -extract
 				 -eliminate-polygon
 				 -extract-polygon
+				 -mask
 
 	type ftype: string
 
@@ -182,11 +183,13 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF)).real
 
 
-		# Convert to Trace object.
+		# Convert to Trace or Stream object.
 		array_filtered = array_filtered[0:ix, 0:it]
-		stacked_array = stack(array_filtered, order)
-
-		stream_filtered = array2trace(stacked_array, st_original=st.copy())
+		if stack:
+			stacked_array = stack(array_filtered, order)
+			stream_filtered = array2trace(stacked_array, st_original=st.copy())
+		else:
+			stream_filtered = array2stream(array_filtered,st_original=st.copy())
 
 		return stream_filtered, array_filtered_fk
 	
@@ -226,9 +229,13 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF)).real
 
 
-		# Convert to Trace object.
+		# Convert to Trace or Stream object.
 		array_filtered = array_filtered[0:ix, 0:it]
-		stacked_array = stack(array_filtered, order)
+		if stack:
+			stacked_array = stack(array_filtered, order)
+			stream_filtered = array2trace(stacked_array, st_original=st.copy())
+		else:
+			stream_filtered = array2stream(array_filtered,st_original=st.copy())
 
 		stream_filtered = array2trace(stacked_array, st_original=st.copy())
 
@@ -671,6 +678,7 @@ def pocs_recon(st, maxiter, dmethod='denoise', method='linear', alpha=0.9, beta=
 	elif dmethod in ('denoise', 'de-noise'):
 		noft = range(ArrayData.shape[0])
 	
+	print(noft)
 	ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
 
 	#datap = ADfinal.copy()
