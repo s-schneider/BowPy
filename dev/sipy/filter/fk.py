@@ -48,6 +48,7 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 				 -eliminate-polygon
 				 -extract-polygon
 				 -mask
+				 -fk
 
 	type ftype: string
 
@@ -249,6 +250,25 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 		array_filtered = np.fft.ifft2(array_filtered_fk)
 		stream_filtered = array2stream(array_filtered, st_original=st.copy())
 		return stream_filtered
+
+
+	elif ftype in ("fk"):
+		if phase:
+			if not isinstance(event, Event) and not isinstance(inv, Inventory):
+				msg='For alignment on phase calculation inventory and event information is needed, not found.'
+				raise IOError(msg)
+
+			st_al = alignon(st_tmp, inv, event, phase)
+			ArrayData = stream2array(st_al, normalize)
+			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+			### BUILD DOUBLE TAPER ###
+			#array_filtered_fk = 
+
+		else:
+			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+			### BUILD DOUBLE TAPER ###
+			#array_filtered_fk = 
+
 
 	else:
 		print("No type of filter specified")
