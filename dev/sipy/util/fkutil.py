@@ -1356,4 +1356,61 @@ def create_filter(name, length, cutoff=None, ncorner=None, cornerpoints=None):
 		raise IOError(msg)
 
 	return y
+
+def fktrafo(stream, normalize=True):
+	"""
+	Calculates the f,k - transformation of the data in stream. Returns the trafo as an array.
+
+	:param st: Stream
+	:type st: obspy.core.stream.Stream
+
+	:param inv: inventory
+	:type inv: obspy.station.inventory.Inventory
+
+	:param event: Event
+	:type event: obspy.core.event.Event
+
+	returns
+	:param fkdata: f,k - transformation of data in stream
+	:type fkdata: numpyndarray
+	"""
+	st_tmp = stream.copy()
+	ArrayData = stream2array(st_tmp, normalize)
+	
+	ix = ArrayData.shape[0]
+	iK = int(math.pow(2,nextpow2(ix)))
+	it = ArrayData.shape[1]
+	iF = int(math.pow(2,nextpow2(it)))
+
+	fkdata = np.fft.fft2(ArrayData, s=(iK,iF))
+	
+	return fkdata
+
+def ifktrafo(fkdata, normalize=True):
+	"""
+	Calculates the inverse f,k - transformation of the data in fkdata. Returns the trafo as an array.
+
+	"""
+	fk_tmp = fkdata.copy()
+	
+	ix = fkdata.shape[0]
+	iK = int(math.pow(2,nextpow2(ix)))
+	it = fkdata.shape[1]
+	iF = int(math.pow(2,nextpow2(it)))
+
+	ArrayData = np.fft.ifft2(fkdata, s=(iK,iF))
+	
+	return ArrayData
+
+def eval_fkarea(fkdata, no_of_phases, polygon, xlabel, xticks, ylabel, yticks):
+	"""
+	Calculates the mean of an area in the fk-domain, depending of the number of linear events.
+
+	Author: Simon Schneider, 2016
+	"""
+
+	indicies = get_polygon(abs(dsfk), polygon, xlabel, xticks, ylabel, yticks)
+
+
+	return fkdata_eval
 	

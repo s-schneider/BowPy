@@ -25,7 +25,7 @@ from sipy.util.picker import get_polygon
 
 def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase=None, polygon=12, normalize=True, stack=False,
 					slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], 
-					order=4., peakinput=False):
+					order=4., peakinput=False, eval_mean=1):
 	"""
 	Import stream, the function applies an 2D FFT, removes a certain window around the
 	desired phase to surpress a slownessvalue corresponding to a wavenumber and applies an 2d iFFT.
@@ -82,6 +82,8 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 
 	param SSA: Force SSA algorithm or let it check, default:False
 	type SSA: bool
+
+	param eval_mean: number of linear events used to calculate the average of the area in the fk domain.
 
 	returns:	stream_filtered, the filtered stream.
 			
@@ -222,10 +224,12 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 				ArrayData = stream2array(st_al, normalize)
 				array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
 				array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-													yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
+													yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean)
 		else:
 			array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-												yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
+												yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean)
+
+
 
 		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF)).real
 
@@ -238,7 +242,6 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 		else:
 			stream_filtered = array2stream(array_filtered,st_original=st.copy())
 
-		stream_filtered = array2trace(stacked_array, st_original=st.copy())
 
 		return stream_filtered
 
@@ -288,35 +291,6 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 """
 FFT FUNCTIONS 
 """
-def fktrafo(stream, inv, event, normalize=True):
-	"""
-	Calculates the f,k - transformation of the data in stream. Returns the trafo as an array.
-
-	:param st: Stream
-	:type st: obspy.core.stream.Stream
-
-	:param inv: inventory
-	:type inv: obspy.station.inventory.Inventory
-
-	:param event: Event
-	:type event: obspy.core.event.Event
-
-	returns
-	:param fkdata: f,k - transformation of data in stream
-	:type fkdata: numpyndarray
-	"""
-	st_tmp = stream.copy()
-	ArrayData = stream2array(st_tmp, normalize)
-	
-	ix = ArrayData.shape[0]
-	iK = int(math.pow(2,nextpow2(ix)))
-	it = ArrayData.shape[1]
-	iF = int(math.pow(2,nextpow2(it)))
-
-	fkdata = np.fft.fft2(ArrayData, s=(iK,iF))
-	
-	return fkdata
-
 def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], 
 					method='denoise', solver="iterative",  mu=5e-2, tol=1e-12, fulloutput=False, peakinput=False, alpha=0.9):
 	"""
@@ -707,7 +681,7 @@ def pocs_recon(st, maxiter, dmethod='denoise', method='linear', alpha=0.9, beta=
 
 	return st_rec
 
-def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
+def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None, eval_mean=1):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
@@ -716,8 +690,18 @@ def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yt
 	"""
 	# Shift 0|0 f-k to center, for easier handling
 	dsfk = np.fft.fftshift(data.conj().transpose())
-
+	dsfk_tmp = np.zeros(dsfk.shape[0]/2)
+	dsfk_tmp = dsfk[0:dsfk.shape[0]/2 -1]
 	# Define polygon by user-input.
+	# If eval_mean is true, select area where to calculate the mean value
+	if eval_mean != 1:
+		indicies_eval = get_polygon(abs(dsfk_tmp), 4, xlabel, xticks, ylabel, yticks)
+		dsfk_eval = dsfk
+		dsfk_eval.conj().transpose().flat[ indicies_eval ] = dsfk_eval.conj().transpose().flat[ indicies_eval ] / float(eval_mean)
+		dsfk = dsfk_eval.copy()
+
+	#CONTINUE HERE
+
 	#indicies = get_polygon(np.log(abs(dsfk)), polygon, xlabel, xticks, ylabel, yticks)
 	indicies = get_polygon(abs(dsfk), polygon, xlabel, xticks, ylabel, yticks)
 	# Create new array, only contains extractet energy, pointed to with indicies

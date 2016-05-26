@@ -43,6 +43,7 @@ def radon_filter(st, inv, event, p, weights, line_model, inversion_model, hyperp
 	"""
 	st_input = st.copy()
 	
+	print('Starting inverse Radon-Transformation')
 	R, t, epi = radon_inverse(st_input, inv, event, p, weights, line_model, inversion_model, hyperparameters)
 	indicies = get_polygon(R, no_of_vert=8, xlabel=r'$\tau$', ylabel='p')
 	Rpick=np.zeros(R.shape)
@@ -127,6 +128,7 @@ def radon_inverse(st, inv, event, p, weights, line_model, inversion_model, hyper
 
 	t = np.linspace(0,st_tmp[0].stats.delta * st_tmp[0].stats.npts, st_tmp[0].stats.npts)
 	it=t.size
+	print(it)
 	iF=int(math.pow(2,nextpow2(it)+1)) # Double length
 
    
@@ -189,7 +191,7 @@ def radon_inverse(st, inv, event, p, weights, line_model, inversion_model, hyper
 
 	# Loop through each frequency.
 	for i in range( int(math.floor((iF+1)/2)) ):
-
+		print('Step %i of %i' % (i, int(math.floor((iF+1)/2))) )
 		# Make time-shift matrix, A.
 		f = ((float(i)/float(iF))*dF)
 		A = np.exp( (0.+1j)*2*pi*f * Tshift )
