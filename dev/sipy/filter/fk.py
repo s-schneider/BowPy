@@ -124,11 +124,23 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 		yinfo = epidist2nparray(attach_epidist2coords(inv, event, st_tmp))
 		dx = (yinfo.max() - yinfo.min() + 1) / yinfo.size
 		k_axis = np.fft.fftfreq(iK, dx)	
+
 	except:
-		print("\nNo inventory or event-information found. \nContinue without specific distance and wavenumber information.")
-		yinfo=None
-		dx=None
-		k_axis=None
+		try:
+			ymax = st_tmp[0].stats.distance
+			ymin = st_tmp[0].stats.distance
+			for trace in st_tmp:
+				if trace.stats.distance > ymax: ymax = trace.stats.distance
+				if trace.stats.distance < ymin: ymin = trace.stats.distance
+
+			dx = (ymax - ymin + 1) / len(st_tmp)
+			k_axis = np.fft.fftfreq(iK, dx)
+
+		except:
+			print("\nNo inventory or event-information found. \nContinue without specific distance and wavenumber information.")
+			yinfo=None
+			dx=None
+			k_axis=None
 
 	it = ArrayData.shape[1]
 	iF = int(math.pow(2,nextpow2(it)))
@@ -206,11 +218,11 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 			ArrayData = stream2array(st_al, normalize)
 			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
 			array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-													  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
+													  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean)
 
 		else:
 			array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-													  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis)
+													  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean)
 
 
 	elif ftype in ("extract-polygon"):
@@ -220,11 +232,11 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 				msg='For alignment on phase calculation inventory and event information is needed, not found.'
 				raise IOError(msg)
 
-				st_al = alignon(st_tmp, inv, event, phase)
-				ArrayData = stream2array(st_al, normalize)
-				array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
-				array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-													yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean)
+			st_al = alignon(st_tmp, inv, event, phase)
+			ArrayData = stream2array(st_al, normalize)
+			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
+			array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
+												yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean)
 		else:
 			array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
 												yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean)
@@ -742,8 +754,9 @@ def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, 
 	indicies = get_polygon(abs(dsfk_tmp), polygon, xlabel, xticks, ylabel, yticks)
 
 	# Create new array, only contains extractet energy, pointed to with indicies
-	dsfk_elim 										= dsfk_tmp
-	dsfk_elim.conj().transpose().flat[ indicies ] 	= 0. 
+	dsfk_elim 										= np.ones(dsfk_tmp.shape)
+	dsfk_elim.conj().transpose().flat[ indicies ] 	= 0.
+	dsfk_tmp = dsfk_tmp * dsfk_elim
 	data_fk = np.zeros(dsfk.shape).astype('complex')
 
 	#top half of domain.

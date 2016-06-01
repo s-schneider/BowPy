@@ -156,14 +156,11 @@ def create_ricker(n_of_samples, n_of_traces, delta_traces = 1,  slope=0, n_of_ri
 	trace[shift_of_ricker:shift_of_ricker+n_of_ricker_samples] = ricker
 
 	if slope != 0:
-		if slope > 0:
-			for i in range(data.shape[0]):
-				delta = np.floor( i * float(slope) / float(delta_traces)).astype('int')
-				data[i] = np.roll(trace, delta)[:n_of_samples]	
-		elif slope < 0:
-			for i in range(data.shape[0])[::-1]:
-				delta = np.floor( i * float(slope) / float(delta_traces)).astype('int')
-				data[i] = np.roll(trace, -(data.shape[0]-1-i) * delta)[:n_of_samples]	
+		for i in range(data.shape[0]):
+			delta = np.floor( i * float(abs(slope) / float(delta_traces)).astype('int'))
+			data[i] = np.roll(trace, delta)[:n_of_samples]	
+		if slope < 0:
+			data = np.flipud(data)	
 	elif slope == 0:	
 		for i, dt in enumerate(data):
 			data[i] = trace	
