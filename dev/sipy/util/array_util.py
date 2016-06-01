@@ -442,6 +442,9 @@ def alignon(st, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod
 						  Also possible to input a list with time before and after the theoretical pick.
 
 	:type maxtimewindow: int, float or string
+
+	:param xcorr: Use cross correlation with the reference trace to align traces.
+	:type  xcorr: bool
 	
 	:param taup_model: model used by TauPyModel to calculate arrivals, default is ak135
 	:type taup_model: str
@@ -1106,7 +1109,7 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 		
 		#vespa = truncate(vespa, tmin, tmax)
 
-	vespa = vespa/vespa.max()		
+	vespa = vespa/abs(vespa).max()		
 
 	# Plotting routine
 	if plot:
@@ -1164,7 +1167,8 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 					ax.plot(tPhase, sloPhase, 'x')
 					ax.annotate('%s' % name, xy=(tPhase,sloPhase))
 
-			fig.colorbar(cax)
+			fig.colorbar(cax).set_clim(-1,1)
+			
 
 		# Plot all the traces of the Vespagram.
 		else:
@@ -1263,7 +1267,7 @@ def plot_vespa(st, inv, event, data, markphases=['ttall', 'P^410P', 'P^660P'], p
 			ax.plot(tPhase, sloPhase, 'x')
 			ax.annotate('%s' % name, xy=(tPhase,sloPhase))
 
-		fig.colorbar(cax)
+		fig.colorbar(cax).set_clim(-1,1)
 
 	# Plot all the traces of the Vespagram.
 	else:
@@ -1297,6 +1301,7 @@ def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135',
 	st_tmp 			= stream.copy()
 	data 			= stream2array(st_tmp)
 	stream_resample = Stream()
+	depth			= stream[0].stats.depth
 
 	try:
 		yinfo = epidist2nparray(attach_epidist2coords(inv, event, st_tmp))
@@ -1320,6 +1325,7 @@ def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135',
 
 	yresample 	= np.linspace(ymin, ymax, npts)
 	ilist		= []
+	tstart_new_list = []
 
 	# Shifting takes place
 	for no, trace in enumerate(st_tmp):
@@ -1329,12 +1335,13 @@ def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135',
 		else:
 			index_resampled = no
 
-		torg 		= m.get_travel_times(trace.stats.depth, trace.stats.distance, phase_list=refphase)[0].time
-		tres 		= m.get_travel_times(trace.stats.depth, yresample[index_resampled], phase_list=refphase)[0].time
+		torg 		= m.get_travel_times(depth, trace.stats.distance, phase_list=refphase)[0].time
+		tres 		= m.get_travel_times(depth, yresample[index_resampled], phase_list=refphase)[0].time
 		tdelta 		= torg -tres
 		shiftvalue 	= int(tdelta / trace.stats.delta)
 		trace.data, shift_index = shift2ref(data[no], 0, shiftvalue, method=shiftmethod)
 		trace.stats.starttime	= trace.stats.starttime + tdelta
+		tstart_new_list.append(trace.stats.starttime)
 
 		# Doublettes are stacked
 		if stacking:
@@ -1350,7 +1357,11 @@ def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135',
 		#if np.abs(yresample - trace.stats.distance).min() <= ymeandiff:
 
 		trace.stats.distance = yresample[index_resampled]
-		trace.stats.processing.append(u'resampled')
+		try:
+			trace.stats.processing.append(u'resampled')
+		except:
+			trace.stats.processing = u'resampled'
+
 		stream_resample 	+= trace
 		ilist.append(index_resampled)
 
@@ -1363,9 +1374,13 @@ def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135',
 	if zero_traces:
 		for j in zero_traces:
 			newtrace 					 = obspy.core.trace.Trace(np.zeros(st_tmp[0].data.size))
+			newtrace.stats.network 		 = stream[0].stats.network
 			newtrace.stats.station		 = "empty"
+			newtrace.stats.channel 		 = stream[0].stats.channel
+			newtrace.stats.starttime	 = tstart_new_list[j]
 			newtrace.stats.distance 	 = yresample[j]
 			newtrace.stats.zerotrace 	 = "True"
+			newtrace.stats.sampling_rate = stream[0].stats.sampling_rate
 			stream_resample 			+= newtrace
 
 	#sort traces by distance

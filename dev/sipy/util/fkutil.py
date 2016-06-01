@@ -131,7 +131,6 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			npts_min = 0
 			npts_max = st[0].stats.npts
 
-		
 		data = stream2array(st)
 	
 		spacing=2.
@@ -202,10 +201,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 
 					if Phase < t_axis.min() or Phase > t_axis.max():
 						continue	
-					else:	
+					else:
 						timetable[0].append(phase_name)
 						timetable[1].append(Phase)
-
 
 				if not timetable[0] or not timetable[1]:
 					print('Phases not in Seismogram')
@@ -1059,7 +1057,6 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', dmethod='de
 	
 		else:
 			if dmethod in ('reconstruct'):
-				print(maxiter)
 				ADtemp = ArrayData.copy()
 				for i in range(maxiter):
 					data_tmp 	= ADtemp.copy()

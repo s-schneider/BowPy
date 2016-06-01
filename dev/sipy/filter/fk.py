@@ -672,7 +672,6 @@ def pocs_recon(st, maxiter, dmethod='denoise', method='linear', alpha=0.9, beta=
 	elif dmethod in ('denoise', 'de-noise'):
 		noft = range(ArrayData.shape[0])
 	
-	print(noft)
 	ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
 
 	#datap = ADfinal.copy()
@@ -720,7 +719,7 @@ def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yt
 	return data_fk
 
 
-def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None):
+def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None, eval_mean=1):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
@@ -729,14 +728,29 @@ def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, 
 	"""
 	# Shift 0|0 f-k to center, for easier handling
 	dsfk = np.fft.fftshift(data.conj().transpose())
-	
+	dsfk_tmp = dsfk[0:dsfk.shape[0]/2]
+
 	# Define polygon by user-input.
+	# If eval_mean is true, select area where to calculate the mean value
+	if eval_mean != 1:
+		indicies_eval 				= get_polygon(abs(dsfk_tmp), 4, xlabel, xticks, ylabel, yticks)
+		dsfk_eval 					= dsfk
+		dsfk_eval.conj().transpose().flat[ indicies_eval ] = dsfk_eval.conj().transpose().flat[ indicies_eval ] / float(eval_mean)
+		dsfk_tmp 					= dsfk_eval.copy()
+
 	#indicies = get_polygon(np.log(abs(dsfk)), polygon, xlabel, xticks, ylabel, yticks)
-	indicies = get_polygon(abs(dsfk), polygon, xlabel, xticks, ylabel, yticks)
-	# Create new array, contains all the energy, except the eliminated, pointed to with indicies
-	dsfk_elim = dsfk.conj().transpose()
-	dsfk_elim.flat[ indicies ]=0.
-	data_fk = dsfk_elim.conj().transpose()
+	indicies = get_polygon(abs(dsfk_tmp), polygon, xlabel, xticks, ylabel, yticks)
+
+	# Create new array, only contains extractet energy, pointed to with indicies
+	dsfk_elim 										= dsfk_tmp
+	dsfk_elim.conj().transpose().flat[ indicies ] 	= 0. 
+	data_fk = np.zeros(dsfk.shape).astype('complex')
+
+	#top half of domain.
+	data_fk[0:dsfk.shape[0]/2] 	= dsfk_tmp
+
+	#Bottom half of domain, exploiting symmetry and shift properties.
+	data_fk[dsfk.shape[0]/2:] 		= np.roll(np.roll(np.flipud(np.fliplr(dsfk_tmp)),1).transpose(), 1).transpose()
 
 	data_fk = np.fft.ifftshift(data_fk.conj().transpose())
 

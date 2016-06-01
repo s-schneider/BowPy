@@ -44,6 +44,11 @@ stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_trac
 alignon, partial_stack, gaps_fill_zeros, vespagram, rm, cut
 from sipy.util.picker import get_polygon
 
+##########
+st = read_st('../data/workfiles/UT_24_10_09/FKFIL_PREP.pickle')
+
+##########
+
 ###################################
 noise = np.fromfile('../data/test_datasets/randnumbers/PCnoise.dat')
 noise = noise.reshape(20,300)

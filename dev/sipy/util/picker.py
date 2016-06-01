@@ -188,17 +188,17 @@ def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, ytick
     # Define shape of polygon.
     try:
         x, y = xticks.max(), yticks.max() 
-        xmin= -x/10. + x/2.
-        xmax= x/10. + x/2.
-        ymin= -y/10. + y/2.
-        ymax= y/10. + y/2.
+        xmin= -x/10.
+        xmax= x/10.
+        ymin= y - 3.*y/2.
+        ymax= y - 3.*y/4.
 
     except AttributeError:
         y,x = data.shape
-        xmin= -x/10. + x/2.
-        xmax= x/10. + x/2.
-        ymin= -y/10. + y/2.
-        ymax= y/10. + y/2.
+        xmin= -x/10.
+        xmax= x/10.
+        ymin= y - 3.*y/2.
+        ymax= y - 3.*y/4.
         
     xs = []
     for i in range(no_of_vert):

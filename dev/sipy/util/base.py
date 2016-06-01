@@ -251,3 +251,13 @@ def LCM(a,b):
 	"""
 	import fractions
 	return abs(a * b) / fractions.gcd(a,b) if a and b else 0
+
+def stats(stream):
+	"""
+	Prints stats of the stream
+	"""
+
+	for trace in stream:
+		print(trace.stats)
+
+	return
