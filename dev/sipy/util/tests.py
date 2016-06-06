@@ -45,7 +45,7 @@ from sipy.util.picker import get_polygon
 import os
 import sys
 
-def qtest_pocs(st_rec, st_orginal, alpharange, alphadecrease, irange):
+def qtest_pocs(st_rec, st_orginal, alpharange, irange):
 	"""
 	Runs the selected method in a certain range of parameters (iterations and alpha), returns a table of Q values ,defined as:
 
@@ -53,31 +53,91 @@ def qtest_pocs(st_rec, st_orginal, alpharange, alphadecrease, irange):
 
 	The highest Q value is the one to be chosen.
 	"""
-
-	method  = 'reconstruct'
-	dmethod	= 'linear'
+	Qall = []
+	dmethod  = 'reconstruct'
+	method	= 'linear'
 
 	st_org  = st_orginal.copy()
-	data_org= stream2array(st_org)
+	data_org= stream2array(st_org, normalize=True)
 
 	for alpha in alpharange:
 		
 		print("##################### CURRENT ALPHA %f  #####################\n" % alpha )
 		for i in irange:
 
-			print('POCS RECON WITH %i ITERATIONS' % maxiter, end="\r")
+			print('POCS RECON WITH %i ITERATIONS' % i, end="\r")
 			sys.stdout.flush()
 			srs = st_rec.copy()
-			st_pocsrec = pocs_recon(srs, maxiter=i, method=method, dmethod=dmethod, alpha=alpha)
+			st_pocsrec = pocs_recon(srs, maxiter=int(i), method=method, dmethod=dmethod, alpha=alpha)
 			drec = stream2array(st_pocsrec, normalize=True)
 			Q_tmp = np.linalg.norm(data_org,2)**2. / np.linalg.norm(data_org - drec,2)**2.
 			Q = 10.*np.log(Q_tmp)	
-			Qall.append([alpha, maxiter, Qlin])
+			Qall.append([alpha, i, Q])
 
 
 	return Qall
 
-def qtest_plot():
+def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None):
+
+	if isinstance(alpharange, numpy.ndarray):
+		yrange  = alpharange
+		yextent = np.zeros(yrange.size)
+	else:
+		msg = 'Wrong alpharange input'
+		raise IOError(msg)
+
+	if isinstance(irange, numpy.ndarray):
+		xrange  = irange
+	else:
+		msg = 'Wrong irange input'
+		raise IOError(msg)
+
+	Qraw = ifile
+	Qmat = np.zeros((10,10))
+	for xi, x in enumerate(xrange):
+		for yi, y in enumerate(yrange):
+			for j, item in enumerate(Qraw):
+				if item[1] == x and item[0]==y:
+					Qmat[xi,yi] = item[2]
+
+	fig, ax = plt.subplots(frameon=False)
+	Qplot = Qmat.copy()
+	maxindex = Qmat.argmax()
+	Qmax=np.zeros(Qplot.shape)
+	#Qmax[:,:]= np.float64('nan')
+	Qmax[np.unravel_index(maxindex, Qmat.shape)] = 10000
+
+	extent =(0.01, 1, 1,11)
+	im = ax.imshow(Qplot, aspect='auto', origin='lower', interpolation='none',cmap='Blues', extent=extent)
+	ax.set_ylabel('No of iterations', fontsize=fs)
+	ax.set_xlabel(r'$\alpha$', fontsize=fs)
+	ax.tick_params(axis='both', which='both', labelsize=fs)
+	cbar = fig.colorbar(im)
+	cbar.ax.set_ylabel('Q', fontsize=fs)
+	cbar.ax.tick_params(labelsize=fs)
+
+	# Customize major tick labels
+
+	ax.yaxis.set_major_locator(ticker.FixedLocator(np.linspace(1.5,10.5,10)))
+	ax.yaxis.set_major_formatter(ticker.FixedFormatter(np.linspace(1,10,10).astype('int')))
+
+	for vi, value in enumerate(yrange):
+		yextent[vi] = "{:.2f}".format(value)
+	ax.xaxis.set_major_locator(ticker.FixedLocator(np.linspace(.05,.95,10)))#np.linspace(1.5,99.5,9)))
+	ax.xaxis.set_major_formatter(ticker.FixedFormatter(yextent))
+	#fig.set_size_inches(12,10)
+	#fig.savefig(plotname, dpi=300)
+	#plt.close("all")
+	return
+
+def set_zero(st, name):
+
+	for station in name:
+		for i, trace in enumerate(st):
+			if trace.stats.station == station:
+				trace.data = np.zeros(trace.data.shape)
+				st[i].stats.zerotrace = 'True'
+				st[i].stats.station = 'empty'
 
 	return
 

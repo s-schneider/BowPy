@@ -472,7 +472,7 @@ import instaseis as ins
 uniform=False
 real=True
 db = ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
-
+#db = ins.open_db("/local/s_schn42/instaseis/10s_PREM_ANI_FORCES")
 tofe = obspy.UTCDateTime(2009, 10, 24, 14, 40, 44, 770000)
 lat = -6.1165
 lon = 130.429
