@@ -34,6 +34,7 @@ import sipy.filter.radon as radon
 import sipy.util.fkutil as fku
 import sipy.util.base as base
 import sipy.util.array_util as au
+import sipy.util.tests as tests
 
 from sipy.filter.fk import pocs_recon
 from sipy.util.data_request import data_request, cat4stream, inv4stream
@@ -485,11 +486,11 @@ magn=1.
 
 #output
 
-streamfile = "SYNTH_OUT.QHD"
+streamfile = "synth1.pickle"
 
-qstfile = "SYNTH_OUT.QST"
-invfile = "SYNTH_OUT_inv.xml"
-catfile = "SYNTH_OUT_cat.xml"
+qstfile = None #"SYNTH_OUT.QST"
+invfile = "synth1_inv.xml"
+catfile = "synth1_cat.xml"
 
 source = ins.Source(
 latitude=lat, longitude=lon, depth_in_m=depth,
