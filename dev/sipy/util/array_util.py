@@ -461,8 +461,17 @@ def alignon(st, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod
 	
 	# Calculate depth and distance of receiver and event.
 	# Set some variables.
+
+	for trace in st_tmp:
+		try:
+			null = trace.stats.distance
+		except:
+			print('No distance information found, add Inventory')
+			return
+
 	if isinstance(inv, Inventory):
 		attach_coordinates_to_traces(st_tmp, inv, event)
+		attach_network_to_traces(st_tmp, inv)
 	depth 	= event.origins[0]['depth']/1000.
 	origin 	= event.origins[0]['time']
 	m 		= TauPyModel(taup_model)
@@ -1195,7 +1204,7 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 
 	return vespa, taxis, urange
 
-def plot_vespa(st, inv, event, data, markphases=['ttall', 'P^410P', 'P^660P'], plot=True):
+def plot_vespa(st, inv, event, data, markphases=['ttall', 'P^410P', 'P^660P'], plot=True, cmap='jet'):
 
 	center 	= geometrical_center(inv)
 	
@@ -1251,7 +1260,7 @@ def plot_vespa(st, inv, event, data, markphases=['ttall', 'P^410P', 'P^660P'], p
 	
 	# Do the contour plot of the Vespagram.
 	if plot in ['contour', 'Contour']:
-		cax = ax.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()), origin='lower')
+		cax = ax.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()), origin='lower', cmap=cmap)
 
 		for phase in arrival:
 			t 			= phase.time

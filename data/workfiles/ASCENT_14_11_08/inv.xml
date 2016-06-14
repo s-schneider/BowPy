@@ -3,270 +3,12 @@
   <Source>IRIS-DMC</Source>
   <Sender>IRIS-DMC</Sender>
   <Module>IRIS WEB SERVICE: fdsnws-station | version: 1.1.20</Module>
-  <ModuleURI>http://service.iris.edu/fdsnws/station/1/query?network=X4&amp;format=xml</ModuleURI>
-  <Created>2016-04-10T18:50:54+00:00</Created>
-  <Network code="X4" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-01-01T00:00:00+00:00">
-    <Description>Gulf of Mexico Basin Opening</Description>
-    <TotalNumberStations>23</TotalNumberStations>
-    <SelectedNumberStations>23</SelectedNumberStations>
-    <Station code="GC01" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-07-30T00:00:00+00:00">
-      <Latitude unit="DEGREES">28.2472</Latitude>
-      <Longitude unit="DEGREES">-96.6062</Longitude>
-      <Elevation>6.0</Elevation>
-      <Site>
-        <Name>Matagorda Island,TX USA</Name>
-      </Site>
-      <CreationDate>2010-07-30T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>3</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC02" endDate="2012-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-07-21T00:00:00+00:00">
-      <Latitude unit="DEGREES">28.3353</Latitude>
-      <Longitude unit="DEGREES">-96.6712</Longitude>
-      <Elevation>0.0</Elevation>
-      <Site>
-        <Name>Seadrift, TX USA</Name>
-      </Site>
-      <CreationDate>2010-07-21T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>12</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC03" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-07-21T00:00:00+00:00">
-      <Latitude unit="DEGREES">28.4777</Latitude>
-      <Longitude unit="DEGREES">-96.7764</Longitude>
-      <Elevation>4.0</Elevation>
-      <Site>
-        <Name>Long Mott, TX USA</Name>
-      </Site>
-      <CreationDate>2010-07-21T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>6</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC04" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-07-21T00:00:00+00:00">
-      <Latitude unit="DEGREES">28.6357</Latitude>
-      <Longitude unit="DEGREES">-96.8751</Longitude>
-      <Elevation>20.0</Elevation>
-      <Site>
-        <Name>Bloomington, TX USA</Name>
-      </Site>
-      <CreationDate>2010-07-21T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>6</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC05" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2011-03-16T00:00:00+00:00">
-      <Latitude unit="DEGREES">28.7467</Latitude>
-      <Longitude unit="DEGREES">-96.9667</Longitude>
-      <Elevation>17.0</Elevation>
-      <Site>
-        <Name>Highway 185, Victoria, TX USA</Name>
-      </Site>
-      <CreationDate>2011-03-16T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>3</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC06" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-07-21T00:00:00+00:00">
-      <Latitude unit="DEGREES">28.8759</Latitude>
-      <Longitude unit="DEGREES">-97.0345</Longitude>
-      <Elevation>31.0</Elevation>
-      <Site>
-        <Name>Sun Valley Drive, Victoria, TX USA</Name>
-      </Site>
-      <CreationDate>2010-07-21T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>3</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC07" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-06-05T00:00:00+00:00">
-      <Latitude unit="DEGREES">28.9871</Latitude>
-      <Longitude unit="DEGREES">-97.1551</Longitude>
-      <Elevation>55.0</Elevation>
-      <Site>
-        <Name>Thomaston, TX USA</Name>
-      </Site>
-      <CreationDate>2010-06-05T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>6</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC08" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-06-05T00:00:00+00:00">
-      <Latitude unit="DEGREES">29.06</Latitude>
-      <Longitude unit="DEGREES">-97.2505</Longitude>
-      <Elevation>45.0</Elevation>
-      <Site>
-        <Name>Cuero, TX USA</Name>
-      </Site>
-      <CreationDate>2010-06-05T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>9</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC09" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-06-05T00:00:00+00:00">
-      <Latitude unit="DEGREES">29.2135</Latitude>
-      <Longitude unit="DEGREES">-97.2929</Longitude>
-      <Elevation>69.0</Elevation>
-      <Site>
-        <Name>Concrete, TX USA</Name>
-      </Site>
-      <CreationDate>2010-06-05T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>9</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC10" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-06-03T00:00:00+00:00">
-      <Latitude unit="DEGREES">29.3485</Latitude>
-      <Longitude unit="DEGREES">-97.3376</Longitude>
-      <Elevation>96.0</Elevation>
-      <Site>
-        <Name>Hochheim, TX USA</Name>
-      </Site>
-      <CreationDate>2010-06-03T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>6</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC11" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-07-26T00:00:00+00:00">
-      <Latitude unit="DEGREES">29.459</Latitude>
-      <Longitude unit="DEGREES">-97.4368</Longitude>
-      <Elevation>80.0</Elevation>
-      <Site>
-        <Name>Gonzales, TX USA</Name>
-      </Site>
-      <CreationDate>2010-07-26T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>3</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC12" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-06-05T00:00:00+00:00">
-      <Latitude unit="DEGREES">29.5871</Latitude>
-      <Longitude unit="DEGREES">-97.5226</Longitude>
-      <Elevation>110.0</Elevation>
-      <Site>
-        <Name>Slayden, TX USA</Name>
-      </Site>
-      <CreationDate>2010-06-05T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>9</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC13" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-06-04T00:00:00+00:00">
-      <Latitude unit="DEGREES">29.669</Latitude>
-      <Longitude unit="DEGREES">-97.6274</Longitude>
-      <Elevation>128.0</Elevation>
-      <Site>
-        <Name>Luling, TX USA</Name>
-      </Site>
-      <CreationDate>2010-06-04T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>9</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC14" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-07-20T00:00:00+00:00">
-      <Latitude unit="DEGREES">29.7641</Latitude>
-      <Longitude unit="DEGREES">-97.7709</Longitude>
-      <Elevation>142.0</Elevation>
-      <Site>
-        <Name>Fentress, TX USA</Name>
-      </Site>
-      <CreationDate>2010-07-20T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>9</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC15" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-07-20T00:00:00+00:00">
-      <Latitude unit="DEGREES">29.8579</Latitude>
-      <Longitude unit="DEGREES">-97.9316</Longitude>
-      <Elevation>196.0</Elevation>
-      <Site>
-        <Name>San Marcos, TX USA</Name>
-      </Site>
-      <CreationDate>2010-07-20T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>12</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC16" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-06-02T00:00:00+00:00">
-      <Latitude unit="DEGREES">29.9304</Latitude>
-      <Longitude unit="DEGREES">-98.0072</Longitude>
-      <Elevation>140.0</Elevation>
-      <Site>
-        <Name>San Marcos, TX USA</Name>
-      </Site>
-      <CreationDate>2010-06-02T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>9</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC17" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-06-01T00:00:00+00:00">
-      <Latitude unit="DEGREES">30.0323</Latitude>
-      <Longitude unit="DEGREES">-98.1602</Longitude>
-      <Elevation>344.0</Elevation>
-      <Site>
-        <Name>Wimberley, TX USA</Name>
-      </Site>
-      <CreationDate>2010-06-01T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>9</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC18" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-06-04T00:00:00+00:00">
-      <Latitude unit="DEGREES">30.1664</Latitude>
-      <Longitude unit="DEGREES">-98.213</Longitude>
-      <Elevation>437.0</Elevation>
-      <Site>
-        <Name>Henly, TX USA</Name>
-      </Site>
-      <CreationDate>2010-06-04T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>9</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC19" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-06-04T00:00:00+00:00">
-      <Latitude unit="DEGREES">30.262</Latitude>
-      <Longitude unit="DEGREES">-98.31</Longitude>
-      <Elevation>350.0</Elevation>
-      <Site>
-        <Name>Pedernales Falls, TX USA</Name>
-      </Site>
-      <CreationDate>2010-06-04T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>9</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC20" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-06-05T00:00:00+00:00">
-      <Latitude unit="DEGREES">30.3099</Latitude>
-      <Longitude unit="DEGREES">-98.4044</Longitude>
-      <Elevation>376.0</Elevation>
-      <Site>
-        <Name>Johnson City, TX USA</Name>
-      </Site>
-      <CreationDate>2010-06-05T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>9</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC24" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2010-07-23T00:00:00+00:00">
-      <Latitude unit="DEGREES">28.8301</Latitude>
-      <Longitude unit="DEGREES">-97.0106</Longitude>
-      <Elevation>29.0</Elevation>
-      <Site>
-        <Name>Vine Street, Victoria, TX USA</Name>
-      </Site>
-      <CreationDate>2010-07-23T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>6</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC25" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2012-03-15T00:00:00+00:00">
-      <Latitude unit="DEGREES">28.4102</Latitude>
-      <Longitude unit="DEGREES">-96.7086</Longitude>
-      <Elevation>6.0</Elevation>
-      <Site>
-        <Name>Seadrift, TX USA</Name>
-      </Site>
-      <CreationDate>2012-03-15T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>6</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GC26" endDate="2014-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2012-03-16T00:00:00+00:00">
-      <Latitude unit="DEGREES">28.3999</Latitude>
-      <Longitude unit="DEGREES">-96.6903</Longitude>
-      <Elevation>6.0</Elevation>
-      <Site>
-        <Name>Seadrift, TX USA</Name>
-      </Site>
-      <CreationDate>2012-03-16T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>6</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-  </Network>
+  <ModuleURI>http://service.iris.edu/fdsnws/station/1/query?endtime=2009-01-01T00%3A00%3A00.000000&amp;network=X4&amp;starttime=2008-01-01T00%3A00%3A00.000000&amp;format=xml</ModuleURI>
+  <Created>2016-06-08T08:19:32+00:00</Created>
   <Network code="X4" endDate="2009-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2007-01-01T00:00:00+00:00">
     <Description>ASCENT</Description>
     <TotalNumberStations>97</TotalNumberStations>
-    <SelectedNumberStations>97</SelectedNumberStations>
+    <SelectedNumberStations>92</SelectedNumberStations>
     <Station code="A01" endDate="2009-06-07T23:59:59+00:00" restrictedStatus="open" startDate="2007-04-28T00:00:00+00:00">
       <Latitude unit="DEGREES">36.4327</Latitude>
       <Longitude unit="DEGREES">94.8732</Longitude>
@@ -276,28 +18,6 @@
       </Site>
       <CreationDate>2007-04-28T00:00:00+00:00</CreationDate>
       <TotalNumberChannels>8</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="A02" endDate="2007-06-05T23:59:59+00:00" restrictedStatus="open" startDate="2007-04-28T00:00:00+00:00">
-      <Latitude unit="DEGREES">36.7894</Latitude>
-      <Longitude unit="DEGREES">93.6709</Longitude>
-      <Elevation>2775.0</Elevation>
-      <Site>
-        <Name>China</Name>
-      </Site>
-      <CreationDate>2007-04-28T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>4</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="A03" endDate="2007-06-05T23:59:59+00:00" restrictedStatus="open" startDate="2007-04-28T00:00:00+00:00">
-      <Latitude unit="DEGREES">36.9092</Latitude>
-      <Longitude unit="DEGREES">93.1608</Longitude>
-      <Elevation>2860.0</Elevation>
-      <Site>
-        <Name>China</Name>
-      </Site>
-      <CreationDate>2007-04-28T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>4</TotalNumberChannels>
       <SelectedNumberChannels>0</SelectedNumberChannels>
     </Station>
     <Station code="A04" endDate="2009-06-07T23:59:59+00:00" restrictedStatus="open" startDate="2008-05-29T00:00:00+00:00">
@@ -341,17 +61,6 @@
         <Name>China</Name>
       </Site>
       <CreationDate>2008-05-30T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>4</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="A14" endDate="2007-06-05T23:59:59+00:00" restrictedStatus="open" startDate="2007-04-28T00:00:00+00:00">
-      <Latitude unit="DEGREES">37.5978</Latitude>
-      <Longitude unit="DEGREES">95.2983</Longitude>
-      <Elevation>3312.0</Elevation>
-      <Site>
-        <Name>China</Name>
-      </Site>
-      <CreationDate>2007-04-28T00:00:00+00:00</CreationDate>
       <TotalNumberChannels>4</TotalNumberChannels>
       <SelectedNumberChannels>0</SelectedNumberChannels>
     </Station>
@@ -502,17 +211,6 @@
       <Latitude unit="DEGREES">32.1019</Latitude>
       <Longitude unit="DEGREES">91.2633</Longitude>
       <Elevation>4700.0</Elevation>
-      <Site>
-        <Name>China</Name>
-      </Site>
-      <CreationDate>2007-04-28T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>4</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="C15" endDate="2007-06-07T23:59:59+00:00" restrictedStatus="open" startDate="2007-04-28T00:00:00+00:00">
-      <Latitude unit="DEGREES">31.4759</Latitude>
-      <Longitude unit="DEGREES">92.0779</Longitude>
-      <Elevation>4500.0</Elevation>
       <Site>
         <Name>China</Name>
       </Site>
@@ -898,17 +596,6 @@
       <Latitude unit="DEGREES">34.272</Latitude>
       <Longitude unit="DEGREES">104.2421</Longitude>
       <Elevation>1500.0</Elevation>
-      <Site>
-        <Name>China</Name>
-      </Site>
-      <CreationDate>2007-07-30T00:00:00+00:00</CreationDate>
-      <TotalNumberChannels>4</TotalNumberChannels>
-      <SelectedNumberChannels>0</SelectedNumberChannels>
-    </Station>
-    <Station code="GS02" endDate="2007-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2007-07-30T00:00:00+00:00">
-      <Latitude unit="DEGREES">33.7768</Latitude>
-      <Longitude unit="DEGREES">102.9682</Longitude>
-      <Elevation>2000.0</Elevation>
       <Site>
         <Name>China</Name>
       </Site>

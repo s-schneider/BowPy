@@ -77,7 +77,7 @@ def qtest_pocs(st_rec, st_orginal, alpharange, irange):
 
 	return Qall
 
-def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None):
+def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None, fs=20):
 
 	if isinstance(alpharange, numpy.ndarray):
 		yrange  = alpharange
@@ -93,7 +93,7 @@ def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None):
 		raise IOError(msg)
 
 	Qraw = ifile
-	Qmat = np.zeros((10,10))
+	Qmat = np.zeros((xrange.size,yrange.size))
 	for xi, x in enumerate(xrange):
 		for yi, y in enumerate(yrange):
 			for j, item in enumerate(Qraw):
@@ -107,7 +107,7 @@ def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None):
 	#Qmax[:,:]= np.float64('nan')
 	Qmax[np.unravel_index(maxindex, Qmat.shape)] = 10000
 
-	extent =(0.01, 1, 1,11)
+	extent =(alpharange.min(), alpharange.max(), irange.min(), irange.max())
 	im = ax.imshow(Qplot, aspect='auto', origin='lower', interpolation='none',cmap='Blues', extent=extent)
 	ax.set_ylabel('No of iterations', fontsize=fs)
 	ax.set_xlabel(r'$\alpha$', fontsize=fs)
@@ -118,16 +118,17 @@ def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None):
 
 	# Customize major tick labels
 
-	ax.yaxis.set_major_locator(ticker.FixedLocator(np.linspace(1.5,10.5,10)))
-	ax.yaxis.set_major_formatter(ticker.FixedFormatter(np.linspace(1,10,10).astype('int')))
+	# ax.yaxis.set_major_locator(ticker.FixedLocator(np.linspace(1.5,10.5,10)))
+	# ax.yaxis.set_major_formatter(ticker.FixedFormatter(np.linspace(1,10,10).astype('int')))
 
 	for vi, value in enumerate(yrange):
 		yextent[vi] = "{:.2f}".format(value)
-	ax.xaxis.set_major_locator(ticker.FixedLocator(np.linspace(.05,.95,10)))#np.linspace(1.5,99.5,9)))
-	ax.xaxis.set_major_formatter(ticker.FixedFormatter(yextent))
+	# ax.xaxis.set_major_locator(ticker.FixedLocator(np.linspace(.05,.95,10)))#np.linspace(1.5,99.5,9)))
+	# ax.xaxis.set_major_formatter(ticker.FixedFormatter(yextent))
 	#fig.set_size_inches(12,10)
 	#fig.savefig(plotname, dpi=300)
 	#plt.close("all")
+	plt.show()
 	return
 
 def set_zero(st, name):
