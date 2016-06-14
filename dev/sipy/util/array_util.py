@@ -162,6 +162,8 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 			value["distance"] = locations2degrees(
 				value["latitude"], value["longitude"], event_lat, event_lng)
 			value["depth"] = event_dpt
+	else:
+		print("No Event information found, distance information will NOT be set!")
 
 	# Attach the information to the traces.
 	if isinstance(stream, Stream):
