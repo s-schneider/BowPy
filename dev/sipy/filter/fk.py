@@ -23,7 +23,7 @@ from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array,
 from sipy.util.base import nextpow2, array2stream, array2trace, stream2array
 from sipy.util.picker import get_polygon
 
-def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase=None, polygon=12, normalize=True, stack=False,
+def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike', None, None ], phase=None, polygon=12, normalize=True, stack=False,
 					slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], 
 					order=4., peakinput=False, eval_mean=1):
 	"""
@@ -105,7 +105,7 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike'], phase
 	"""
 
 	# Convert format and prepare Variables.
-
+	print(fshape)
 	# Check for Data type of variables.
 	if not type(st ) == Stream:
 		print( "Wrong input type of stream, must be obspy.core.stream.Stream" )

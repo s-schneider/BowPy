@@ -1,0 +1,164 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<FDSNStationXML schemaVersion="1.0" xmlns="http://www.fdsn.org/xml/station/1">
+  <Source>IRIS-DMC</Source>
+  <Sender>IRIS-DMC</Sender>
+  <Module>IRIS WEB SERVICE: fdsnws-station | version: 1.1.20</Module>
+  <ModuleURI>http://service.iris.edu/fdsnws/station/1/query?endtime=2003-01-01T00%3A00%3A00.000000&amp;network=KN&amp;starttime=2002-01-01T00%3A00%3A00.000000&amp;format=xml</ModuleURI>
+  <Created>2016-06-14T08:32:59+00:00</Created>
+  <Network code="KN" endDate="2500-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1991-01-01T00:00:00+00:00">
+    <Description>Kyrgyz Seismic Telemetry Network</Description>
+    <TotalNumberStations>14</TotalNumberStations>
+    <SelectedNumberStations>11</SelectedNumberStations>
+    <Station code="AAK" endDate="2599-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1991-09-01T00:00:00+00:00">
+      <Comment>
+        <Value>   0.0000 km N    0.0000 km E from AAK(  42.6333,   74.4944)</Value>
+        <BeginEffectiveTime>1991-09-01T00:00:00+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2599-12-31T23:59:59+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>0.0000 km N    0.0000 km E from AAK(  42.6333,   74.4944)</Value>
+        <BeginEffectiveTime>1991-09-01T00:00:00+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2599-12-31T23:59:59+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>0.0000 km N    0.0000 km E from AAK(  42.6333,   74.4944)</Value>
+        <BeginEffectiveTime>1991-09-01T00:00:00+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2599-12-31T23:59:59+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">42.6333</Latitude>
+      <Longitude unit="DEGREES">74.4944</Longitude>
+      <Elevation>1680.0</Elevation>
+      <Site>
+        <Name>-</Name>
+      </Site>
+      <CreationDate>1991-09-01T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>168</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="AML" endDate="2599-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1991-09-01T00:00:00+00:00">
+      <Comment>
+        <Value> -55.5287 km N  -65.9923 km E from AAK(  42.6333,   74.4944)</Value>
+        <BeginEffectiveTime>1991-09-01T00:00:00+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2599-12-31T23:59:59+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>-55.5287 km N  -65.9923 km E from AAK(  42.6333,   74.4944)</Value>
+        <BeginEffectiveTime>1991-09-01T00:00:00+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2599-12-31T23:59:59+00:00</EndEffectiveTime>
+      </Comment>
+      <Comment>
+        <Value>-55.5287 km N  -65.9923 km E from AAK(  42.6333,   74.4944)</Value>
+        <BeginEffectiveTime>1991-09-01T00:00:00+00:00</BeginEffectiveTime>
+        <EndEffectiveTime>2599-12-31T23:59:59+00:00</EndEffectiveTime>
+      </Comment>
+      <Latitude unit="DEGREES">42.1311</Latitude>
+      <Longitude unit="DEGREES">73.6941</Longitude>
+      <Elevation>3400.0</Elevation>
+      <Site>
+        <Name>-</Name>
+      </Site>
+      <CreationDate>1991-09-01T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>174</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="CHM" endDate="2599-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1991-09-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">42.9986</Latitude>
+      <Longitude unit="DEGREES">74.7513</Longitude>
+      <Elevation>655.0</Elevation>
+      <Site>
+        <Name>-</Name>
+      </Site>
+      <CreationDate>1991-09-01T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>223</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="EKS2" endDate="2599-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1991-09-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">42.6615</Latitude>
+      <Longitude unit="DEGREES">73.7772</Longitude>
+      <Elevation>1360.0</Elevation>
+      <Site>
+        <Name>-</Name>
+      </Site>
+      <CreationDate>1991-09-01T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>171</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KBK" endDate="2599-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1991-09-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">42.6564</Latitude>
+      <Longitude unit="DEGREES">74.9478</Longitude>
+      <Elevation>1760.0</Elevation>
+      <Site>
+        <Name>-</Name>
+      </Site>
+      <CreationDate>1991-09-01T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>192</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="KZA" endDate="2599-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1991-09-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">42.0778</Latitude>
+      <Longitude unit="DEGREES">75.2496</Longitude>
+      <Elevation>3520.0</Elevation>
+      <Site>
+        <Name>-</Name>
+      </Site>
+      <CreationDate>1991-09-01T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>150</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="NRPT" endDate="2599-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1999-08-08T00:00:00+00:00">
+      <Latitude unit="DEGREES">42.6011</Latitude>
+      <Longitude unit="DEGREES">76.0735</Longitude>
+      <Elevation>3790.0</Elevation>
+      <Site>
+        <Name>-</Name>
+      </Site>
+      <CreationDate>1999-08-08T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>9</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="TKM2" endDate="2599-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1994-09-14T00:00:00+00:00">
+      <Latitude unit="DEGREES">42.9208</Latitude>
+      <Longitude unit="DEGREES">75.5966</Longitude>
+      <Elevation>2020.0</Elevation>
+      <Site>
+        <Name>-</Name>
+      </Site>
+      <CreationDate>1994-09-14T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>42</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="UCH" endDate="2599-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1991-09-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">42.2275</Latitude>
+      <Longitude unit="DEGREES">74.5134</Longitude>
+      <Elevation>3850.0</Elevation>
+      <Site>
+        <Name>-</Name>
+      </Site>
+      <CreationDate>1991-09-01T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>196</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="ULHL" endDate="2599-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1994-09-09T00:00:00+00:00">
+      <Latitude unit="DEGREES">42.2456</Latitude>
+      <Longitude unit="DEGREES">76.2417</Longitude>
+      <Elevation>2040.0</Elevation>
+      <Site>
+        <Name>-</Name>
+      </Site>
+      <CreationDate>1994-09-09T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>54</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+    <Station code="USP" endDate="2599-12-31T23:59:59+00:00" restrictedStatus="open" startDate="1991-09-01T00:00:00+00:00">
+      <Latitude unit="DEGREES">43.2669</Latitude>
+      <Longitude unit="DEGREES">74.4997</Longitude>
+      <Elevation>740.0</Elevation>
+      <Site>
+        <Name>-</Name>
+      </Site>
+      <CreationDate>1991-09-01T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>159</TotalNumberChannels>
+      <SelectedNumberChannels>0</SelectedNumberChannels>
+    </Station>
+  </Network>
+</FDSNStationXML>
