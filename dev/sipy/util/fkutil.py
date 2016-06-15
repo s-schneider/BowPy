@@ -524,6 +524,7 @@ def line_set_zero(array, shape):
 	:type  shape: list
 	"""
 
+
 	fil=None
 	name = shape[0]
 	kwarg = shape[1]
@@ -531,7 +532,7 @@ def line_set_zero(array, shape):
 	new_array = array
 
 	if name in ['spike', 'Spike']:
-		new_array[0] = np.zeros(array[0].size).astype('complex')
+		new_array[0] = array[0]
 		return new_array
 
 	elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
