@@ -42,7 +42,7 @@ from sipy.filter.fk import fk_filter, fk_reconstruct
 from sipy.util.fkutil import  nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx, plotfk, fktrafo
 from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
 stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, attach_epidist2coords, epidist2nparray, epidist2list, \
-alignon, partial_stack, gaps_fill_zeros, vespagram, rm, cut
+alignon, partial_stack, gaps_fill_zeros, vespagram, rm, cut, plot_vespa
 from sipy.util.picker import get_polygon
 
 ##########
