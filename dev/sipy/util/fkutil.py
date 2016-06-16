@@ -538,10 +538,9 @@ def line_set_zero(array, shape):
 	elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
 		new_array[0] = np.zeros(array[0].size)
 		newrange = np.linspace(1, length, length).astype('int')
-		print(newrange)
 		for i in newrange:
 			new_array[i] = array[i]
-			new_array[new_array.shape[0]-i] = array[new_array.shape[0]-i]			
+			new_array[new_array.shape[0]-i] = np.zeros(array[new_array.shape[0]-i].size)			
 		return new_array
 
 	elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
