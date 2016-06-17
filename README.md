@@ -8,7 +8,7 @@ Installation:
 
 - Put startup.py in ~./ipython/profile_default/ 
 
-- cd into FK-Toolbox/dev
+- cd into FK-Toolbox/dev/
 
 start ipython
 
