@@ -271,39 +271,6 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 	list_of_stream = streamall
 	return(list_of_stream, inventory, catalog)
 
-def cat4stream(stream, client_name, stime=None, etime=None, minmag=None, lat=None, lon=None):
-
-	client = Client(client_name)
-	try:
-		eventinfo 	= stream[0].stats.sh
-		depth 		= eventinfo['DEPTH']+10
-		lat 		= eventinfo['LAT']
-		lon 		= eventinfo['LON']
-		origin 		= eventinfo['ORIGIN']
-
-		etime = origin + 300
-		stime = origin - 300
-		cat = client.get_events(starttime=stime, endtime=etime, maxdepth=depth, latitude=lat, longitude=lon, maxradius=0.5)
-
-		return cat
-	except:
-		try:
-			cat = client.get_events(starttime=stime, endtime=etime, latitude=lat, longitude=lon, minmagnitude=minmag)
-			return cat
-		except:
-			print('No Catalog found')
-			return
-
-	
-
-def inv4stream(network, client_name, start, end):
-
-
-	client 	= Client(client_name)
-	inv 	= client.get_stations(network=network, starttime=start, endtime=end)
-
-	return inv
-
 def create_insta_from_invcat(network, event):
 	import obspy
 	from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
