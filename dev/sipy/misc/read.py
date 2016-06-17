@@ -24,8 +24,11 @@ def read_st(input, network=None, client_name=None):
 
 				attach_coordinates_to_traces(stream, inv, cat[0])
 				attach_network_to_traces(stream , inv)
-
+				print('Stream input with Meta-Information read.')
 				return stream
 			except:
-				print('Stream read without adding Meta information, not Found!')
-				return stream
+				msg = 'Error with Input: network or client_name wrong?'
+				raise IOError(msg)
+	else:
+		print('Stream input without Meta-Information read.')
+		return stream
