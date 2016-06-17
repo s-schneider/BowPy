@@ -22,7 +22,7 @@ import datetime
 import obspy
 from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy.taup import TauPyModel
-from obspy import read as read_st
+# from obspy import read as read_st
 from obspy import read_inventory as read_inv
 from obspy import read_events as read_cat
 from obspy import UTCDateTime
@@ -36,8 +36,10 @@ import sipy.util.base as base
 import sipy.util.array_util as au
 import sipy.util.tests as tests
 
+from sipy.misc.read import read_st
 from sipy.filter.fk import pocs_recon
-from sipy.util.data_request import data_request, cat4stream, inv4stream
+from sipy.util.data_request import data_request
+from sipy.util.base import cat4stream, inv4stream
 from sipy.filter.fk import fk_filter, fk_reconstruct
 from sipy.util.fkutil import  nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx, plotfk, fktrafo
 from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\

@@ -2,7 +2,8 @@ from __future__ import absolute_import
 import numpy as np
 import scipy as sp
 import obspy
-from obspy import UTCDateTime, Stream, Inventory, Trace
+from obspy.clients.fdsn import Client
+from obspy import UTCDateTime, Stream, Inventory, Trace, read
 from obspy.core.inventory.network import Network
 import warnings
 
@@ -83,6 +84,40 @@ def array2trace(ArrayData, st_original=None):
 		trace.stats = st_original.stats
 
 	return trace
+
+def cat4stream(stream, client_name, stime=None, etime=None, minmag=None, lat=None, lon=None, mindepth=None):
+
+	client = Client(client_name)
+	try:
+		eventinfo 	= stream[0].stats.sh
+		depth 		= eventinfo['DEPTH']+10
+		lat 		= eventinfo['LAT']
+		lon 		= eventinfo['LON']
+		origin 		= eventinfo['ORIGIN']
+
+		etime = origin + 300
+		stime = origin - 300
+		cat = client.get_events(starttime=stime, endtime=etime, maxdepth=depth, latitude=lat, longitude=lon, maxradius=0.5, mindepth=mindepth)
+
+		return cat
+	except:
+		try:
+			cat = client.get_events(starttime=stime, endtime=etime, latitude=lat, longitude=lon, minmagnitude=minmag, mindepth=mindepth)
+			return cat
+		except:
+			print('No Catalog found')
+			return
+
+
+def inv4stream(stream, network, client_name):
+
+	start 	= stream[0].stats.starttime
+	end 	= stream[0].stats.endtime
+	client 	= Client(client_name)
+	inv 	= client.get_stations(network=network, starttime=start, endtime=end)
+
+	return inv
+
 
 def read_file(stream, inventory, catalog, array=False):
 	"""
