@@ -23,11 +23,74 @@ from sipy.filter.fk import fk_filter
 import sipy.util.fkutil as fku
 import instaseis as ins
 
+def create_quake_origins(time, lat, lon, depth_in_m, m_rr, m_tt, m_pp, m_rt, m_rp, m_tp):
+	"""
+	Routine to create the quake_origins file for dosynthetics.
+	:param time: Origin time of the event
+	:type  time: UTCDatetime
+
+	m_rr = 0.526e26 / 1E7,
+	m_tt = -2.1e26 / 1E7,
+	m_pp = -1.58e26 / 1E7,
+	m_rt = 1.08e+26 / 1E7,
+	m_rp = 2.05e+26 / 1E7,
+	m_tp = 0.607e+26 / 1E7,
+	"""
+
+
+	quake_origins = {
+		'tofe': 		time,
+		'latitude': 	lat,
+		'longitude': 	lon,
+		'depth_in_m':	depth_in_m,
+		'm_rr':			m_rr,
+		'm_tt':			m_tt,
+		'm_pp':			m_pp,
+		'm_rt':			m_rt,
+		'm_rp':			m_rp,
+		'm_tp':			m_tp,
+	}
+
+	return quake_origins
+
+
+
+def dosynthetics(database_path, quake_origins, inv=None, stream_file=None, inv_file=None, cat_file=None):
+	"""
+	Routine to create synthetic data using instaseis.
+
+
+	:param database_path:
+	:type  database_path:
+
+	:param quake_origins: 
+	:type  quake_origins: dict from create_quake_origins
+	"""
+	db = ins.open_db(database_path)
+	source = ins.Source(
+		latitude  	= quake_origins['latitude'], 
+		longitude 	= quake_origins['longitude'], 
+		depth_in_m 	= quake_origins['depth_in_m'],
+		m_rr 		= quake_origins['m_rr'],
+		m_tt 		= quake_origins['m_tt'],
+		m_pp 		= quake_origins['m_pp'],
+		m_rt 		= quake_origins['m_rt'],
+		m_rp 		= quake_origins['m_rp'],
+		m_tp 		= quake_origins['m_rp'],
+		origin_time	= quake_origins['tofe']
+		)
+
+	return
+
+
+
+
 uniform=False
 real=True
 # db = ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
-#db = ins.open_db("/local/s_schn42/instaseis/10s_PREM_ANI_FORCES")
-db = ins.open_db("/Volumes/UNTITLED/10s_PREM_ANI_FORCES")
+# db = ins.open_db("/local/s_schn42/instaseis/10s_PREM_ANI_FORCES")
+# db = ins.open_db("/Volumes/UNTITLED/10s_PREM_ANI_FORCES")
+db = ins.open_db("/local/s_schn42/instaseis/10s_PREM_ANI_FORCES")
 tofe = obspy.UTCDateTime(2009, 10, 24, 14, 40, 44, 770000)
 lat = -6.1165
 lon = 130.429
