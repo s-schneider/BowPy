@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='utf-8'?> 
+<q:quakeml xmlns:q="http://quakeml.org/xmlns/quakeml/1.2" xmlns:ns0="http://service.iris.edu/fdsnws/event/1/" xmlns="http://quakeml.org/xmlns/bed/1.2"> 
+  <eventParameters publicID="smi:local/6b269cbf-6b00-4643-8c2c-cbe6274083ae"> 
+    <event publicID="smi:service.iris.edu/fdsnws/event/1/query?eventid=3279407"> 
+      <preferredOriginID>smi:service.iris.edu/fdsnws/event/1/query?originid=9933375</preferredOriginID> 
+      <preferredMagnitudeID>smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=16642444</preferredMagnitudeID> 
+      <type>earthquake</type> 
+      <description ns0:FEcode="228"> 
+        <text>NEAR EAST COAST OF HONSHU, JAPAN</text> 
+         <type>Flinn-Engdahl region</type> 
+      </description> 
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=9933375" ns0:contributor="ISC" ns0:contributorOriginId="02227159" ns0:catalog="ISC" ns0:contributorEventId="16461282"> 
+        <time> 
+          <value>2001-01-01T00:00:00.000000Z</value> 
+        </time> 
+        <latitude> 
+          <value>1.000000</value> 
+        </latitude>
+        <longitude> 
+          <value>1.000000</value> 
+        </longitude>
+        <depth> 
+          <value>10.000000</value> 
+        </depth>
+        <creationInfo> 
+          <author>Simon</author> 
+        </creationInfo> 
+      </origin> 
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=16642444"> 
+        <mag> 
+          <value>9.1</value> 
+        </mag> 
+        <type>MW</type> 
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=9933383</originID> 
+        <creationInfo> 
+          <author>Simon</author> 
+        </creationInfo> 
+      </magnitude> 
+    </event> 
+  </eventParameters> 
+</q:quakeml>
