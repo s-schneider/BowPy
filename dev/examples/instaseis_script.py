@@ -23,7 +23,7 @@ from sipy.filter.fk import fk_filter
 import sipy.util.fkutil as fku
 import instaseis as ins
 
-def create_quake_origins(time, lat, lon, depth_in_m, m_rr, m_tt, m_pp, m_rt, m_rp, m_tp):
+def create_quake_origins(event=None, time=None, lat=None, lon=None, depth_in_m=None, m_rr=None, m_tt=None, m_pp=None, m_rt=None, m_rp=None, m_tp=None):
 	"""
 	Routine to create the quake_origins file for dosynthetics.
 	:param time: Origin time of the event
@@ -37,6 +37,8 @@ def create_quake_origins(time, lat, lon, depth_in_m, m_rr, m_tt, m_pp, m_rt, m_r
 	m_tp = 0.607e+26 / 1E7,
 	"""
 
+	# If event file is input, quake_origins will be created from this input, other inputs will be ignored!
+	if event:
 
 	quake_origins = {
 		'tofe': 		time,
@@ -55,7 +57,7 @@ def create_quake_origins(time, lat, lon, depth_in_m, m_rr, m_tt, m_pp, m_rt, m_r
 
 
 
-def dosynthetics(database_path, quake_origins, inv=None, stream_file=None, inv_file=None, cat_file=None):
+def dosynthetics(database_path, quake_origins, inv=None, inv_file=None, stream):
 	"""
 	Routine to create synthetic data using instaseis.
 
@@ -80,7 +82,10 @@ def dosynthetics(database_path, quake_origins, inv=None, stream_file=None, inv_f
 		origin_time	= quake_origins['tofe']
 		)
 
-	return
+	if inv:
+
+	elif inv_file:
+	return 
 
 
 
