@@ -22,7 +22,6 @@ import datetime
 import obspy
 from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy.taup import TauPyModel
-# from obspy import read as read_st
 from obspy import read_inventory as read_inv
 from obspy import read_events as read_cat
 from obspy import UTCDateTime
