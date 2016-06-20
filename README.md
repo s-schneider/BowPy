@@ -6,7 +6,7 @@ Installation:
 
 - clone/download the repo
 
-- Put startup.py in ~./ipython/profile_default/ 
+- Put startup.py in ~./ipython/profile_default/startup
 
 - cd into FK-Toolbox/dev/
 
