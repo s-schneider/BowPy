@@ -46,7 +46,7 @@ try:
 
 	print('Imported all modules, including SiPy and Obspy')
 
-except:
+except ImportError:
 
 	import numpy
 	import numpy as np

@@ -105,7 +105,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 		if xlabel:
 			ax.set_xlabel(xlabel, fontsize=fs)
 		else:
-			ax.set_xlabel("Time(s)")
+			ax.set_xlabel("Time(s)", fontsize=fs)
 		if ylabel:
 			ax.set_ylabel(ylabel, fontsize=fs)
 
@@ -174,6 +174,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 		if norm in ['all']:
 			data = data/data.max()
 		
+		if yinfo:
+			ymin = st[0].stats.distance
+			ymax = st[0].stats.distance
 
 		for j, trace in enumerate(data):
 
@@ -183,6 +186,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 
 			try:
 				y_dist = st[j].stats.distance
+				if y_dist < ymin: ymin = y_dist
+				if y_dist > ymax: ymax = y_dist
 			except:
 				y_dist = yold + 1
 			
@@ -211,7 +216,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					return
 
 				if yinfo:
-					if not ylabel: ax.set_ylabel("Distance(deg)")
+					if not ylabel: ax.set_ylabel("Distance(deg)", fontsize=fs)
+
+
 
 					try:
 						if j in clrtrace: 
@@ -231,7 +238,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 						continue
 
 				else:
-					if not ylabel: ax.set_ylabel("No. of trace")
+					if not ylabel: ax.set_ylabel("No. of trace", fontsize=fs)
 
 					try:
 						if j in clrtrace: 
@@ -261,7 +268,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 				
 			elif type(epidistances) == numpy.ndarray or type(epidistances)==list:
 				y_dist = epidistances
-				if not ylabel: ax.set_ylabel("Distance(deg)")
+				if not ylabel: ax.set_ylabel("Distance(deg)", fontsize=fs)
 				try:
 					if j in clrtrace: 
 						cclr = clrtrace[j]
@@ -274,8 +281,10 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 
 			else:
 				if yinfo:
+
 					try:
-						if not ylabel: ax.set_ylabel("Distance(deg)")
+						if not ylabel: ax.set_ylabel("Distance(deg)", fontsize=fs)
+
 						try:
 							if j in clrtrace: 
 								cclr = clrtrace[j]
@@ -283,14 +292,16 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 								cclr = clr
 						except:
 							cclr = clr
-						ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
-						ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
-				
+
 					except:
 						msg='Oops, something not found.'
 						raise IOError(msg)
+
+					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
+					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
+
 				else:
-					if not ylabel: ax.set_ylabel("No. of trace")
+					if not ylabel: ax.set_ylabel("No. of trace", fontsize=fs)
 					try:
 						if j in clrtrace: 
 							cclr = clrtrace[j]
@@ -304,6 +315,12 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ spacing*j, color=cclr)			
 
 			yold = y_dist
+
+
+		if yinfo:
+			ylim = (ymin-1, ymax+1)
+			ax.set_ylim(ylim)
+
 		if savefig:
 			fig.set_size_inches(8,7)
 			fig.savefig(savefig, dpi=300)
@@ -347,9 +364,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					timetable[0].append(phase_name)
 					timetable[1].append(Phase)
 
-			if not ylabel: ax.set_ylabel("Amplitude")
+			if not ylabel: ax.set_ylabel("Amplitude", fontsize=fs)
 			title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
-			ax.set_title(title)
+			ax.set_title(title, fontsize=fs)
 			#plt.gca().yaxis.set_major_locator(plt.NullLocator())
 			ax.plot(t_axis,zoom*data, color=clr)
 			ax.plot( (timetable[1],timetable[1]),(-0.5,0.5), color=phaselabelclr )
@@ -358,9 +375,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					ax.annotate('%s' % key, xy=(timetable[1][time]+5,0.55))
 
 		else:
-			if not ylabel: ax.set_ylabel("Amplitude")
+			if not ylabel: ax.set_ylabel("Amplitude", fontsize=fs)
 			title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
-			ax.set_title(title)
+			ax.set_title(title, fontsize=fs)
 			ax.plot(t_axis, zoom*data, color=clr)
 
 		if savefig:

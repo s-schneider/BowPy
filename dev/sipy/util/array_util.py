@@ -1144,20 +1144,20 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 		try:
 			p_ref = m.get_travel_times(depth, dist, refphase)[0].ray_param_sec_degree
 			
-			ax.set_ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=12)
+			ax.set_ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=20)
 			try:
-				ax.set_title(r'Relative %ith root Vespagram' %(power), fontsize=12 )
+				ax.set_title(r'Relative %ith root Vespagram' %(power), fontsize=20 )
 			except:
-				ax.set_title(r'Relative linear Vespagram', fontsize=12 )
+				ax.set_title(r'Relative linear Vespagram', fontsize=20 )
 		except:
 			p_ref = 0
-			ax.set_ylabel(r'$p$ in $\frac{deg}{s}$')
+			ax.set_ylabel(r'$p$ in $\frac{deg}{s}$', fontsize=20)
 			try:
-				ax.set_title(r'%ith root Vespagram' %(power), fontsize=12 )
+				ax.set_title(r'%ith root Vespagram' %(power), fontsize=20 )
 			except:
-				ax.set_title(r'Linear Vespagram', fontsize=12 )
+				ax.set_title(r'Linear Vespagram', fontsize=20 )
 		
-		ax.set_xlabel(r'Time in s', fontsize=15)
+		ax.set_xlabel(r'Time in s', fontsize=20)
 		
 		# Do the contour plot of the Vespagram.
 		if plot in ['contour', 'Contour']:
@@ -1208,10 +1208,12 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 
 def plot_vespa(st, inv, event, data, markphases=['ttall', 'P^410P', 'P^660P'], plot=True, cmap='jet'):
 
-	center 	= geometrical_center(inv)
-	
-	cstat 	= find_closest_station(inv, st, center['latitude'], center['longitude'])
-	
+	if isinstance(inv, Inventory):
+		center 	= geometrical_center(inv)
+		cstat 	= find_closest_station(inv, st, center['latitude'], center['longitude'])
+	else:
+		cstat 	= None
+
 	for i, trace in enumerate(st):
 		if not trace.stats.station in [cstat]:
 			continue
