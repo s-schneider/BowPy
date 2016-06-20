@@ -174,6 +174,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 		if norm in ['all']:
 			data = data/data.max()
 		
+		if yinfo:
+			ymin = st[0].stats.distance
+			ymax = st[0].stats.distance
 
 		for j, trace in enumerate(data):
 
@@ -212,6 +215,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 
 				if yinfo:
 					if not ylabel: ax.set_ylabel("Distance(deg)")
+
+					if trace.stats.distance < ymin: ymin = trace.stats.distance
+					if trace.stats.distance > ymax: ymax = trace.stats.distance
 
 					try:
 						if j in clrtrace: 
@@ -274,8 +280,10 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 
 			else:
 				if yinfo:
+
 					try:
 						if not ylabel: ax.set_ylabel("Distance(deg)")
+
 						try:
 							if j in clrtrace: 
 								cclr = clrtrace[j]
@@ -283,12 +291,14 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 								cclr = clr
 						except:
 							cclr = clr
-						ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
-						ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
-				
+
 					except:
 						msg='Oops, something not found.'
 						raise IOError(msg)
+
+					if trace.stats.distance < ymin: ymin = trace.stats.distance
+					if trace.stats.distance > ymax: ymax = trace.stats.distance
+
 				else:
 					if not ylabel: ax.set_ylabel("No. of trace")
 					try:
@@ -304,6 +314,12 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ spacing*j, color=cclr)			
 
 			yold = y_dist
+
+
+		if yinfo:
+			ylim = (ymin-1, ymax+1)
+			ax.set_ylim(ylim)
+
 		if savefig:
 			fig.set_size_inches(8,7)
 			fig.savefig(savefig, dpi=300)

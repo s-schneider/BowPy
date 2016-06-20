@@ -192,7 +192,7 @@ def create_ricker(n_of_samples, n_of_traces, delta_traces = 1,  slope=0, n_of_ri
 
 	if slope != 0:
 		for i in range(data.shape[0]):
-			delta = np.floor( i * float(abs(slope) / float(delta_traces)).astype('int'))
+			delta = np.floor( i * float(abs(slope) / float(delta_traces))).astype('int')
 			data[i] = np.roll(trace, delta)[:n_of_samples]	
 		if slope < 0:
 			data = np.flipud(data)	
