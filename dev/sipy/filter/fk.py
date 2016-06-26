@@ -142,10 +142,11 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike', None, 
 			dx=None
 			k_axis=None
 
-	it = ArrayData.shape[1]
-	iF = int(math.pow(2,nextpow2(it)))
-	dt = st_tmp[0].stats.delta
+	it     = ArrayData.shape[1]
+	iF     = int(math.pow(2,nextpow2(it)))
+	dt     = st_tmp[0].stats.delta
 	f_axis = np.fft.fftfreq(iF,dt)
+
 
 
 	# Calc mean diff of each epidist entry if it is reasonable
@@ -638,7 +639,7 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 	else:
 		return st_rec #, x[8], x[4]
 
-def pocs_recon(st, maxiter, dmethod='denoise', method='linear', alpha=0.9, beta=None, peaks=None, maskshape=None, 
+def pocs_recon(st, maxiter, alpha, dmethod='denoise', method='linear', beta=None, peaks=None, maskshape=None, 
 			   dt=None, p=None, flow=None, fhigh=None, slidingwindow=False):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
