@@ -169,12 +169,12 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 	if isinstance(stream, Stream):
 		for trace in stream:
 			try:
-				station = ".".join(trace.id.split(".")[:2])
-				value = coords[station]
-				trace.stats.coordinates = AttribDict()
+				station                          = ".".join(trace.id.split(".")[:2])
+				value                            = coords[station]
+				trace.stats.coordinates          = AttribDict()
 				trace.stats.coordinates.latitude = value["latitude"]
-				trace.stats.coordinates.longitude = value["longitude"]
-				trace.stats.coordinates.elevation = value["elevation"]
+				trace.stats.coordinates.longitude= value["longitude"]
+				trace.stats.coordinates.elevation= value["elevation"]
 				if event:
 					trace.stats.distance = value["distance"]
 					trace.stats.depth = value["depth"]

@@ -142,10 +142,11 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike', None, 
 			dx=None
 			k_axis=None
 
-	it = ArrayData.shape[1]
-	iF = int(math.pow(2,nextpow2(it)))
-	dt = st_tmp[0].stats.delta
+	it     = ArrayData.shape[1]
+	iF     = int(math.pow(2,nextpow2(it)))
+	dt     = st_tmp[0].stats.delta
 	f_axis = np.fft.fftfreq(iF,dt)
+
 
 
 	# Calc mean diff of each epidist entry if it is reasonable
