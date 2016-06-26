@@ -10,6 +10,12 @@ Installation:
 
 - cd into FK-Toolbox/dev/
 
+- chmod 755 INSTALL.sh
+
+- ./INSTALL.sh
+
+
+
 start ipython
 
 voilá
