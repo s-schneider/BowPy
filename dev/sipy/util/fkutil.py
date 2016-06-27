@@ -47,7 +47,7 @@ GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
 def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphases=None, phaselabel=True, phaselabelclr='red', 
-		norm=None, clr='black', clrtrace=None, newfigure=True, savefig=False, xlabel=None, ylabel=None, t_axis=None, fs=15, tw=None):
+		norm='all', clr='black', clrtrace=None, newfigure=True, savefig=False, xlabel=None, ylabel=None, t_axis=None, fs=15, tw=None):
 	"""
 	Alpha Version!
 	
