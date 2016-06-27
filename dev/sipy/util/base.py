@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import numpy as np
 import scipy as sp
+import math
 import obspy
 from obspy.clients.fdsn import Client
 from obspy import UTCDateTime, Stream, Inventory, Trace, read
@@ -16,15 +17,19 @@ def stream2array(stream, normalize=False):
 	sx = stream.copy()
 	x = np.zeros((len(sx), len(sx[0].data)))
 	for i, traces in enumerate(sx):
-		for j, data in enumerate(traces):
-			x[i,j]=data
+		x[i] = traces.data
 
 	if normalize:
 		if x.max()==0:
 			print('Maximum value is 0')
 			return(x)
-		else:
-			x = x / x.max()
+
+		elif math.isnan(x.max()):
+			print('Maximum values are NaN, set to 0')
+			n   = np.isnan(x)
+			x[n]= 0.
+		
+		x = x / x.max()
 	return(x)
 
 def array2stream(ArrayData, st_original=None, network=None):
