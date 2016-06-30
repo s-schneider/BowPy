@@ -422,7 +422,7 @@ def cut(st, tmin, tmax=0):
 	return st_new
 
 
-def alignon(st, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod='normal', taup_model='ak135', inv=None):
+def alignon(st, event=None, inv=None, phase=None, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod='normal', taup_model='ak135'):
 	"""
 	Aligns traces on a given phase and truncates the starts to the latest beginning and the ends
 	to the earliest end.
@@ -471,87 +471,146 @@ def alignon(st, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod
 			print('No distance information found, add Inventory')
 			return
 
-	if isinstance(inv, Inventory):
-		attach_coordinates_to_traces(st_tmp, inv, event)
-		attach_network_to_traces(st_tmp, inv)
-	depth 	= event.origins[0]['depth']/1000.
-	origin 	= event.origins[0]['time']
-	m 		= TauPyModel(taup_model)
 	tmin 	= 0
 	tmax 	= 0
 
-	if isinstance(ref, int):
-		ref_dist 	= st_tmp[ref].stats.distance
-		ref_start 	= st_tmp[ref].stats.starttime
-		delta 		= st_tmp[ref].stats.delta
-		iref 		= ref
+	if isinstance(event, Event):
+		if isinstance(inv, Inventory):
+			attach_coordinates_to_traces(st_tmp, inv, event)
+			attach_network_to_traces(st_tmp, inv)
+		depth 	= event.origins[0]['depth']/1000.
+		origin 	= event.origins[0]['time']
+		m 		= TauPyModel(taup_model)
 
-	elif isinstance(ref, str):
-		for i, trace in enumerate(st_tmp):
-			if trace.stats['station'] != ref:
-				continue
-			ref_dist = trace.stats.distance
-			iref 	 = i
 
-		ref_start = trace.stats.starttime
-		delta 	  = float(trace.stats.delta)
-	
-	if isinstance(maxtimewindow, list):
-		maxtimewindow = np.array(maxtimewindow)
-	elif isinstance(maxtimewindow, int):
-		maxtimewindow = float(maxtimewindow)
+		if isinstance(ref, int):
+			ref_dist 	= st_tmp[ref].stats.distance
+			ref_start 	= st_tmp[ref].stats.starttime
+			delta 		= st_tmp[ref].stats.delta
+			iref 		= ref
 
-	if isinstance(phase[0], str):
+		elif isinstance(ref, str):
+			for i, trace in enumerate(st_tmp):
+				if trace.stats['station'] != ref:
+					continue
+				ref_dist = trace.stats.distance
+				iref 	 = i
+				ref_start = trace.stats.starttime
+				delta 	  = float(trace.stats.delta)
+		
+		if isinstance(maxtimewindow, list):
+			maxtimewindow = np.array(maxtimewindow)
+		elif isinstance(maxtimewindow, int):
+			maxtimewindow = float(maxtimewindow)
+
+
 		# Calculating reference arriving time/index of phase.
 		ref_t = origin + m.get_travel_times(depth, ref_dist, phase_list=phase)[0].time - ref_start
 		ref_n = int(ref_t/delta)
-	elif isinstance(phase[0], float) or isinstance(phase[0], int):
-		ref_t = phase[0]
-		ref_n = int(ref_t/delta)
-		maxtimewindow = [0, phase[1]]
-
-	if xcorr:
-		if isinstance(maxtimewindow, np.ndarray):
-			reftrace_tmp 	= cut(st_tmp[iref], ref_t - abs(maxtimewindow[0]), ref_t + maxtimewindow[1])
-			reftrace 		= reftrace_tmp.data
-
-		elif isinstance(maxtimewindow, float):
-			reftrace_tmp	= cut(st_tmp[iref], ref_t - maxtimewindow, ref_t + maxtimewindow)
-			reftrace 		= reftrace_tmp.data
-
-		datashift_null, shift_index 	= shift2ref(data[iref,:], ref_n, ref_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
-
-	# First work on reference Trace:
-	else:
-		if isinstance(maxtimewindow, float) or isinstance(maxtimewindow, int) or isinstance(maxtimewindow, np.ndarray):
-			datashift_null, shift_index 	= shift2ref(data[iref,:], ref_n, ref_n, mtw= maxtimewindow/delta, method=shiftmethod)
-
-	ref_n = ref_n - shift_index
-
-	data_tmp 	= data.copy() 
-	for no_x, data_x in enumerate(data):
-		if no_x == iref:
-			continue
-
-		dist = st_tmp[no_x].stats.distance
-		t 	 = m.get_travel_times(depth, dist, phase_list=phase)[0].time
-
-		# Calculate arrivals, and shift times/indicies.
-		phase_time 				= origin + t - st_tmp[no_x].stats.starttime
-		phase_n 				= int(phase_time/delta)
-		if not xcorr:
-			if isinstance(maxtimewindow, float) or isinstance(maxtimewindow, int) or isinstance(maxtimewindow, np.ndarray):
-				datashift, shift_index 	= shift2ref(data_x, ref_n, phase_n, mtw= maxtimewindow/delta, method=shiftmethod)
 
 		if xcorr:
-			datashift, shift_index 	= shift2ref(data_x, ref_n, phase_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
+			if isinstance(maxtimewindow, np.ndarray):
+				reftrace_tmp 	= cut(st_tmp[iref], ref_t - abs(maxtimewindow[0]), ref_t + maxtimewindow[1])
+				reftrace 		= reftrace_tmp.data
 
-		shifttimes[no_x] 		= delta*shift_index
-		data_tmp[no_x,:] 		= datashift
-		print(delta*shift_index)
-		# Positive shift_index indicates positive shift in time and vice versa.	
-		if shift_index > 0 and shift_index > tmin: tmin = shift_index
-		if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
+			elif isinstance(maxtimewindow, float):
+				reftrace_tmp	= cut(st_tmp[iref], ref_t - maxtimewindow, ref_t + maxtimewindow)
+				reftrace 		= reftrace_tmp.data
+
+			datashift_null, shift_index 	= shift2ref(data[iref,:], ref_n, ref_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
+
+
+		# First work on reference Trace:
+		else:
+			if isinstance(maxtimewindow, float) or isinstance(maxtimewindow, int) or isinstance(maxtimewindow, np.ndarray):
+				datashift_null, shift_index 	= shift2ref(data[iref,:], ref_n, ref_n, mtw= maxtimewindow/delta, method=shiftmethod)
+
+		ref_n = ref_n - shift_index
+
+		data_tmp 	= data.copy() 
+		for no_x, data_x in enumerate(data):
+			if no_x == iref:
+				continue
+
+			dist = st_tmp[no_x].stats.distance
+			t 	 = m.get_travel_times(depth, dist, phase_list=phase)[0].time
+
+			# Calculate arrivals, and shift times/indicies.
+			phase_time 				= origin + t - st_tmp[no_x].stats.starttime
+			phase_n 				= int(phase_time/delta)
+			if not xcorr:
+				if isinstance(maxtimewindow, float) or isinstance(maxtimewindow, int) or isinstance(maxtimewindow, np.ndarray):
+					datashift, shift_index 	= shift2ref(data_x, ref_n, phase_n, mtw= maxtimewindow/delta, method=shiftmethod)
+
+			if xcorr:
+				datashift, shift_index 	= shift2ref(data_x, ref_n, phase_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
+
+			shifttimes[no_x] 		= delta*shift_index
+			data_tmp[no_x,:] 		= datashift
+			print(delta*shift_index)
+			# Positive shift_index indicates positive shift in time and vice versa.	
+			if shift_index > 0 and shift_index > tmin: tmin = shift_index
+			if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
+
+	# Alignment of timewindow around
+	elif not isinstance(event, Event) and isinstance(phase[0], int) and isinstance(phase[1], int):
+
+		if isinstance(ref, int):
+			ref_dist 	= st_tmp[ref].stats.distance
+			ref_start 	= st_tmp[ref].stats.starttime
+			delta 		= st_tmp[ref].stats.delta
+			iref 		= ref
+
+		elif isinstance(ref, str):
+			for i, trace in enumerate(st_tmp):
+				if trace.stats['station'] != ref:
+					continue
+				iref 	 = i
+				delta 	  = float(trace.stats.delta)
+
+		ref_n = int(phase[0]/delta)
+		maxtimewindow = np.array([0, phase[1] - phase[0]])
+
+		if xcorr:
+			if isinstance(maxtimewindow, np.ndarray):
+				reftrace_tmp 	= cut(st_tmp[iref], ref_t - abs(maxtimewindow[0]), ref_t + maxtimewindow[1])
+				reftrace 		= reftrace_tmp.data
+
+			elif isinstance(maxtimewindow, float):
+				reftrace_tmp	= cut(st_tmp[iref], ref_t - maxtimewindow, ref_t + maxtimewindow)
+				reftrace 		= reftrace_tmp.data
+
+			datashift_null, shift_index 	= shift2ref(data[iref,:], ref_n, ref_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
+
+
+		# First work on reference Trace:
+		else:
+			if isinstance(maxtimewindow, float) or isinstance(maxtimewindow, int) or isinstance(maxtimewindow, np.ndarray):
+				datashift_null, shift_index 	= shift2ref(data[iref,:], ref_n, ref_n, mtw= maxtimewindow/delta, method=shiftmethod)
+
+		ref_n = ref_n - shift_index
+		phase_n = int(phase[0]/delta)
+		data_tmp 	= data.copy()
+		for no_x, data_x in enumerate(data):
+			if no_x == iref:
+				continue
+
+			if not xcorr:
+				if isinstance(maxtimewindow, float) or isinstance(maxtimewindow, int) or isinstance(maxtimewindow, np.ndarray):
+					datashift, shift_index 	= shift2ref(data_x, ref_n, phase_n, mtw= maxtimewindow/delta, method=shiftmethod)
+
+			else:
+				datashift, shift_index 	= shift2ref(data_x, ref_n, phase_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
+
+			shifttimes[no_x] 		= delta*shift_index
+			data_tmp[no_x,:] 		= datashift
+			print(delta*shift_index)
+			# Positive shift_index indicates positive shift in time and vice versa.	
+			if shift_index > 0 and shift_index > tmin: tmin = shift_index
+			if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
+	else:
+		print('No valid input defined, please use event-file or time-window defined in phases')
+		return
 
 	data_trunc = truncate(data_tmp, tmin, tmax)
 	st_align = array2stream(data_trunc, st_tmp)
