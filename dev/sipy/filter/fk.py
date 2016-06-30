@@ -196,18 +196,6 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike', None, 
 			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
 			array_filtered_fk = line_cut(array_fk, shape=fshape)
 
-		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF)).real
-
-
-		# Convert to Trace or Stream object.
-		array_filtered = array_filtered[0:ix, 0:it]
-		if stack:
-			stacked_array = stack(array_filtered, order)
-			stream_filtered = array2trace(stacked_array, st_original=st.copy())
-		else:
-			stream_filtered = array2stream(array_filtered,st_original=st.copy())
-
-		return stream_filtered, array_filtered_fk
 	
 	elif ftype in ("eliminate-polygon"):
 		array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
@@ -242,21 +230,6 @@ def fk_filter(st, inv=None, event=None, ftype='extract', fshape=['spike', None, 
 			array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
 												yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean)
 
-
-
-		array_filtered = np.fft.ifft2(array_filtered_fk, s=(iK,iF)).real
-
-
-		# Convert to Trace or Stream object.
-		array_filtered = array_filtered[0:ix, 0:it]
-		if stack:
-			stacked_array = stack(array_filtered, order)
-			stream_filtered = array2trace(stacked_array, st_original=st.copy())
-		else:
-			stream_filtered = array2stream(array_filtered,st_original=st.copy())
-
-
-		return stream_filtered
 
 	elif ftype in ("mask"):
 		array_fk = np.fft.fft2(ArrayData)
