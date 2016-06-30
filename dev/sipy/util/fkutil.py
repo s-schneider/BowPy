@@ -47,7 +47,7 @@ GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
 def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphases=None, phaselabel=True, phaselabelclr='red', 
-		norm='all', clr='black', clrtrace=None, newfigure=True, savefig=False, xlabel=None, ylabel=None, t_axis=None, fs=15, tw=None):
+		norm='all', clr='black', clrtrace=None, newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, fs=15, tw=None):
 	"""
 	Alpha Version!
 	
@@ -94,7 +94,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			try:
 				if isinstance(yinfo,bool):
 					yinfo = 1
-				plot_data(st, zoom=zoom, y_dist=yinfo, clr=clr, newfigure=newfigure, savefig=savefig, xlabel=xlabel, ylabel=ylabel, t_axis=t_axis, fs=fs)
+				plot_data(st, zoom=zoom, y_dist=yinfo, clr=clr, newfigure=newfigure, savefig=savefig, dpi=dpi, xlabel=xlabel, ylabel=ylabel, t_axis=t_axis, fs=fs)
 				return
 			except:
 				msg = "Wrong data input, must be Stream or Trace"
@@ -322,7 +322,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 
 		if savefig:
 			fig.set_size_inches(8,7)
-			fig.savefig(savefig, dpi=300)
+			fig.savefig(savefig, dpi=dpi)
 			plt.close("all")
 		else:
 			plt.ion()
@@ -388,7 +388,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			plt.show()
 			plt.ioff()
 
-def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, savefig=False, xlabel=None, ylabel=None, t_axis=None, fs=15):
+def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, fs=15):
 	"""
 	Alpha Version!
 	Time axis has no time-ticks --> Working on right now
@@ -429,7 +429,7 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 
 	if savefig:
 		fig.set_size_inches(12,10)
-		fig.savefig(savefig, dpi=300)
+		fig.savefig(savefig, dpi=dpi)
 		plt.close('all')
 	else:
 		plt.ion()
@@ -438,7 +438,7 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 		plt.show()
 		plt.ioff()
 
-def plotfk(data, fs=15, savefig=False, hold=False):
+def plotfk(data, fs=15, savefig=False, dpi=400, logscale=False, hold=False):
 	fig, ax = plt.subplots()
 	ax.set_xlabel('Normalized Wavenumber', fontsize=fs)
 	ax.set_ylabel('Normalized Frequency', fontsize=fs)
@@ -447,7 +447,10 @@ def plotfk(data, fs=15, savefig=False, hold=False):
 	#ax.xaxis.set_label_position('top')
 	ax.tick_params(axis='both', which='major', labelsize=fs)
 
-	im = ax.imshow(np.flipud(abs(np.fft.fftshift(data.transpose(), axes=1))), aspect='auto', extent=(-0.5, 0.5, 0, 0.5), interpolation='none')
+	if logscale:
+		im = ax.imshow(np.flipud(np.log(abs(np.fft.fftshift(data[:,:data.shape[1]/2].transpose(), axes=1)))), aspect='auto', extent=(-0.5, 0.5, 0, 0.5), interpolation='none')	
+	else:
+		im = ax.imshow(np.flipud(abs(np.fft.fftshift(data[:,:data.shape[1]/2].transpose(), axes=1))), aspect='auto', extent=(-0.5, 0.5, 0, 0.5), interpolation='none')
 	cbar = fig.colorbar(im)
 	cbar.ax.tick_params(labelsize=fs)
 	cbar.ax.set_ylabel('R', fontsize=fs)
@@ -455,7 +458,7 @@ def plotfk(data, fs=15, savefig=False, hold=False):
 
 	if savefig:
 		fig.set_size_inches(7,8)
-		fig.savefig(savefig, dpi=300)
+		fig.savefig(savefig, dpi=dpi)
 		plt.close('all')
 	else:
 		if not hold:
@@ -555,8 +558,8 @@ def line_set_zero(array, shape):
 		new_array[0] = np.zeros(array[0].size)
 		newrange = np.linspace(1, length, length).astype('int')
 		for i in newrange:
-			new_array[i] = array[i]
-			new_array[new_array.shape[0]-i] = np.zeros(array[new_array.shape[0]-i].size)			
+			new_array[i] = np.zeros(array[new_array.shape[0]-i].size)
+			new_array[new_array.shape[0]-i] = np.zeros(array[new_array.shape[0]-i].size)
 		return new_array
 
 	elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
@@ -570,8 +573,10 @@ def line_set_zero(array, shape):
 	fil = np.zeros(2*fil_lh.size)
 	fil[:fil.size/2] = fil_lh
 	fil[fil.size/2+1:] = fil_rh
+	newfil = np.ones(fil.shape)
+	newfil = newfil - fil
 	
-	new_array = array.transpose() * fil
+	new_array = array.transpose() * newfil
 	new_array = new_array.transpose()
 	return(new_array)
 
@@ -1398,20 +1403,22 @@ def fktrafo(stream, normalize=True):
 	
 	return fkdata
 
-def ifktrafo(fkdata, normalize=True):
+def ifktrafo(fkdata, stream, normalize=True):
 	"""
 	Calculates the inverse f,k - transformation of the data in fkdata. Returns the trafo as an array.
 
 	"""
+	StreamData= stream2array(stream)
+	ix   = StreamData.shape[0]
+	iK   = int(math.pow(2,nextpow2(ix)))
+	it   = StreamData.shape[1]
+	iF   = int(math.pow(2,nextpow2(it)))
+
 	fk_tmp = fkdata.copy()
-	
-	ix = fkdata.shape[0]
-	iK = int(math.pow(2,nextpow2(ix)))
-	it = fkdata.shape[1]
-	iF = int(math.pow(2,nextpow2(it)))
 
 	ArrayData = np.fft.ifft2(fkdata, s=(iK,iF))
-	
+	ArrayData = ArrayData[0:ix, 0:it]
+
 	return ArrayData
 
 def eval_fkarea(fkdata, no_of_phases, polygon, xlabel, xticks, ylabel, yticks):

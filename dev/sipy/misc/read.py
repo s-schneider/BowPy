@@ -15,6 +15,14 @@ def read_st(input, network=None, client_name=None):
 
 	stream = read(input)
 
+	try:
+		if stream[0].stats._format == 'Q':
+			for i, trace in enumerate(stream):
+				stream[i].stats.distance= trace.stats.sh['DISTANCE']
+				stream[i].stats.depth   = trace.stats.sh['DEPTH']
+	except:
+		msg = 'No Q-file'
+
 	if isinstance(network, str):
 		if isinstance(client_name, str):
 			client = Client(client_name)
