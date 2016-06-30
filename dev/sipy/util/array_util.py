@@ -1026,7 +1026,7 @@ def partial_stack(st, bins, overlap=None, order=None, align=False, maxtimewindow
 
 	return st_binned
 
-def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, plot=False, markphases=['ttall', 'P^410P', 'P^660P'], method='fft', fs=25):
+def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, plot=False, markphases=['ttall', 'P^410P', 'P^660P'], method='fft', savefig=False, dpi=400, fs=25):
 	"""
 	Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
 	and if set a plot.
@@ -1263,9 +1263,15 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 
 
 		ax.tick_params(axis='both', which='major', labelsize=fs)
-		for label in ax.get_ticks()[::2]:
+		for label in ax.xaxis.get_ticklabels()[::2]:
 			label.set_visible(False)
 
+	if savefig:
+		fig.set_size_inches(8,7)
+		fig.savefig(savefig, dpi=dpi)
+		plt.close("all")
+		return
+	else:
 		plt.ion()
 		plt.draw()
 		plt.show()
@@ -1273,7 +1279,7 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 
 	return vespa, taxis, urange
 
-def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic', cmap='jet', fs=25):
+def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic', cmap='jet', savefig=False, dpi=400, fs=25):
 
 	if isinstance(inv, Inventory):
 		center 	= geometrical_center(inv)
@@ -1373,10 +1379,15 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
 	for label in ax.xaxis.get_ticklabels()[::2]:
 		label.set_visible(False)
 
-	plt.ion()
-	plt.draw()
-	plt.show()
-	plt.ioff()
+	if savefig:
+		fig.set_size_inches(8,7)
+		fig.savefig(savefig, dpi=dpi)
+		plt.close("all")
+	else:
+		plt.ion()
+		plt.draw()
+		plt.show()
+		plt.ioff()
 
 
 def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135', stacking=False, refphase=['PP']):
