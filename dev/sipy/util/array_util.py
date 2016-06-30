@@ -501,10 +501,14 @@ def alignon(st, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod
 	elif isinstance(maxtimewindow, int):
 		maxtimewindow = float(maxtimewindow)
 
-
-	# Calculating reference arriving time/index of phase.
-	ref_t = origin + m.get_travel_times(depth, ref_dist, phase_list=phase)[0].time - ref_start
-	ref_n = int(ref_t/delta)
+	if isinstance(phase[0], str):
+		# Calculating reference arriving time/index of phase.
+		ref_t = origin + m.get_travel_times(depth, ref_dist, phase_list=phase)[0].time - ref_start
+		ref_n = int(ref_t/delta)
+	elif isinstance(phase[0], float) or isinstance(phase[0], int):
+		ref_t = phase[0]
+		ref_n = int(ref_t/delta)
+		maxtimewindow = [0, phase[1]]
 
 	if xcorr:
 		if isinstance(maxtimewindow, np.ndarray):
@@ -515,14 +519,12 @@ def alignon(st, event, phase, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod
 			reftrace_tmp	= cut(st_tmp[iref], ref_t - maxtimewindow, ref_t + maxtimewindow)
 			reftrace 		= reftrace_tmp.data
 
+		datashift_null, shift_index 	= shift2ref(data[iref,:], ref_n, ref_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
 
 	# First work on reference Trace:
-	if not xcorr:
+	else:
 		if isinstance(maxtimewindow, float) or isinstance(maxtimewindow, int) or isinstance(maxtimewindow, np.ndarray):
 			datashift_null, shift_index 	= shift2ref(data[iref,:], ref_n, ref_n, mtw= maxtimewindow/delta, method=shiftmethod)
-
-	if xcorr:
-		datashift_null, shift_index 	= shift2ref(data[iref,:], ref_n, ref_n, ref_array=reftrace, mtw=maxtimewindow/delta, method=shiftmethod, xcorr=xcorr)
 
 	ref_n = ref_n - shift_index
 
