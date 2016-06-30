@@ -547,7 +547,7 @@ def alignon(st, event=None, inv=None, phase=None, ref=0 , maxtimewindow=0, xcorr
 
 			shifttimes[no_x] 		= delta*shift_index
 			data_tmp[no_x,:] 		= datashift
-			print(delta*shift_index)
+			print('Trace no %i was shifted by %f seconds' % (no_x, delta*shift_index))
 			# Positive shift_index indicates positive shift in time and vice versa.	
 			if shift_index > 0 and shift_index > tmin: tmin = shift_index
 			if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
@@ -604,7 +604,7 @@ def alignon(st, event=None, inv=None, phase=None, ref=0 , maxtimewindow=0, xcorr
 
 			shifttimes[no_x] 		= delta*shift_index
 			data_tmp[no_x,:] 		= datashift
-			print(delta*shift_index)
+			print('Trace no %i was shifted by %f seconds' % (no_x, delta*shift_index))
 			# Positive shift_index indicates positive shift in time and vice versa.	
 			if shift_index > 0 and shift_index > tmin: tmin = shift_index
 			if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
