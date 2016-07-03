@@ -422,7 +422,7 @@ def cut(st, tmin, tmax=0):
 	return st_new
 
 
-def alignon(st, event=None, inv=None, phase=None, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod='normal', taup_model='ak135'):
+def alignon(st, inv=None, event=None, phase=None, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod='normal', taup_model='ak135'):
 	"""
 	Aligns traces on a given phase and truncates the starts to the latest beginning and the ends
 	to the earliest end.
@@ -473,6 +473,9 @@ def alignon(st, event=None, inv=None, phase=None, ref=0 , maxtimewindow=0, xcorr
 
 	tmin 	= 0
 	tmax 	= 0
+
+	if not isinstance(event, Event) and isinstance(phase[0], int) and isinstance(phase[1], int):
+		timewindow = True
 
 	if isinstance(event, Event):
 		if isinstance(inv, Inventory):
@@ -553,7 +556,7 @@ def alignon(st, event=None, inv=None, phase=None, ref=0 , maxtimewindow=0, xcorr
 			if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
 
 	# Alignment of timewindow around
-	elif not isinstance(event, Event) and isinstance(phase[0], int) and isinstance(phase[1], int):
+	elif timewindow:
 
 		if isinstance(ref, int):
 			ref_dist 	= st_tmp[ref].stats.distance
@@ -616,12 +619,13 @@ def alignon(st, event=None, inv=None, phase=None, ref=0 , maxtimewindow=0, xcorr
 	st_align = array2stream(data_trunc, st_tmp)
 
 	# Change startime entry and add alignon entry.
-	for i, trace in enumerate(st_align):
-		if i == iref:
-			trace.stats.aligned 	= phase
-		else:
-			trace.stats.starttime 	= trace.stats.starttime - shifttimes[i]
-			trace.stats.aligned 	= phase
+	if not timewindow:
+		for i, trace in enumerate(st_align):
+			if i == iref:
+				trace.stats.aligned 	= phase
+			else:
+				trace.stats.starttime 	= trace.stats.starttime - shifttimes[i]
+				trace.stats.aligned 	= phase
 
 	return st_align
 

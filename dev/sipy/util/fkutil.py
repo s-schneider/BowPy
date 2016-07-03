@@ -216,8 +216,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 				if yinfo:
 					if not ylabel: ax.set_ylabel("Distance(deg)", fontsize=fs)
 
-					if trace.stats.distance < ymin: ymin = trace.stats.distance
-					if trace.stats.distance > ymax: ymax = trace.stats.distance
+					if st[j].stats.distance < ymin: ymin = st[j].stats.distance
+					if st[j].stats.distance > ymax: ymax = st[j].stats.distance
 
 					try:
 						if j in clrtrace: 
@@ -296,9 +296,11 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 						msg='Oops, something not found.'
 						raise IOError(msg)
 						
-					if trace.stats.distance < ymin: ymin = trace.stats.distance
-					if trace.stats.distance > ymax: ymax = trace.stats.distance
-
+					if st[j].stats.distance < ymin: ymin = st[j].stats.distance
+					if st[j].stats.distance > ymax: ymax = st[j].stats.distance
+					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
+					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
+					
 				else:
 					if not ylabel: ax.set_ylabel("No. of trace", fontsize=fs)
 					try:
