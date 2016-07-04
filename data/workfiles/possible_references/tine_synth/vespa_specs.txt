@@ -1,0 +1,3 @@
+100:
+vespa1 = vespagram(stal, -10, 5, 0.05, plot=False, markphases=False)
+vespa2 = vespagram(stalfk, -10, 5, 0.05, plot=False, markphases=False)
