@@ -464,6 +464,10 @@ def alignon(st, inv=None, event=None, phase=None, ref=0 , maxtimewindow=0, xcorr
 	# Calculate depth and distance of receiver and event.
 	# Set some variables.
 
+	isevent = False
+	isinv   = False
+	timewindow = False
+
 	for trace in st_tmp:
 		try:
 			null = trace.stats.distance
@@ -477,15 +481,27 @@ def alignon(st, inv=None, event=None, phase=None, ref=0 , maxtimewindow=0, xcorr
 	if not isinstance(event, Event) and isinstance(phase[0], int) and isinstance(phase[1], int):
 		timewindow = True
 
-	if isinstance(event, Event):
-		if isinstance(inv, Inventory):
-			attach_coordinates_to_traces(st_tmp, inv, event)
-			attach_network_to_traces(st_tmp, inv)
+	if isinstance(event, Event): isevent = True
+	if isinstance(inv, Inventory): isinv = True
+
+	if isevent and isinv:
+		attach_coordinates_to_traces(st_tmp, inv, event)
+		attach_network_to_traces(st_tmp, inv)
+
+	try:
+		depth	= st_tmp[0].stats.depth
+		origin 	= st_tmp[0].stats.origin
+		isevent = True
+	except AttributeError:
 		depth 	= event.origins[0]['depth']/1000.
 		origin 	= event.origins[0]['time']
-		m 		= TauPyModel(taup_model)
+		isevent = True
+	except:
+		isevent = False
 
+	m 		= TauPyModel(taup_model)
 
+	if isevent:
 		if isinstance(ref, int):
 			ref_dist 	= st_tmp[ref].stats.distance
 			ref_start 	= st_tmp[ref].stats.starttime
