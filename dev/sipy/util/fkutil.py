@@ -160,14 +160,13 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 						isinv = False
 						break					
 		
-		if isevent:	depth = event.origins[0]['depth']/1000.
-		
-		else:
-			try:
-				depth = st_tmp[0].stats.depth			
-			except:
-				print()
-	
+		try:
+			depth = event.origins[0]['depth']/1000.
+			isevent = True
+		except:
+			depth = st[0].stats.depth	
+			isevent = True		
+
 		yold=0
 		
 		# Normalize Data, if set to 'all'
@@ -190,7 +189,14 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 				y_dist = yold + 1
 
 			if markphases and isinv and isevent:
-				origin = event.origins[0]['time']
+				try:
+					origin = st[0].stats.origin
+				except AttributeError:
+					origin = event.origins[0]['time']
+				except:
+					msg=('No origin-time found in stream or event-file')
+					raise IOError(msg)
+
 				m = TauPyModel('ak135')
 				arrivals = m.get_travel_times(depth, y_dist, phase_list=markphases)
 				timetable = [ [], [] ]
@@ -300,7 +306,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					if st[j].stats.distance > ymax: ymax = st[j].stats.distance
 					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
 					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
-					
+
 				else:
 					if not ylabel: ax.set_ylabel("No. of trace", fontsize=fs)
 					try:

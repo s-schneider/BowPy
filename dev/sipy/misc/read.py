@@ -20,6 +20,7 @@ def read_st(input, network=None, client_name=None):
 			for i, trace in enumerate(stream):
 				stream[i].stats.distance= trace.stats.sh['DISTANCE']
 				stream[i].stats.depth   = trace.stats.sh['DEPTH']
+				stream[i].stats.origin  = trace.stats.sh['ORIGIN']
 	except:
 		msg = 'No Q-file'
 
