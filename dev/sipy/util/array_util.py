@@ -488,16 +488,17 @@ def alignon(st, inv=None, event=None, phase=None, ref=0 , maxtimewindow=0, xcorr
 		attach_coordinates_to_traces(st_tmp, inv, event)
 		attach_network_to_traces(st_tmp, inv)
 
-	try:
-		depth	= st_tmp[0].stats.depth
-		origin 	= st_tmp[0].stats.origin
-		isevent = True
-	except AttributeError:
-		depth 	= event.origins[0]['depth']/1000.
-		origin 	= event.origins[0]['time']
-		isevent = True
-	except:
-		isevent = False
+	if not timewindow:
+		try:
+			depth	= st_tmp[0].stats.depth
+			origin 	= st_tmp[0].stats.origin
+			isevent = True
+		except AttributeError:
+			depth 	= event.origins[0]['depth']/1000.
+			origin 	= event.origins[0]['time']
+			isevent = True
+		except:
+			isevent = False
 
 	m 		= TauPyModel(taup_model)
 
@@ -1360,18 +1361,19 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
 	if plot in ['contour', 'Contour']:
 		cax = ax.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()), origin='lower', cmap=cmap)
 
-		for phase in arrival:
-			t 			= phase.time
-			phase_time 	= origin + t - st[sref].stats.starttime
-			Phase_npt 	= int(phase_time/st[sref].stats.delta)
-			tPhase 		= Phase_npt * st[sref].stats.delta
-			name 		= phase.name
-			sloPhase 	= phase.ray_param_sec_degree - p_ref
-			if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
-				continue
-			ax.autoscale(False)
-			ax.plot(tPhase, sloPhase, 'x')
-			ax.annotate('%s' % name, xy=(tPhase,sloPhase))
+		if markphases:
+			for phase in arrival:
+				t 			= phase.time
+				phase_time 	= origin + t - st[sref].stats.starttime
+				Phase_npt 	= int(phase_time/st[sref].stats.delta)
+				tPhase 		= Phase_npt * st[sref].stats.delta
+				name 		= phase.name
+				sloPhase 	= phase.ray_param_sec_degree - p_ref
+				if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
+					continue
+				ax.autoscale(False)
+				ax.plot(tPhase, sloPhase, 'x')
+				ax.annotate('%s' % name, xy=(tPhase,sloPhase))
 
 		fig.colorbar(cax).set_clim(-1,1)
 
