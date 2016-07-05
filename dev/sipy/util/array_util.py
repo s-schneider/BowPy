@@ -158,12 +158,14 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 		event_lat = event.origins[0].latitude
 		event_lng = event.origins[0].longitude
 		event_dpt = event.origins[0].depth/1000.
+		event_origin = event.origins[0].time
 		for value in coords.values():
 			value["distance"] = locations2degrees(
 				value["latitude"], value["longitude"], event_lat, event_lng)
 			value["depth"] = event_dpt
+			value["origin"]= event_origin
 	else:
-		print("No Event information found, distance information will NOT be set!")
+		print("No Event information found, distance and origin information will NOT be set!")
 
 	# Attach the information to the traces.
 	if isinstance(stream, Stream):
@@ -176,22 +178,25 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 				trace.stats.coordinates.longitude= value["longitude"]
 				trace.stats.coordinates.elevation= value["elevation"]
 				if event:
-					trace.stats.distance = value["distance"]
-					trace.stats.depth = value["depth"]
+					trace.stats.distance= value["distance"]
+					trace.stats.depth   = value["depth"]
+					trace.stats.origin = value["origin"]
+					print(trace.stats.origin)
 			except:
 				continue
 
 	elif isinstance(stream, Trace):
 		try:
-			station = ".".join(stream.id.split(".")[:2])
-			value = coords[station]
-			stream.stats.coordinates = AttribDict()
+			station                           = ".".join(stream.id.split(".")[:2])
+			value                             = coords[station]
+			stream.stats.coordinates          = AttribDict()
 			stream.stats.coordinates.latitude = value["latitude"]
-			stream.stats.coordinates.longitude = value["longitude"]
-			stream.stats.coordinates.elevation = value["elevation"]
+			stream.stats.coordinates.longitude= value["longitude"]
+			stream.stats.coordinates.elevation= value["elevation"]
 			if event:
-				stream.stats.distance = value["distance"]
-				stream.stats.depth = value["depth"]
+				stream.stats.distance= value["distance"]
+				stream.stats.depth   = value["depth"]
+				stream.stats.origin  = value["origin"]
 		except:
 			return		
 
@@ -1327,8 +1332,14 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
 	if markphases:
 		RE 		= 6371.0
 		REdeg 	= kilometer2degrees(RE)
-		origin 	= event.origins[0]['time']
-		depth 	= event.origins[0]['depth']/1000.
+		try:
+			origin 	= st[0].stats.origin
+			depth 	= st[0].stats.depth
+
+		except:
+			origin 	= event.origins[0]['time']
+			depth 	= event.origins[0]['depth']/1000.
+
 		m 		= TauPyModel('ak135')
 		dist 	= st[sref].stats.distance
 		arrival =  m.get_travel_times(depth, dist, phase_list=markphases)
