@@ -1051,7 +1051,8 @@ def partial_stack(st, bins, overlap=None, order=None, align=False, maxtimewindow
 
 	return st_binned
 
-def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, plot=False, markphases=['ttall', 'P^410P', 'P^660P'], method='fft', savefig=False, dpi=400, fs=25):
+def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, plot=False,\
+			 markphases=['ttall', 'P^410P', 'P^660P'], method='fft', savefig=False, dpi=400, fs=25):
 	"""
 	Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
 	and if set a plot.
@@ -1208,103 +1209,14 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 	vespa = vespa/abs(vespa).max()		
 
 	# Plotting routine
-	if plot in ['line', 'Line', 'classic', 'Classic']:
-		fig, ax = plt.subplots()
-		try:
-			refphase = st[0].stats.aligned
-		except:
-			refphase = None
-
-		if markphases:
-			RE 		= 6371.0
-			REdeg 	= kilometer2degrees(RE)
-			origin 	= event.origins[0]['time']
-			depth 	= event.origins[0]['depth']/1000.
-			m 		= TauPyModel('ak135')
-			dist 	= st[sref].stats.distance
-			arrival =  m.get_travel_times(depth, dist, phase_list=markphases)
-
-
-		# Labels of the plot.
-		# Check if it is a relative plot to an aligned Phase.
-		try:
-			p_ref = m.get_travel_times(depth, dist, refphase)[0].ray_param_sec_degree
-			
-			ax.set_ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=fs)
-			try:
-				ax.set_title(r'Relative %ith root Vespagram' %(power), fontsize=fs )
-			except:
-				ax.set_title(r'Relative linear Vespagram', fontsize=fs )
-		except:
-			p_ref = 0
-			ax.set_ylabel(r'$p$ in $\frac{deg}{s}$', fontsize=fs)
-			try:
-				ax.set_title(r'%ith root Vespagram' %(power), fontsize=fs )
-			except:
-				ax.set_title(r'Linear Vespagram', fontsize=fs )
-		
-		ax.set_xlabel(r'Time in s', fontsize=fs)
-		
-		# Do the contour plot of the Vespagram.
-		if plot in ['contour', 'Contour']:
-			cax = ax.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()), origin='lower')
-
-			if markphases:
-				for phase in arrival:
-					t 			= phase.time
-					phase_time 	= origin + t - st[sref].stats.starttime
-					Phase_npt 	= int(phase_time/st[sref].stats.delta)
-					tPhase 		= Phase_npt * st[sref].stats.delta
-					name 		= phase.name
-					sloPhase 	= phase.ray_param_sec_degree - p_ref
-					if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
-						continue
-					ax.autoscale(False)
-					ax.plot(tPhase, sloPhase, 'x')
-					ax.annotate('%s' % name, xy=(tPhase,sloPhase))
-
-			fig.colorbar(cax).set_clim(-1,1)
-			
-
-		# Plot all the traces of the Vespagram.
-		else:
-			ax.set_ylim(urange[0]-0.5, urange[urange.size-1]+0.5)
-			ax.set_xticks(np.arange(taxis[0], taxis[taxis.size-1], 100))
-			for i, trace in enumerate(vespa):
-				ax.plot(taxis, trace+ urange[i], color='black')
-
-			if markphases:
-				for phase in arrival:
-					t 			= phase.time
-					phase_time 	= origin + t - st[sref].stats.starttime
-					Phase_npt 	= int(phase_time/st[sref].stats.delta)
-					tPhase 		= Phase_npt * st[sref].stats.delta
-					name 		= phase.name
-					sloPhase 	= phase.ray_param_sec_degree - p_ref
-					if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
-						continue
-					ax.plot(tPhase, sloPhase, 'x')
-					ax.annotate('%s' % name, xy=(tPhase+1,sloPhase))
-
-
-		ax.tick_params(axis='both', which='major', labelsize=fs)
-		for label in ax.xaxis.get_ticklabels()[::2]:
-			label.set_visible(False)
-
-	if savefig:
-		fig.set_size_inches(8,7)
-		fig.savefig(savefig, dpi=dpi)
-		plt.close("all")
-		return
-	else:
-		plt.ion()
-		plt.draw()
-		plt.show()
-		plt.ioff()
+	if plot:
+		plot_vespa(data=(vespa, taxis, urange), st=st, inv=inv, event=event, markphases=markphases, plot=plot,\
+					 cmap=cmap, savefig=savefig, dpi=dpi, fs=fs)
 
 	return vespa, taxis, urange
 
-def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic', cmap='jet', savefig=False, dpi=400, fs=25):
+def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic',\
+				 cmap='jet', savefig=False, dpi=400, fs=25):
 
 	if isinstance(inv, Inventory):
 		center 	= geometrical_center(inv)
