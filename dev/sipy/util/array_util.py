@@ -1051,7 +1051,7 @@ def partial_stack(st, bins, overlap=None, order=None, align=False, maxtimewindow
 
 	return st_binned
 
-def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, plot=False,\
+def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, plot=False, cmap='seismic',\
 			 markphases=['ttall', 'P^410P', 'P^660P'], method='fft', savefig=False, dpi=400, fs=25):
 	"""
 	Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
@@ -1216,7 +1216,7 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 	return vespa, taxis, urange
 
 def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic',\
-				 cmap='jet', savefig=False, dpi=400, fs=25):
+				 cmap='seismic', savefig=False, dpi=400, fs=25):
 
 	if isinstance(inv, Inventory):
 		center 	= geometrical_center(inv)
@@ -1297,7 +1297,7 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
 				ax.plot(tPhase, sloPhase, 'x')
 				ax.annotate('%s' % name, xy=(tPhase,sloPhase))
 
-		fig.colorbar(cax).set_clim(-1,1)
+		fig.colorbar(cax, format='%.1f').set_clim(-1,1)
 
 	# Plot all the traces of the Vespagram.
 	else:
