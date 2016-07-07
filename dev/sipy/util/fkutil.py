@@ -163,10 +163,12 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 		try:
 			depth = event.origins[0]['depth']/1000.
 			isevent = True
-		except:
+		except NameError:
 			depth = st[0].stats.depth	
 			isevent = True		
-
+		except AttributeError:
+			isevent = False
+			
 		yold=0
 		
 		# Normalize Data, if set to 'all'
