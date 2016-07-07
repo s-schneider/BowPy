@@ -181,7 +181,6 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 					trace.stats.distance= value["distance"]
 					trace.stats.depth   = value["depth"]
 					trace.stats.origin = value["origin"]
-					print(trace.stats.origin)
 			except:
 				continue
 
