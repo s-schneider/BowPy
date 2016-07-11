@@ -426,7 +426,7 @@ def cut(st, tmin, tmax=0):
 	return st_new
 
 
-def alignon(st, inv=None, event=None, phase=None, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod='normal', taup_model='ak135'):
+def alignon(st, inv=None, event=None, phase=None, ref=0 , maxtimewindow=0, xcorr= False, shiftmethod='normal', taup_model='ak135', verbose=False):
 	"""
 	Aligns traces on a given phase and truncates the starts to the latest beginning and the ends
 	to the earliest end.
@@ -647,6 +647,10 @@ def alignon(st, inv=None, event=None, phase=None, ref=0 , maxtimewindow=0, xcorr
 			else:
 				trace.stats.starttime 	= trace.stats.starttime - shifttimes[i]
 				trace.stats.aligned 	= phase
+
+	if verbose:
+		for i, trace in enumerate(st_align):
+			st_align[i].stats.shifttime = shifttimes[i]
 
 	return st_align
 
@@ -1111,7 +1115,7 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 	st 		= stream.copy()
 	data 	= stream2array(st, normalize=True)
 
-	if inv:
+	if isinstance(inv, Inventory):
 		attach_network_to_traces(st, inv)
 		attach_coordinates_to_traces(st, inv, event)
 
@@ -1211,25 +1215,27 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 	# Plotting routine
 	if plot:
 		plot_vespa(data=(vespa, taxis, urange), st=st, inv=inv, event=event, markphases=markphases, plot=plot,\
-					 cmap=cmap, savefig=savefig, dpi=dpi, fs=fs)
+					 cmap=cmap, savefig=savefig, dpi=dpi, fs=fs, power=power)
 
 	return vespa, taxis, urange
 
 def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic',\
-				 cmap='seismic', savefig=False, dpi=400, fs=25):
+				 cmap='seismic', savefig=False, dpi=400, fs=25, power=4):
 
 	if isinstance(inv, Inventory):
+		attach_network_to_traces(st, inv)
+		attach_coordinates_to_traces(st, inv, event)
+
 		center 	= geometrical_center(inv)
 		cstat 	= find_closest_station(inv, st, center['latitude'], center['longitude'])
-
+		
 		for i, trace in enumerate(st):
 			if not trace.stats.station in [cstat]:
 				continue
 			else:
 				sref=i
-
 	else:
-		cstat 	= None
+		sref=0
 
 	vespa = data[0]
 	taxis = data[1]

@@ -47,7 +47,8 @@ GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
 def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphases=None, phaselabel=True, phaselabelclr='red', 
-		norm='all', clr='black', clrtrace=None, newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, fs=15, tw=None):
+		norm='all', clr='black', clrtrace=None, newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, 
+		fs=15, tw=None, verbose=False):
 	"""
 	Alpha Version!
 	
@@ -163,11 +164,12 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 		try:
 			depth = event.origins[0]['depth']/1000.
 			isevent = True
-		except NameError:
-			depth = st[0].stats.depth	
-			isevent = True		
 		except AttributeError:
-			isevent = False
+			try:
+				depth = st[0].stats.depth	
+				isevent = True		
+			except AttributeError:
+				isevent = False
 			
 		yold=0
 		
@@ -238,9 +240,16 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
 					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
 					ax.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color=phaselabelclr )
+					if verbose:
+						print(timetable[1] + st[j].stats.shifttime)
+						ax.plot( (timetable[1] + st[j].stats.shifttime, timetable[1] + st[j].stats.shifttime), \
+								(-1+y_dist,1+y_dist), color=phaselabelclr )
+
 					if phaselabel:
 						for time, key in enumerate(timetable[0]):
 							ax.annotate('%s' % key, xy=(timetable[1][time],y_dist))
+							if verbose:
+								ax.annotate('%s' % key, xy=(timetable[1][time] + st[j].stats.shifttime, y_dist))
 					else:
 						continue
 
@@ -259,9 +268,18 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),spacing*j+0.1))
 					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ spacing*j, color=cclr)
 					ax.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color=phaselabelclr )
+					if verbose:
+						print(st[j].stats.shifttime)
+						print(timetable[1] + st[j].stats.shifttime)
+
+						ax.plot( (timetable[1] + st[j].stats.shifttime, timetable[1] + st[j].stats.shifttime), \
+								(-1+spacing*j,1+spacing*j), color=phaselabelclr )
+
 					if phaselabel:
 						for time, key in enumerate(timetable[0]):
 							ax.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
+							if verbose:
+								ax.annotate('%s' % key, xy=(timetable[1][time] + st[j].stats.shifttime, spacing*j))
 					else:
 						continue
 
