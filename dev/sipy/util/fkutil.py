@@ -546,13 +546,13 @@ def line_cut(array, shape):
 		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
 
 	elif name in ['taper', 'Taper'] and isinstance(length, int):
-		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+		fil_lh = create_filter(name, array.shape[0]/2, array.shape[0]/2-length, kwarg)
 		fil_lh = -1. * fil_lh + 1.
 
-	fil_rh = np.flipud(fil_lh)[::-1][1:][::-1]
+	fil_rh = np.flipud(fil_lh)[::-1][0:][::-1]
 	fil = np.zeros(2*fil_lh.size)
 	fil[:fil.size/2] = fil_lh
-	fil[fil.size/2+1:] = fil_rh
+	fil[fil.size/2:] = fil_rh
 
 	new_array = array.transpose() * fil
 	new_array = new_array.transpose()
@@ -1118,8 +1118,13 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', dmethod='de
 
 					data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
 					ADtemp[noft] 	= data_tmp[noft]
-					#save = 'pocsdata' + str(i) + '.png'
-					#plot(data_tmp, ylabel='Distance(m)', xlabel='Time(s)', fs=22, yinfo=2, savefig=save)
+					name = str(i) + '.png'
+					# plt.ion()
+					# plotfk(fkdata)
+					# fig = plt.gcf()
+					# fig.set_size_inches(7,8)
+					# fig.savefig(name)
+					# plt.ioff()
 				ADfinal = ADtemp.copy()
 
 				threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
@@ -1375,7 +1380,7 @@ def lstsqs(A,b,mu=0):
 	print("..finished")
 	return x
 
-def create_filter(name, length, cutoff=None, ncorner=None, cornerpoints=None):
+def create_filter(name, length, cutoff=None, ncorner=None):
 	
 	cut = float(cutoff)/float(length)
 	m 	= float(ncorner)
