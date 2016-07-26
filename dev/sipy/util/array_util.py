@@ -1247,7 +1247,7 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 
 
 def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic', \
-               cmap='seismic', savefig=False, dpi=400, fs=25, power=4):
+               cmap='seismic', tw=None, savefig=False, dpi=400, fs=25, power=4):
     if isinstance(inv, Inventory):
         attach_network_to_traces(st, inv)
         attach_coordinates_to_traces(st, inv, event)
@@ -1362,6 +1362,21 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
         plt.show()
         plt.ioff()
 
+def plot_vespa_stdout(data, st=None, inv=None, event=None, savefig=False, dpi=400, fs=25, power=4):
+
+    plot_vespa(data=data, st=st, inv=inv, event=event, markphases=false, plot='classic, \
+                   cmap='seismic', savefig=savefig, dpi=dpi, fs=fs, power=power)
+
+    plot_vespa(data=data, st=st, inv=inv, event=event, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic, \
+                   cmap='seismic', savefig=savefig, dpi=dpi, fs=fs, power=power)
+
+    plot_vespa(data=data, st=st, inv=inv, event=event, markphases=false, plot='contour, \
+                   cmap='seismic', savefig=savefig, dpi=dpi, fs=fs, power=power)
+
+    plot_vespa(data=data, st=st, inv=inv, event=event, markphases=['ttall', 'P^410P', 'P^660P'], plot='contour, \
+                   cmap='seismic', savefig=savefig, dpi=dpi, fs=fs, power=power)
+
+    return
 
 def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135', stacking=False, refphase=['PP']):
     """

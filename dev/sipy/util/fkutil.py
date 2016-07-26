@@ -515,7 +515,7 @@ def kill(data, stat):
 
 def line_cut(array, shape):
 	"""
-	Sets the array to zero, except for the 0 line and given features given in shape.
+	Sets the array to zero, except for the 0 line and given features given in shape, acts as bandpass filter.
 	"Cuts" one line out + given shape. For detailed information look in sipy.filter.fk.fk_filter
 
 	:param array: array-like
@@ -560,7 +560,7 @@ def line_cut(array, shape):
 
 def line_set_zero(array, shape):
 	"""
-	Sets 0 line zero in array + features given in shape.
+	Sets line zero in array + features given in shape, acts as bandstop filter.
 	For detailed information look in sipy.filter.fk.fk_filter
 
 	:param array: array-like
@@ -594,7 +594,7 @@ def line_set_zero(array, shape):
 
 	elif name in ['taper', 'Taper'] and isinstance(length, int):
 		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
-		fil_lh = -1. * fil_lh + 1.
+		# fil_lh = -1. * fil_lh + 1.
 
 	fil_rh = np.flipud(fil_lh)[::-1][1:][::-1]
 	fil = np.zeros(2*fil_lh.size)
