@@ -1077,8 +1077,11 @@ def partial_stack(st, bins, overlap=None, order=None, align=False, maxtimewindow
         trace.stats.sampling_rate = st_tmp[0].stats.sampling_rate
         trace.stats.depth = st_tmp[0].stats.depth
         trace.stats.distance = y_resample[i]
-        trace.stats.processing = st_tmp[0].stats.processing
-    # trace.stats.processing.append(u'Partial Stacked, overlap %f, aligned on %s' % (overlap, str(align)))
+        try:
+            trace.stats.processing = st_tmp[0].stats.processing
+        except:
+            trace.stats.processing = []
+        # trace.stats.processing.append(u'Partial Stacked, overlap %f, aligned on %s' % (overlap, str(align)))
 
     return st_binned
 
@@ -1289,16 +1292,23 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
 
     # Labels of the plot.
     # Check if it is a relative plot to an aligned Phase.
-    try:
-        p_ref = m.get_travel_times(depth, dist, refphase)[0].ray_param_sec_degree
-
-        ax.set_ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=fs)
+    if refphase:
         try:
-            ax.set_title(r'Relative %ith root Vespagram' % (power), fontsize=fs)
+            p_ref = m.get_travel_times(depth, dist, refphase)[0].ray_param_sec_degree
+            ax.set_ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=fs)
+            try:
+                ax.set_title(r'Relative %ith root Vespagram' % (power), fontsize=fs)
+            except:
+                ax.set_title(r'Relative linear Vespagram', fontsize=fs)
         except:
-            ax.set_title(r'Relative linear Vespagram', fontsize=fs)
-    except:
-        p_ref = 0
+            p_ref = 0
+            ax.set_ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=fs)
+            try:
+                ax.set_title(r'Relative %ith root Vespagram' % (power), fontsize=fs)
+            except:
+                ax.set_title(r'Relative linear Vespagram', fontsize=fs)   
+    else:
+        p_ref = 0         
         ax.set_ylabel(r'$p$ in $\frac{deg}{s}$', fontsize=fs)
         try:
             ax.set_title(r'%ith root Vespagram' % (power), fontsize=fs)
@@ -1326,7 +1336,10 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
                 ax.plot(tPhase, sloPhase, 'x')
                 ax.annotate('%s' % name, xy=(tPhase, sloPhase))
 
-        fig.colorbar(cax, format='%.1f').set_clim(-1, 1)
+        cbar = fig.colorbar(cax, format='%.1f')
+        cbar.set_clim(-1, 1)
+        cbar.ax.tick_params(labelsize=fs)
+        cbar.ax.set_ylabel('A', fontsize=fs)
 
     # Plot all the traces of the Vespagram.
     else:
@@ -1349,11 +1362,13 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
                 ax.annotate('%s' % name, xy=(tPhase + 1, sloPhase))
 
     ax.tick_params(axis='both', which='major', labelsize=fs)
-    for label in ax.xaxis.get_ticklabels()[::2]:
-        label.set_visible(False)
+    
+    if len(ax.xaxis.get_ticklabels()) > 5:
+        for label in ax.xaxis.get_ticklabels()[::2]:
+            label.set_visible(False)
 
     if savefig:
-        fig.set_size_inches(8, 7)
+        fig.set_size_inches(10, 6)
         fig.savefig(savefig, dpi=dpi)
         plt.close("all")
     else:
@@ -1364,21 +1379,26 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
 
 def plot_vespa_stdout(data, st=None, inv=None, event=None, savefig=False, dpi=400, fs=25, power=4):
 
-    plot_vespa(data=data, st=st, inv=inv, event=event, markphases=false, plot='classic, \
-                   cmap='seismic', savefig=savefig, dpi=dpi, fs=fs, power=power)
+    if savefig:
+        sf = savefig + "classic_no_captions.png"
+        plot_vespa(data=data, st=st, inv=inv, event=event, markphases=False, plot='classic', \
+                        cmap='seismic', savefig=sf, dpi=dpi, fs=fs, power=power)
 
-    plot_vespa(data=data, st=st, inv=inv, event=event, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic, \
-                   cmap='seismic', savefig=savefig, dpi=dpi, fs=fs, power=power)
+        sf = savefig + "classic.png"
+        plot_vespa(data=data, st=st, inv=inv, event=event, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic', \
+                       cmap='seismic', savefig=sf, dpi=dpi, fs=fs, power=power)
 
-    plot_vespa(data=data, st=st, inv=inv, event=event, markphases=false, plot='contour, \
-                   cmap='seismic', savefig=savefig, dpi=dpi, fs=fs, power=power)
+        sf = savefig + "contour_no_captions.png"
+        plot_vespa(data=data, st=st, inv=inv, event=event, markphases=False, plot='contour', \
+                       cmap='seismic', savefig=sf, dpi=dpi, fs=fs, power=power)
 
-    plot_vespa(data=data, st=st, inv=inv, event=event, markphases=['ttall', 'P^410P', 'P^660P'], plot='contour, \
-                   cmap='seismic', savefig=savefig, dpi=dpi, fs=fs, power=power)
+        sf = savefig + "contour.png"
+        plot_vespa(data=data, st=st, inv=inv, event=event, markphases=['ttall', 'P^410P', 'P^660P'], plot='contour', \
+                       cmap='seismic', savefig=sf, dpi=dpi, fs=fs, power=power)
 
     return
 
-def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135', stacking=False, refphase=['PP']):
+def resample_distance(stream, inv=None, event=None, shiftmethod='fft', taup_model='ak135', stacking=False, refphase=['PP']):
     """
 	Function reorganizes the traces in a equidistant manner.
 	"""
@@ -1443,7 +1463,7 @@ def resample_distance(stream, inv, event, shiftmethod='fft', taup_model='ak135',
 
         trace.stats.distance = yresample[index_resampled]
         try:
-            trace.stats.processing.append(u'resampled')
+            trace.stats.processing.append(u'resampled: ')
         except:
             trace.stats.processing = u'resampled'
 

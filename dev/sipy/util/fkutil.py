@@ -466,7 +466,7 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 		plt.show()
 		plt.ioff()
 
-def plotfk(data, fs=15, savefig=False, dpi=400, logscale=False, hold=False):
+def plotfk(data, fs=15, savefig=False, dpi=400, logscale=False, hold=False, cmap='jet'):
 	fig, ax = plt.subplots()
 	ax.set_xlabel('Normalized Wavenumber', fontsize=fs)
 	ax.set_ylabel('Normalized Frequency', fontsize=fs)
@@ -476,10 +476,14 @@ def plotfk(data, fs=15, savefig=False, dpi=400, logscale=False, hold=False):
 	ax.tick_params(axis='both', which='major', labelsize=fs)
 
 	if logscale:
-		im = ax.imshow(np.flipud(np.log(abs(np.fft.fftshift(data[:,:data.shape[1]/2].transpose(), axes=1)))), aspect='auto', extent=(-0.5, 0.5, 0, 0.5), interpolation='none')	
+		im = ax.imshow(np.flipud(np.log(abs(np.fft.fftshift(data[:,:data.shape[1]/2].transpose(), axes=1)))), aspect='auto', extent=(-0.5, 0.5, 0, 0.5), interpolation='none',cmap=cmap)	
 	else:
-		im = ax.imshow(np.flipud(abs(np.fft.fftshift(data[:,:data.shape[1]/2].transpose(), axes=1))), aspect='auto', extent=(-0.5, 0.5, 0, 0.5), interpolation='none')
-	cbar = fig.colorbar(im)
+		im = ax.imshow(np.flipud(abs(np.fft.fftshift(data[:,:data.shape[1]/2].transpose(), axes=1))), aspect='auto', extent=(-0.5, 0.5, 0, 0.5), interpolation='none', cmap=cmap)
+	if cmap in ['seismic']:
+		cbar = fig.colorbar(im)
+		cbar.set_clim(-data.max(), data.max())
+	else:
+		cbar = fig.colorbar(im)
 	cbar.ax.tick_params(labelsize=fs)
 	cbar.ax.set_ylabel('R', fontsize=fs)
 	#plt.gca().invert_yaxis()

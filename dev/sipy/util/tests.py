@@ -74,10 +74,14 @@ def qtest_pocs(st_rec, st_orginal, alpharange, irange):
 			Q = 10.*np.log(Q_tmp)	
 			Qall.append([alpha, i, Q])
 
+	Qmax = [0,0,0]
+	for i in Qall:
+		if i[2] > Qmax[2]: Qmax = i
+
 
 	return Qall
 
-def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None, fs=20):
+def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None, fs=20, cmap='Blues', cbarlim=None):
 
 	if isinstance(alpharange, numpy.ndarray):
 		yrange  = alpharange
@@ -108,13 +112,15 @@ def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None, fs=20):
 	Qmax[np.unravel_index(maxindex, Qmat.shape)] = 10000
 
 	extent =(alpharange.min(), alpharange.max(), irange.min(), irange.max())
-	im = ax.imshow(Qplot, aspect='auto', origin='lower', interpolation='none',cmap='Blues', extent=extent)
+	im = ax.imshow(Qplot, aspect='auto', origin='lower', interpolation='none',cmap=cmap, extent=extent)
 	ax.set_ylabel('No of iterations', fontsize=fs)
 	ax.set_xlabel(r'$\alpha$', fontsize=fs)
 	ax.tick_params(axis='both', which='both', labelsize=fs)
 	cbar = fig.colorbar(im)
 	cbar.ax.set_ylabel('Q', fontsize=fs)
 	cbar.ax.tick_params(labelsize=fs)
+	if cbarlim:
+		cbar.set_clim(cbarlim[0], cbarlim[1])
 
 	# Customize major tick labels
 
