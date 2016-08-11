@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import matplotlib.cbook as cbook
@@ -172,7 +173,7 @@ class FollowDotCursor(object):
             # IndexError: index out of bounds
             return self._points[0]
 
-def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, yticks=None):
+def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, yticks=None, fs=25):
     """
     Interactive function to pick a polygon out of a figure and receive the vertices of it.
     :param data:
@@ -217,13 +218,21 @@ def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, ytick
     ax.add_patch(poly)
     p = PolygonInteractor(ax, poly)
     plt.title("Pick polygon, close figure to save vertices")
-    plt.xlabel(xlabel, fontsize=15)
-    plt.ylabel(ylabel, fontsize=15)
+    plt.xlabel(xlabel, fontsize=fs)
+    plt.ylabel(ylabel, fontsize=fs)
 
     try:
-        plt.imshow(abs(data), aspect='auto', extent=(xticks.min(), xticks.max(), yticks.min(), yticks.max()), interpolation='none')
+        im = ax.imshow(abs(data), aspect='auto', extent=(xticks.min(), xticks.max(), 0, yticks.max()), interpolation='none')
     except AttributeError:
-        plt.imshow(abs(data), aspect='auto', interpolation='none')
+        im = ax.imshow(abs(data), aspect='auto', interpolation='none')
+
+    cbar = fig.colorbar(im)
+    cbar.ax.tick_params(labelsize=fs)
+    cbar.ax.set_ylabel('R', fontsize=fs)
+    mpl.rcParams['xtick.labelsize'] = fs
+    mpl.rcParams['ytick.labelsize'] = fs
+    ax.tick_params(axis='both', which='major', labelsize=fs)
+
 
     plt.show()      
     print("Calculate area inside chosen polygon\n")
