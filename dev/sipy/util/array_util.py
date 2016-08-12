@@ -1086,7 +1086,7 @@ def partial_stack(st, bins, overlap=None, order=None, align=False, maxtimewindow
     return st_binned
 
 
-def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, plot=False, cmap='seismic', \
+def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None, power=4, plot=False, cmap='seismic', \
               markphases=['ttall', 'P^410P', 'P^660P'], method='fft', savefig=False, dpi=400, fs=25):
     """
 	Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
@@ -1250,7 +1250,7 @@ def vespagram(stream, slomin, slomax, slostep, inv=None, event=None, power=4, pl
 
 
 def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic', \
-               cmap='seismic', tw=None, savefig=False, dpi=400, fs=25, power=4):
+               cmap='seismic', tw=None, savefig=False, dpi=400, fs=25, power=4, marker='|', markerclr='red',labelfs=20):
     if isinstance(inv, Inventory):
         attach_network_to_traces(st, inv)
         attach_coordinates_to_traces(st, inv, event)
@@ -1333,8 +1333,27 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
                 if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
                     continue
                 ax.autoscale(False)
-                ax.plot(tPhase, sloPhase, 'x')
-                ax.annotate('%s' % name, xy=(tPhase, sloPhase))
+                
+                if marker in ['|']:
+                    ax.plot( (tPhase, tPhase), (-labelfs/100. +sloPhase, labelfs/100.+sloPhase), color=markerclr)
+                else:
+                    ax.plot(tPhase, sloPhase, marker)
+
+                if name in [u'P^220P']:
+                    ax.annotate('$P^{220}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase),
+                                 fontsize=labelfs, color=markerclr)
+
+                elif name in [u'P^410P']:
+                    ax.annotate('$P^{410}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase+0.2),
+                                 fontsize=labelfs, color=markerclr)
+
+                elif name in [u'P^660P']:
+                    ax.annotate('$P^{660}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase-0.8),
+                                 fontsize=labelfs, color=markerclr)
+
+                else:
+                    ax.annotate('$%s$' % name, xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase),
+                                 fontsize=labelfs, color=markerclr)
 
         cbar = fig.colorbar(cax, format='%.1f')
         cbar.set_clim(-1, 1)
@@ -1358,8 +1377,27 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
                 sloPhase = phase.ray_param_sec_degree - p_ref
                 if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
                     continue
-                ax.plot(tPhase, sloPhase, 'x')
-                ax.annotate('%s' % name, xy=(tPhase + 1, sloPhase))
+
+                if marker in ['|']:
+                    ax.plot( (tPhase, tPhase), (-labelfs/100. +sloPhase, labelfs/100.+sloPhase), color=markerclr)
+                else:
+                    ax.plot(tPhase, sloPhase, marker)
+
+                if name in [u'P^220P']:
+                    ax.annotate('$P^{220}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase),
+                                 fontsize=labelfs, color=markerclr)
+
+                elif name in [u'P^410P']:
+                    ax.annotate('$P^{410}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase+0.2),
+                                 fontsize=labelfs, color=markerclr)
+
+                elif name in [u'P^660P']:
+                    ax.annotate('$P^{660}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase-0.8),
+                                 fontsize=labelfs, color=markerclr)
+
+                else:
+                    ax.annotate('$%s$' % name, xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase),
+                                 fontsize=labelfs, color=markerclr)
 
     ax.tick_params(axis='both', which='major', labelsize=fs)
     
@@ -1377,7 +1415,7 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
         plt.show()
         plt.ioff()
 
-def plot_vespa_stdout(data, st=None, inv=None, event=None, savefig=False, dpi=400, fs=25, power=4):
+def plot_vespa_stdout(data, st=None, inv=None, event=None, mp=['ttall', 'P^410P', 'P^660P'], savefig=False, dpi=400, fs=25, power=4):
 
     if savefig:
         sf = savefig + "classic_no_captions.png"
@@ -1385,7 +1423,7 @@ def plot_vespa_stdout(data, st=None, inv=None, event=None, savefig=False, dpi=40
                         cmap='seismic', savefig=sf, dpi=dpi, fs=fs, power=power)
 
         sf = savefig + "classic.png"
-        plot_vespa(data=data, st=st, inv=inv, event=event, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic', \
+        plot_vespa(data=data, st=st, inv=inv, event=event, markphases=mp, plot='classic', \
                        cmap='seismic', savefig=sf, dpi=dpi, fs=fs, power=power)
 
         sf = savefig + "contour_no_captions.png"
@@ -1393,7 +1431,7 @@ def plot_vespa_stdout(data, st=None, inv=None, event=None, savefig=False, dpi=40
                        cmap='seismic', savefig=sf, dpi=dpi, fs=fs, power=power)
 
         sf = savefig + "contour.png"
-        plot_vespa(data=data, st=st, inv=inv, event=event, markphases=['ttall', 'P^410P', 'P^660P'], plot='contour', \
+        plot_vespa(data=data, st=st, inv=inv, event=event, markphases=mp, plot='contour', \
                        cmap='seismic', savefig=sf, dpi=dpi, fs=fs, power=power)
 
     return
