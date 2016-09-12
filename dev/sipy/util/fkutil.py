@@ -752,7 +752,7 @@ def makeMask(fkdata, slope, shape, rth=0.4, expl_cutoff=False):
 	Wr[:,Wr.shape[1]/2:] = Wrhs
 	return Wr
 
-def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0, mindist=0, smoothing=False, interactive=False):
+def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0, smoothing=False, interactive=False):
 	"""
 	Generates a distribution of slopes in a range given in prange.
 	Needs fkdata as input. 
@@ -788,9 +788,6 @@ def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0,
 	
 	:param delta_threshold: Value to lower manually 
 	:type delta_threshold: int
-
-	:param mindist: minimum distance between two peaks
-	:type mindist: float or int
 
 	:param smoothing: Parameter to smooth distribution
 	:type smoothing: float
@@ -1259,8 +1256,7 @@ def cg_solver(A,b,x0=None,niter=10):
 
 	cont = True
 	k = 1
-	resnorm = 0.
-	while cont:	
+	while cont:
 
 		alpha = np.dot(r,r) / np.dot(p,A.dot(p))
 		x_new = x + alpha * p
