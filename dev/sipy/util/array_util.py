@@ -1,23 +1,15 @@
 from __future__ import absolute_import
 
-import os
-import ctypes as C
-
 import numpy
 import numpy as np
 import math
 import fractions
-import scipy as sp
-from scipy.integrate import cumtrapz
 from scipy.signal import correlate
 import warnings
-import datetime
 import obspy
 
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 from mpl_toolkits.basemap import Basemap
-from matplotlib.ticker import MaxNLocator
 
 from obspy import UTCDateTime, Stream, Inventory, Trace
 from obspy.core.event.event import Event
@@ -26,7 +18,6 @@ from obspy.core import AttribDict
 from obspy.geodetics.base import locations2degrees, gps2dist_azimuth, \
     kilometer2degrees
 from obspy.taup import TauPyModel
-from obspy.taup import getTravelTimes
 from obspy.taup.taup_geo import add_geo_to_arrivals
 
 from sipy.util.base import nextpow2, stream2array, array2stream, array2trace
@@ -63,6 +54,9 @@ def get_coords(inventory, returntype="dict"):
 	:type return: dictionary or numpy.array
 
 	"""
+
+    coords = None
+
     if isinstance(inventory, Inventory):
         if returntype == "dict":
             coords = {}
@@ -1340,7 +1334,7 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
                     ax.plot(tPhase, sloPhase, marker)
 
                 if name in [u'P^220P']:
-                    ax.annotate('$P^{220}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase),
+                    ax.annotate('$P^{220}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase+0.2),
                                  fontsize=labelfs, color=markerclr)
 
                 elif name in [u'P^410P']:
@@ -1348,11 +1342,11 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
                                  fontsize=labelfs, color=markerclr)
 
                 elif name in [u'P^660P']:
-                    ax.annotate('$P^{660}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase-0.8),
+                    ax.annotate('$P^{660}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase-0.6),
                                  fontsize=labelfs, color=markerclr)
 
                 else:
-                    ax.annotate('$%s$' % name, xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase),
+                    ax.annotate('$%s$' % name, xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase+0.2),
                                  fontsize=labelfs, color=markerclr)
 
         cbar = fig.colorbar(cax, format='%.1f')
@@ -1384,7 +1378,7 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
                     ax.plot(tPhase, sloPhase, marker)
 
                 if name in [u'P^220P']:
-                    ax.annotate('$P^{220}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase),
+                    ax.annotate('$P^{220}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase+0.2),
                                  fontsize=labelfs, color=markerclr)
 
                 elif name in [u'P^410P']:
@@ -1392,11 +1386,11 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
                                  fontsize=labelfs, color=markerclr)
 
                 elif name in [u'P^660P']:
-                    ax.annotate('$P^{660}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase-0.8),
+                    ax.annotate('$P^{660}P$', xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase-0.6),
                                  fontsize=labelfs, color=markerclr)
 
                 else:
-                    ax.annotate('$%s$' % name, xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase),
+                    ax.annotate('$%s$' % name, xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase+0.2),
                                  fontsize=labelfs, color=markerclr)
 
     ax.tick_params(axis='both', which='major', labelsize=fs)
@@ -1415,7 +1409,7 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
         plt.show()
         plt.ioff()
 
-def plot_vespa_stdout(data, st=None, inv=None, event=None, mp=['ttall', 'P^410P', 'P^660P'], savefig=False, dpi=400, fs=25, power=4):
+def plot_vespa_stdout(data, st=None, inv=None, event=None, mp='P', savefig=False, dpi=400, fs=25, power=4):
 
     if savefig:
         sf = savefig + "classic_no_captions.png"
@@ -1423,7 +1417,7 @@ def plot_vespa_stdout(data, st=None, inv=None, event=None, mp=['ttall', 'P^410P'
                         cmap='seismic', savefig=sf, dpi=dpi, fs=fs, power=power)
 
         sf = savefig + "classic.png"
-        plot_vespa(data=data, st=st, inv=inv, event=event, markphases=mp, plot='classic', \
+        plot_vespa(data=data, st=st, inv=inv, event=event, markphases=[mp, 'P^410P', 'P^660P', 'PP'], plot='classic', \
                        cmap='seismic', savefig=sf, dpi=dpi, fs=fs, power=power)
 
         sf = savefig + "contour_no_captions.png"
@@ -1431,7 +1425,7 @@ def plot_vespa_stdout(data, st=None, inv=None, event=None, mp=['ttall', 'P^410P'
                        cmap='seismic', savefig=sf, dpi=dpi, fs=fs, power=power)
 
         sf = savefig + "contour.png"
-        plot_vespa(data=data, st=st, inv=inv, event=event, markphases=mp, plot='contour', \
+        plot_vespa(data=data, st=st, inv=inv, event=event, markphases=[mp, 'P^410P', 'P^660P', 'PP'], plot='contour', \
                        cmap='seismic', savefig=sf, dpi=dpi, fs=fs, power=power)
 
     return

@@ -143,26 +143,23 @@ def read_file(stream, inventory, catalog, array=False):
 def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
                  no_of_periods=1):
     
-    deltax = 2*np.pi/len_of_traces
-    signal_len = len_of_traces * no_of_periods
-    period_time = 1 / samplingrate
-    data_temp = np.array([np.zeros(signal_len)])
-    t = []
-    
-    # first trace
-    for i in range(signal_len):
-        data_temp[0][i] = np.sin(i*deltax)
-        t.append((float(i) + float(i)/signal_len)*2*np.pi/signal_len)
-        data = data_temp
-	
-    # other traces
-    for i in range(no_of_traces)[1:]:
-       #np.array([np.zeros(len_of_traces)])
-       #new_trace[0] = data[0]
-       data = np.append(data, data_temp, axis=0)
+	deltax = 2*np.pi/len_of_traces
+	signal_len = len_of_traces * no_of_periods
+	data_temp = np.array([np.zeros(signal_len)])
+	t = []
+
+	# first trace
+	for i in range(signal_len):
+		data_temp[0][i] = np.sin(i*deltax)
+		t.append((float(i) + float(i)/signal_len)*2*np.pi/signal_len)
+		data = data_temp
+
+	# other traces
+	for i in range(no_of_traces)[1:]:
+		data = np.append(data, data_temp, axis=0)
        
        
-    return(data, t)
+	return(data, t)
 
 def create_ricker(n_of_samples, n_of_traces, delta_traces = 1,  slope=0, n_of_ricker_samples = 100., width_of_ricker=2., shift_of_ricker=0):
 	"""
@@ -252,18 +249,18 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 	return(data, indices)
 
 def standard_test_signal(snes1=1, snes2=3, noise=0, nonequi=False):
-        y, yindices = create_deltasignal(no_of_traces=200, len_of_traces=200, 
-        						multiple=True, multipdist=5, no_of_multip=1, 
-        						slowness=snes1, noise_level=noise,
-        						non_equi=nonequi)
+	y, yindices = create_deltasignal(no_of_traces=200, len_of_traces=200,
+							multiple=True, multipdist=5, no_of_multip=1,
+							slowness=snes1, noise_level=noise,
+							non_equi=nonequi)
 
-        x, xindices = create_deltasignal(no_of_traces=200, len_of_traces=200, 
-        						multiple=True, multipdist=5, no_of_multip=5, 
-        						slowness=snes2, noise_level=noise,
-        						non_equi=nonequi)
-        a = x + y
-        y_index = np.sort(np.unique(np.append(yindices, xindices)))
-        return(a, y_index)
+	x, xindices = create_deltasignal(no_of_traces=200, len_of_traces=200,
+							multiple=True, multipdist=5, no_of_multip=5,
+							slowness=snes2, noise_level=noise,
+							non_equi=nonequi)
+	a = x + y
+	y_index = np.sort(np.unique(np.append(yindices, xindices)))
+	return(a, y_index)
 
 def maxrow(array):
 	rowsum=0

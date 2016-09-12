@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 from obspy import UTCDateTime
 from obspy.clients.fdsn import Client
 from obspy import Stream
-import obspy
-import numpy as np
 from obspy.geodetics import locations2degrees, gps2dist_azimuth
 from obspy.taup import TauPyModel
 import sys
@@ -256,12 +254,12 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 		stream = Stream()
 
 	if savefile:
-		 stname = str(origin_t).split('.')[0] + ".MSEED"
-		 invname = stname + "_inv.xml"
-		 catname = stname + "_cat.xml"
-		 stream.write(stname, format=file_format)
-		 inventory.write(invname, format="STATIONXML")
-		 catalog.write(catname, format="QUAKEML")
+		stname = str(origin_t).split('.')[0] + ".MSEED"
+		invname = stname + "_inv.xml"
+		catname = stname + "_cat.xml"
+		stream.write(stname, format=file_format)
+		inventory.write(invname, format="STATIONXML")
+		catalog.write(catname, format="QUAKEML")
 
 	plt.ion()
 	#invall.plot()
