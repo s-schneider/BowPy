@@ -95,6 +95,9 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 	streamall = []
 	client = Client(client_name)
 
+	#build in different approach for catalog search, using urllib
+
+
 	try:
 		catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, maxdepth=maxdepth, mindepth=mindepth, latitude=radialcenterlat, longitude=radialcenterlon, minradius=minrad, maxradius=maxrad,minlatitude=minlat, maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
 
@@ -324,6 +327,26 @@ def create_insta_from_invcat(network, event):
 		stream += x
 
 	return stream
+
+def request_gcmt(start, end):
+	import urllib
+	from urllib import parse
+	from urllib import request
+	
+	"""
+	Description
+	https://docs.python.org/3.4/howto/urllib2.html
+	"""
+
+	url 	= 'http://www.globalcmt.org/CMTsearch.html'
+	values 	= {'syear': 	start.year,
+				'smonth': 	start.month,
+				'sday' : 	start.day,
+				'eyear' : 	end.year,
+				'emonth' : 	end.month,
+				'eday' : 	end.day }
+
+	return
 
 
 
