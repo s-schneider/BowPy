@@ -328,25 +328,82 @@ def create_insta_from_invcat(network, event):
 
 	return stream
 
-def request_gcmt(start, end):
-	import urllib
-	from urllib import parse
-	from urllib import request
-	
+def request_gcmt(start, end, minmag):
+	import mechanize
+	from mechanize import Browser
+	import re
+
 	"""
 	Description
 	https://docs.python.org/3.4/howto/urllib2.html
+
+	Now I am using mechanize. My attempt is just preliminary, for the current globalcmt.org site. 
 	"""
 
-	url 	= 'http://www.globalcmt.org/CMTsearch.html'
-	values 	= {'syear': 	start.year,
-				'smonth': 	start.month,
-				'sday' : 	start.day,
-				'eyear' : 	end.year,
-				'emonth' : 	end.month,
-				'eday' : 	end.day }
-
-	return
+	#Split numbers and text
+	r = re.compile("([a-zA-Z]+)([0-9]+)")
 
 
+	br = Browser()
+	br.open('http://www.globalcmt.org/CMTsearch.html')
+	#Site has just one form
+	br.select_form(nr=0)
+
+	br.form['yr']   = str(start.year)
+	br.form['mo']   = str(start.month)
+	br.form['day']  = str(start.day)
+	br.form['oyr']  = str(end.year)
+	br.form['omo']  = str(end.month)
+	br.form['oday'] = str(end.day)
+	br.form['lmw']  = str(minmag)
+	br.form['list'] = ['4']
+	br.form['itype'] = ['ymd']
+	br.form['otype'] = ['ymd']
+
+	print("Submitting parameters to globalcmt")
+	req = br.submit()
+
+	data = []
+
+	for line in req:
+		data.append(line) 
+
+	data_chunked = _chunking_list(keyword='\n', list=data)
+
+	precat = []
+	origins = []
+
+	for line in data_chunked:
+		for element in line:
+			if 'event name' in element:
+				precat.append(line[1:])
+				for content in element:
+					org = line[1].split()
+					year = int(r.match(org[0]).groups()[1])
+					mon = int(org[1])
+					day = int(org[2])
+					hour = int(org[3])
+					minute = int(org[4])
+					sec = int(org[5].split('.')[0])
+					msec = int(org[5].split('.')[1])
+
+				origins_temp = UTCDateTime(year, mon, day, hour, minute, sec_temp, msec_temp)
+				origins.append( origins_temp + float(line[3].split()[2]) )
+	return 
+
+def _chunking_list(keyword, list):
+	#taken from http://stackoverflow.com/questions/19575702/pythonhow-to-split-file-into-chunks-by-the-occurrence-of-the-header-word
+	chunks = []
+	current_chunk = []
+
+	for line in list:
+
+		if line.startswith(keyword) and current_chunk:
+			chunks.append(current_chunk[:])
+			current_chunk = []
+
+		current_chunk.append(line)
+	chunks.append(current_chunk)
+
+	return chunks
 
