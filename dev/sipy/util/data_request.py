@@ -5,6 +5,7 @@ from obspy.clients.fdsn import Client
 from obspy import Stream
 from obspy.geodetics import locations2degrees, gps2dist_azimuth
 from obspy.taup import TauPyModel
+from obspy.core.event import Catalog, Event, Magnitude, Origin
 import sys
 
 from sipy.util.array_util import center_of_gravity, plot_map, attach_network_to_traces, attach_coordinates_to_traces, geometrical_center
@@ -369,27 +370,53 @@ def request_gcmt(start, end, minmag):
 		data.append(line) 
 
 	data_chunked = _chunking_list(keyword='\n', list=data)
-
-	precat = []
 	origins = []
+	magnitudes = []
 
 	for line in data_chunked:
 		for element in line:
 			if 'event name' in element:
-				precat.append(line[1:])
 				for content in element:
-					org = line[1].split()
-					year = int(r.match(org[0]).groups()[1])
-					mon = int(org[1])
-					day = int(org[2])
-					hour = int(org[3])
-					minute = int(org[4])
-					sec = int(org[5].split('.')[0])
-					msec = int(org[5].split('.')[1])
+					org       = line[1].split()
+					year      = int(r.match(org[0]).groups()[1])
+					mon       = int(org[1])
+					day       = int(org[2])
+					hour      = int(org[3])
+					minute    = int(org[4])
+					sec_temp  = int(org[5].split('.')[0])
+					msec_temp = int(org[5].split('.')[1])
 
 				origins_temp = UTCDateTime(year, mon, day, hour, minute, sec_temp, msec_temp)
-				origins.append( origins_temp + float(line[3].split()[2]) )
-	return 
+				#adding time shift located in line[3]
+				origin      = origins_temp + float(line[3].split()[2])
+				magnitude   = float(line[1].split()[10])
+				latitude     = float(line[5].split()[1])
+				longitude    = float(line[6].split()[1])
+				depth        = 1000. * float(line[7].split()[1])
+
+				magnitudes.append( ("Mw", magnitude) )
+				origins.append( (latitude, longitude, depth, origin) )
+
+	cat = Catalog()
+
+	for mag, org in zip(magnitudes, origins):
+		# Create magnitude object.
+		magnitude = Magnitude()
+		magnitude.magnitude_type = mag[0]
+		magnitude.mag = mag[1]
+		# Write origin object.
+		origin = Origin()
+		origin.latitude = org[0]
+		origin.longitude = org[1]
+		origin.depth = org[2]
+		origin.time = org[3]
+		# Create event object and append to catalog object.
+		event = Event()
+		event.magnitudes.append(magnitude)
+		event.origins.append(origin)
+		cat.append(event)
+
+	return cat
 
 def _chunking_list(keyword, list):
 	#taken from http://stackoverflow.com/questions/19575702/pythonhow-to-split-file-into-chunks-by-the-occurrence-of-the-header-word
