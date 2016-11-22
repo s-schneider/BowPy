@@ -5,6 +5,7 @@ from obspy.clients.fdsn import Client
 from obspy import Stream
 from obspy.geodetics import locations2degrees, gps2dist_azimuth
 from obspy.taup import TauPyModel
+from obspy.core.event import Catalog, Event, Magnitude, Origin
 import sys
 
 from sipy.util.array_util import center_of_gravity, plot_map, attach_network_to_traces, attach_coordinates_to_traces, geometrical_center
@@ -94,6 +95,9 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 	stream = Stream()
 	streamall = []
 	client = Client(client_name)
+
+	#build in different approach for catalog search, using urllib
+
 
 	try:
 		catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, maxdepth=maxdepth, mindepth=mindepth, latitude=radialcenterlat, longitude=radialcenterlon, minradius=minrad, maxradius=maxrad,minlatitude=minlat, maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
@@ -325,5 +329,108 @@ def create_insta_from_invcat(network, event):
 
 	return stream
 
+def request_gcmt(start, end, minmag):
+	import mechanize
+	from mechanize import Browser
+	import re
 
+	"""
+	Description
+	https://docs.python.org/3.4/howto/urllib2.html
+
+	Now I am using mechanize. My attempt is just preliminary, for the current globalcmt.org site. 
+	"""
+
+	#Split numbers and text
+	r = re.compile("([a-zA-Z]+)([0-9]+)")
+
+
+	br = Browser()
+	br.open('http://www.globalcmt.org/CMTsearch.html')
+	#Site has just one form
+	br.select_form(nr=0)
+
+	br.form['yr']   = str(start.year)
+	br.form['mo']   = str(start.month)
+	br.form['day']  = str(start.day)
+	br.form['oyr']  = str(end.year)
+	br.form['omo']  = str(end.month)
+	br.form['oday'] = str(end.day)
+	br.form['lmw']  = str(minmag)
+	br.form['list'] = ['4']
+	br.form['itype'] = ['ymd']
+	br.form['otype'] = ['ymd']
+
+	print("Submitting parameters to globalcmt")
+	req = br.submit()
+
+	data = []
+
+	for line in req:
+		data.append(line) 
+
+	data_chunked = _chunking_list(keyword='\n', list=data)
+	origins = []
+	magnitudes = []
+
+	for line in data_chunked:
+		for element in line:
+			if 'event name' in element:
+				for content in element:
+					org       = line[1].split()
+					year      = int(r.match(org[0]).groups()[1])
+					mon       = int(org[1])
+					day       = int(org[2])
+					hour      = int(org[3])
+					minute    = int(org[4])
+					sec_temp  = int(org[5].split('.')[0])
+					msec_temp = int(org[5].split('.')[1])
+
+				origins_temp = UTCDateTime(year, mon, day, hour, minute, sec_temp, msec_temp)
+				#adding time shift located in line[3]
+				origin      = origins_temp + float(line[3].split()[2])
+				magnitude   = float(line[1].split()[10])
+				latitude     = float(line[5].split()[1])
+				longitude    = float(line[6].split()[1])
+				depth        = 1000. * float(line[7].split()[1])
+
+				magnitudes.append( ("Mw", magnitude) )
+				origins.append( (latitude, longitude, depth, origin) )
+
+	cat = Catalog()
+
+	for mag, org in zip(magnitudes, origins):
+		# Create magnitude object.
+		magnitude = Magnitude()
+		magnitude.magnitude_type = mag[0]
+		magnitude.mag = mag[1]
+		# Write origin object.
+		origin = Origin()
+		origin.latitude = org[0]
+		origin.longitude = org[1]
+		origin.depth = org[2]
+		origin.time = org[3]
+		# Create event object and append to catalog object.
+		event = Event()
+		event.magnitudes.append(magnitude)
+		event.origins.append(origin)
+		cat.append(event)
+
+	return cat
+
+def _chunking_list(keyword, list):
+	#taken from http://stackoverflow.com/questions/19575702/pythonhow-to-split-file-into-chunks-by-the-occurrence-of-the-header-word
+	chunks = []
+	current_chunk = []
+
+	for line in list:
+
+		if line.startswith(keyword) and current_chunk:
+			chunks.append(current_chunk[:])
+			current_chunk = []
+
+		current_chunk.append(line)
+	chunks.append(current_chunk)
+
+	return chunks
 
