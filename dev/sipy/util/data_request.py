@@ -309,7 +309,7 @@ def data_request(client_name, cat_client_name, start, end, minmag, net=None, sco
 	list_of_stream = streamall
 	return(list_of_stream, inventory, catalog)
 
-def create_insta_from_invcat(network, event):
+def create_insta_from_invcat(network, event, database):
 	import obspy
 	from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
 	from obspy import read as read_st
@@ -335,8 +335,21 @@ def create_insta_from_invcat(network, event):
 	import sipy.util.fkutil as fku
 	import instaseis as ins
 
+	"""
+	This function creates synthetic data using the given network and event information, with the database of instaseis
 
-	db 		= ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
+	:param network: Desired Network, for which the data is generated
+	:type  network: obspy.core.inventory.Network
+
+	:param event: Event, for wich the data is generated. The event must have stored the moment tensor (e.g. given by glogalcmt.org)
+	:type  event: obspy.core.event.Event
+
+	:param database: Link to the database, e.g. the path on your harddrive
+	:type  database: str
+	"""
+
+
+	db 		= ins.open_db(database)
 
 	tofe 	= event.origins[0].time
 	lat 	= event.origins[0].latitude 
