@@ -38,7 +38,7 @@ try:
 	from sipy.util.data_request import data_request
 	from sipy.util.base import cat4stream, inv4stream
 	from sipy.filter.fk import fk_filter, fk_reconstruct
-	from sipy.util.fkutil import  nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx, plotfk, fktrafo
+	from sipy.util.fkutil import  plot, nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx, plotfk, fktrafo
 	from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
 	stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, attach_epidist2coords, epidist2nparray, epidist2list, \
 	alignon, partial_stack, gaps_fill_zeros, vespagram, rm, cut, plot_vespa

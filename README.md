@@ -6,9 +6,15 @@ Installation:
 
 - clone/download the repo
 
-- Put startup.py in ~./ipython/profile_default/startup
+- Put startup.py in ~/.ipython/profile_default/startup
 
-- cd into FK-Toolbox/dev/
+- cd into FK-Toolbox
+
+- chmod 755 INSTALL.sh
+
+- ./INSTALL.sh
+
+
 
 start ipython
 
