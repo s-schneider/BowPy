@@ -9,6 +9,7 @@ import warnings
 import obspy
 
 import matplotlib.pyplot as plt
+import pylab
 from mpl_toolkits.basemap import Basemap
 
 from obspy import UTCDateTime, Stream, Inventory, Trace
@@ -1081,7 +1082,7 @@ def partial_stack(st, bins, overlap=None, order=None, align=False, maxtimewindow
 
 
 def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None, power=4, plot=False, cmap='seismic', \
-              markphases=['ttall', 'P^410P', 'P^660P'], method='fft', savefig=False, dpi=400, fs=25):
+              markphases=['ttall', 'P^410P', 'P^660P'], method='fft', tw=None, zoom=1, savefig=False, dpi=400, fs=25):
     """
 	Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
 	and if set a plot.
@@ -1238,13 +1239,13 @@ def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None, po
     # Plotting routine
     if plot:
         plot_vespa(data=(vespa, taxis, urange), st=st, inv=inv, event=event, markphases=markphases, plot=plot, \
-                   cmap=cmap, savefig=savefig, dpi=dpi, fs=fs, power=power)
+                   cmap=cmap, tw=tw, savefig=savefig, dpi=dpi, fs=fs, power=power, zoom=zoom)
 
     return vespa, taxis, urange
 
 
 def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic', \
-               cmap='seismic', tw=None, savefig=False, dpi=400, fs=25, power=4, marker='|', markerclr='red',labelfs=20):
+               cmap='seismic', tw=None, savefig=False, dpi=400, fs=25, power=4, marker='|', markerclr='red',labelfs=20, zoom=1):
     if isinstance(inv, Inventory):
         attach_network_to_traces(st, inv)
         attach_coordinates_to_traces(st, inv, event)
@@ -1260,7 +1261,7 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
     else:
         sref = 0
 
-    vespa = data[0]
+    vespa = data[0]*zoom
     taxis = data[1]
     urange = data[2]
 
@@ -1289,21 +1290,21 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
     if refphase:
         try:
             p_ref = m.get_travel_times(depth, dist, refphase)[0].ray_param_sec_degree
-            ax.set_ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=fs)
+            ax.set_ylabel(r'Relative $p$ in $\pm \frac{s}{deg}$  to %s arrival' % refphase, fontsize=fs)
             try:
                 ax.set_title(r'Relative %ith root Vespagram' % (power), fontsize=fs)
             except:
                 ax.set_title(r'Relative linear Vespagram', fontsize=fs)
         except:
             p_ref = 0
-            ax.set_ylabel(r'Relative $p$ in $\pm \frac{deg}{s}$  to %s arrival' % refphase, fontsize=fs)
+            ax.set_ylabel(r'Relative $p$ in $\pm \frac{s}{deg}$  to %s arrival' % refphase, fontsize=fs)
             try:
                 ax.set_title(r'Relative %ith root Vespagram' % (power), fontsize=fs)
             except:
                 ax.set_title(r'Relative linear Vespagram', fontsize=fs)   
     else:
         p_ref = 0         
-        ax.set_ylabel(r'$p$ in $\frac{deg}{s}$', fontsize=fs)
+        ax.set_ylabel(r'$p$ in $\frac{s}{deg}$', fontsize=fs)
         try:
             ax.set_title(r'%ith root Vespagram' % (power), fontsize=fs)
         except:
@@ -1313,7 +1314,12 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
 
     # Do the contour plot of the Vespagram.
     if plot in ['contour', 'Contour']:
-        cax = ax.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()),
+        if tw:
+            tw = np.array(tw)
+            cax = ax.imshow(vespa, aspect='auto', extent=(tw.min(), tw.max(), urange.min(), urange.max()),
+                        origin='lower', cmap=cmap)
+        else:
+            cax = ax.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()),
                         origin='lower', cmap=cmap)
 
         if markphases:
@@ -1392,6 +1398,11 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
                 else:
                     ax.annotate('$%s$' % name, xy=(tPhase, sloPhase), xytext=(tPhase + 1, sloPhase+0.2),
                                  fontsize=labelfs, color=markerclr)
+
+        if tw:
+            tw = np.array(tw)
+            pylab.xlim(tw.min(), tw.max())
+
 
     ax.tick_params(axis='both', which='major', labelsize=fs)
     
