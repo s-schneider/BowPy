@@ -1258,7 +1258,7 @@ def plot_vespa_stdout(data, st=None, inv=None, event=None, mp='P', savefig=False
 
     return
 
-def resample_distance(stream, inv=None, event=None, shiftmethod='fft', taup_model='ak135', stacking=False, refphase=['PP']):
+def resample_distance(stream, inv=None, event=None, shiftmethod='fft', taup_model='ak135', stacking=False, refphase='PP'):
     """
 	Function reorganizes the traces in a equidistant manner.
 	"""
@@ -1299,13 +1299,14 @@ def resample_distance(stream, inv=None, event=None, shiftmethod='fft', taup_mode
             index_resampled = np.abs(yresample - trace.stats.distance).argmin()
         else:
             index_resampled = no
+        if refphase:
+            torg = m.get_travel_times(depth, trace.stats.distance, phase_list=[refphase])[0].time
+            tres = m.get_travel_times(depth, yresample[index_resampled], phase_list=[refphase])[0].time
+            tdelta = torg - tres
+            shiftvalue = int(tdelta / trace.stats.delta)
+            trace.data, shift_index = shift2ref(data[no], 0, shiftvalue, method=shiftmethod)
+            trace.stats.starttime = trace.stats.starttime + tdelta
 
-        torg = m.get_travel_times(depth, trace.stats.distance, phase_list=refphase)[0].time
-        tres = m.get_travel_times(depth, yresample[index_resampled], phase_list=refphase)[0].time
-        tdelta = torg - tres
-        shiftvalue = int(tdelta / trace.stats.delta)
-        trace.data, shift_index = shift2ref(data[no], 0, shiftvalue, method=shiftmethod)
-        trace.stats.starttime = trace.stats.starttime + tdelta
         tstart_new_list.append(trace.stats.starttime)
 
         # Doublettes are stacked
@@ -1360,7 +1361,7 @@ def resample_distance(stream, inv=None, event=None, shiftmethod='fft', taup_mode
 
     return stream_res
 
-def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, align=False, maxtimewindow=None, shiftmethod='normal',
+def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, maxtimewindow=None, shiftmethod='normal',
                   taup_model='ak135'):
     """
     Will sort the traces into equally distributed bins and stack the bins.
@@ -1379,7 +1380,8 @@ def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, ali
                        the size of each bin.
     :type bins: int
 
-    :param refphase: Phase 
+    :param refphase: If True, traces will be shifted to reference time of the bin, calculated by the reference phase.
+                     If Traces already aligned on a phase switch to False. 
     :type refphase: str
 
     :param overlap: degree of overlap of each bin, e.g 0.5 corresponds to 50 percent
@@ -1388,10 +1390,6 @@ def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, ali
 
     :param order: Order of Nth-root stacking, default None
     :type order: float or int
-
-    :param align: If True, traces will be shifted to reference time of the bin.
-                  If Traces already aligned on a phase switch to False.
-    :type align: bool
 
     :param maxtimewindow: Maximum timewindow in seconds, symmetrical around theoretical phase arrival time, 
                           in which to pick the maximum amplitude.
@@ -1472,7 +1470,8 @@ def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, ali
     # Calculate theoretical arrivals of each bin.
     yr_sampleindex = np.zeros(len(y_resample)).astype('int')
     yi_sampleindex = np.zeros(len(epidist)).astype('int')
-    if not alignon:
+
+    if refphase:
         try:
             for i, res_distance in enumerate(y_resample):
                 yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[refphase])[0].time / delta)
@@ -1484,7 +1483,7 @@ def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, ali
                 yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[refphase+'diff'])[0].time / delta)
 
             for i, epi_distance in enumerate(epidist):
-                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[refphase+'diff'])[0].time / delta)
+                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[refphase+'diff'])[0].time / delta)       
 
     # Loop through all bins.
     for i, bins in enumerate(L):
@@ -1495,7 +1494,7 @@ def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, ali
             # First bin.
             if i == 0:
                 if epidist[j] <= bins[1]:
-                    if align:
+                    if refphase:
                         trace_shift, shif_index = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw,
                                                             method=shiftmethod)
                     else:
@@ -1505,7 +1504,7 @@ def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, ali
 
             # Check if current trace is inside bin-boundaries.
             if epidist[j] > bins[0] and epidist[j] <= bins[1]:
-                if align:
+                if refphase:
                     trace_shift, shif_index = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw,
                                                         method=shiftmethod)
                 else:
@@ -1516,7 +1515,7 @@ def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, ali
 
             if overlap:
                 if i == len(L):
-                    if align:
+                    if refphase:
                         trace_shift, shif_index = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw,
                                                             method=shiftmethod)
                     else:
