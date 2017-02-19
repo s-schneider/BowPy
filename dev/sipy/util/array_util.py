@@ -898,7 +898,7 @@ def stack(data, order=None):
     return v
 
 
-def partial_stack(st, bins, refphase='P', overlap=None, order=None, align=False, maxtimewindow=None, shiftmethod='normal',
+def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, align=False, maxtimewindow=None, shiftmethod='normal',
                   taup_model='ak135'):
     """
 	Will sort the traces into equally distributed bins and stack the bins.
