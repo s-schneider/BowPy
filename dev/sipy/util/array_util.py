@@ -898,7 +898,7 @@ def stack(data, order=None):
     return v
 
 
-def partial_stack(st, bins, overlap=None, order=None, align=False, maxtimewindow=None, shiftmethod='normal',
+def partial_stack(st, bins, phase='P', overlap=None, order=None, align=False, maxtimewindow=None, shiftmethod='normal',
                   taup_model='ak135'):
     """
 	Will sort the traces into equally distributed bins and stack the bins.
@@ -1013,16 +1013,16 @@ def partial_stack(st, bins, overlap=None, order=None, align=False, maxtimewindow
     if not alignon:
         try:
             for i, res_distance in enumerate(y_resample):
-                yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=['P'])[0].time / delta)
+                yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[phase])[0].time / delta)
 
             for i, epi_distance in enumerate(epidist):
-                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=['P'])[0].time / delta)
+                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[phase])[0].time / delta)
         except:
             for i, res_distance in enumerate(y_resample):
-                yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=['Pdiff'])[0].time / delta)
+                yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[phase+'diff'])[0].time / delta)
 
             for i, epi_distance in enumerate(epidist):
-                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=['Pdiff'])[0].time / delta)
+                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[phase+'diff'])[0].time / delta)
 
     # Loop through all bins.
     for i, bins in enumerate(L):
