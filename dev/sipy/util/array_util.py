@@ -898,7 +898,7 @@ def stack(data, order=None):
     return v
 
 
-def partial_stack(st, bins, phase='P', overlap=None, order=None, align=False, maxtimewindow=None, shiftmethod='normal',
+def partial_stack(st, bins, refphase='P', overlap=None, order=None, align=False, maxtimewindow=None, shiftmethod='normal',
                   taup_model='ak135'):
     """
 	Will sort the traces into equally distributed bins and stack the bins.
@@ -917,8 +917,8 @@ def partial_stack(st, bins, phase='P', overlap=None, order=None, align=False, ma
 					   the size of each bin.
 	:type bins: int
 
-	:param phase: Phase 
-	:type phase: str
+	:param refphase: Phase 
+	:type refphase: str
 
 	:param overlap: degree of overlap of each bin, e.g 0.5 corresponds to 50 percent
 					overlap ov each bin, to deactivate set to "None"
@@ -1013,16 +1013,16 @@ def partial_stack(st, bins, phase='P', overlap=None, order=None, align=False, ma
     if not alignon:
         try:
             for i, res_distance in enumerate(y_resample):
-                yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[phase])[0].time / delta)
+                yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[refphase])[0].time / delta)
 
             for i, epi_distance in enumerate(epidist):
-                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[phase])[0].time / delta)
+                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[refphase])[0].time / delta)
         except:
             for i, res_distance in enumerate(y_resample):
-                yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[phase+'diff'])[0].time / delta)
+                yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[refphase+'diff'])[0].time / delta)
 
             for i, epi_distance in enumerate(epidist):
-                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[phase+'diff'])[0].time / delta)
+                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[refphase+'diff'])[0].time / delta)
 
     # Loop through all bins.
     for i, bins in enumerate(L):
