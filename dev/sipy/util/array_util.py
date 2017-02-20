@@ -898,189 +898,6 @@ def stack(data, order=None):
     return v
 
 
-def partial_stack(st, bins, overlap=None, order=None, align=False, maxtimewindow=None, shiftmethod='normal',
-                  taup_model='ak135'):
-    """
-	Will sort the traces into equally distributed bins and stack the bins.
-	The stacking is just an addition of the traces, more advanced schemes might follow.
-	The uniform distribution is useful for FK-filtering, SSA and every method that requires
-	a uniform distribution.
-	
-	Needs depth information attached to the stream, array_util.see attach_coordinates_to_stream()
-	and attach_network_to_traces()
-	
-	input:
-	:param st: obspy stream object
-	:type st: obspy.core.stream.Stream
-
-	:param bins: number of bins, that should be used, if overlap is set, it is used to calculate
-					   the size of each bin.
-	:type bins: int
-
-	:param phase: Phase 
-	:type phase: str
-
-	:param overlap: degree of overlap of each bin, e.g 0.5 corresponds to 50 percent
-					overlap ov each bin, to deactivate set to "None"
-	:type: float
-
-	:param order: Order of Nth-root stacking, default None
-	:type order: float or int
-
-	:param align: If True, traces will be shifted to reference time of the bin.
-				  If Traces already aligned on a phase switch to False.
-	:type align: bool
-
-	:param maxtimewindow: Maximum timewindow in seconds, symmetrical around theoretical phase arrival time, 
-						  in which to pick the maximum amplitude.
-
-	:param taup_model:
-
-	returns: 
-	:param bin_data: partial stacked data of the array in bins uniform distributed stacks
-	:type bin_data: array
-
-	Author: S. Schneider, 2016
-	Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
-	"""
-
-    st_tmp = st.copy()
-
-    data = stream2array(st_tmp, normalize=True)
-
-    # Create list of distances from stations to array
-    epidist = np.zeros(len(st_tmp))
-    for i, trace in enumerate(st_tmp):
-        epidist[i] = trace.stats.distance
-
-    # Calculate the border of each bin
-    # and the new yinfo values.
-
-    # Resample the borders of the bin, to overlap, if activated
-    if overlap and not isinstance(overlap, bool):
-        # bin_size = (epidist.max() - epidist.min()) / bins
-        bin_size = bins
-        L = [(epidist.min(), epidist.min() + bin_size)]
-        y_resample = [epidist.min() + bin_size / 2.]
-        i = 0
-        while (L[i][0] + (1 - overlap) * bin_size) < epidist.max():
-            lower = L[i][0] + (1 - overlap) * bin_size
-            upper = lower + bin_size
-            L.append((lower, upper))
-            y_resample.append(lower + bin_size / 2.)
-            i += 1
-            if i == 100.:
-                break
-
-    else:
-        L = np.linspace(min(epidist), max(epidist), bins + 1)
-        L = zip(L, np.roll(L, -1))
-        L = L[0:len(L) - 1]
-
-        bin_size = abs(L[0][0] - L[0][1])
-
-        # Resample the y-axis information to new, equally distributed ones.
-        y_resample = np.linspace(min(min(L)) + bin_size / 2., max(max(L)) - bin_size / 2., bins + 1)
-        bin_distribution = np.zeros(len(y_resample))
-
-    # Preallocate some space in memory.
-    bin_data = np.zeros((len(y_resample), data.shape[1]))
-    m = TauPyModel(taup_model)
-    depth = st_tmp[0].stats.depth
-    delta = st_tmp[0].stats.delta
-
-    # Find newstarttimes.
-    nst_min = st_tmp[0].stats.starttime
-    nst_max = st_tmp[0].stats.starttime
-    for trace in st_tmp:
-        if trace.stats.starttime < nst_min: nst_min = trace.stats.starttime
-        if trace.stats.starttime > nst_max: nst_max = trace.stats.starttime
-
-    nst_delta = abs(nst_max - nst_min)
-    nst = []
-
-    for i, time in enumerate(L):
-        nst.append(nst_min + i * nst_delta / float(len(L) - 1.))
-
-    if maxtimewindow:
-        mtw = maxtimewindow / delta
-    else:
-        mtw = 0.
-
-    # Calculate theoretical arrivals of each bin.
-    yr_sampleindex = np.zeros(len(y_resample)).astype('int')
-    yi_sampleindex = np.zeros(len(epidist)).astype('int')
-    if not alignon:
-        try:
-            for i, res_distance in enumerate(y_resample):
-                yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=['P'])[0].time / delta)
-
-            for i, epi_distance in enumerate(epidist):
-                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=['P'])[0].time / delta)
-        except:
-            for i, res_distance in enumerate(y_resample):
-                yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=['Pdiff'])[0].time / delta)
-
-            for i, epi_distance in enumerate(epidist):
-                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=['Pdiff'])[0].time / delta)
-
-    # Loop through all bins.
-    for i, bins in enumerate(L):
-
-        # Loop through all traces.
-        for j, trace in enumerate(data):
-
-            # First bin.
-            if i == 0:
-                if epidist[j] <= bins[1]:
-                    if align:
-                        trace_shift, shif_index = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw,
-                                                            method=shiftmethod)
-                    else:
-                        trace_shift = trace
-                    stack_arr = np.vstack([bin_data[i], trace_shift])
-                    bin_data[i] = stack(stack_arr, order)
-
-            # Check if current trace is inside bin-boundaries.
-            if epidist[j] > bins[0] and epidist[j] <= bins[1]:
-                if align:
-                    trace_shift, shif_index = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw,
-                                                        method=shiftmethod)
-                else:
-                    trace_shift = trace
-
-                stack_arr = np.vstack([bin_data[i], trace_shift])
-                bin_data[i] = stack(stack_arr, order)
-
-            if overlap:
-                if i == len(L):
-                    if align:
-                        trace_shift, shif_index = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw,
-                                                            method=shiftmethod)
-                    else:
-                        trace_shift = trace
-
-                    stack_arr = np.vstack([bin_data[i], trace_shift])
-                    bin_data[i] = stack(stack_arr, order)
-
-    st_binned = array2stream(bin_data)
-
-    for i, trace in enumerate(st_binned):
-        trace.stats.network = st_tmp[0].stats.network
-        trace.stats.channel = st_tmp[0].stats.channel
-        trace.stats.starttime = nst[i]
-        trace.stats.sampling_rate = st_tmp[0].stats.sampling_rate
-        trace.stats.depth = st_tmp[0].stats.depth
-        trace.stats.distance = y_resample[i]
-        try:
-            trace.stats.processing = st_tmp[0].stats.processing
-        except:
-            trace.stats.processing = []
-        # trace.stats.processing.append(u'Partial Stacked, overlap %f, aligned on %s' % (overlap, str(align)))
-
-    return st_binned
-
-
 def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None, power=4, plot=False, cmap='seismic', \
               markphases=['ttall', 'P^410P', 'P^660P'], method='fft', tw=None, zoom=1, savefig=False, dpi=400, fs=25):
     """
@@ -1441,7 +1258,7 @@ def plot_vespa_stdout(data, st=None, inv=None, event=None, mp='P', savefig=False
 
     return
 
-def resample_distance(stream, inv=None, event=None, shiftmethod='fft', taup_model='ak135', stacking=False, refphase=['PP']):
+def resample_distance(stream, inv=None, event=None, shiftmethod='fft', taup_model='ak135', stacking=False, refphase='PP'):
     """
 	Function reorganizes the traces in a equidistant manner.
 	"""
@@ -1482,13 +1299,14 @@ def resample_distance(stream, inv=None, event=None, shiftmethod='fft', taup_mode
             index_resampled = np.abs(yresample - trace.stats.distance).argmin()
         else:
             index_resampled = no
+        if refphase:
+            torg = m.get_travel_times(depth, trace.stats.distance, phase_list=[refphase])[0].time
+            tres = m.get_travel_times(depth, yresample[index_resampled], phase_list=[refphase])[0].time
+            tdelta = torg - tres
+            shiftvalue = int(tdelta / trace.stats.delta)
+            trace.data, shift_index = shift2ref(data[no], 0, shiftvalue, method=shiftmethod)
+            trace.stats.starttime = trace.stats.starttime + tdelta
 
-        torg = m.get_travel_times(depth, trace.stats.distance, phase_list=refphase)[0].time
-        tres = m.get_travel_times(depth, yresample[index_resampled], phase_list=refphase)[0].time
-        tdelta = torg - tres
-        shiftvalue = int(tdelta / trace.stats.delta)
-        trace.data, shift_index = shift2ref(data[no], 0, shiftvalue, method=shiftmethod)
-        trace.stats.starttime = trace.stats.starttime + tdelta
         tstart_new_list.append(trace.stats.starttime)
 
         # Doublettes are stacked
@@ -1543,6 +1361,185 @@ def resample_distance(stream, inv=None, event=None, shiftmethod='fft', taup_mode
 
     return stream_res
 
+def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, maxtimewindow=None, shiftmethod='normal',
+                  taup_model='ak135'):
+    """
+    Will sort the traces into equally distributed bins and stack the bins.
+    The stacking is just an addition of the traces, more advanced schemes might follow.
+    The uniform distribution is useful for FK-filtering, SSA and every method that requires
+    a uniform distribution.
+    
+    Needs depth information attached to the stream, array_util.see attach_coordinates_to_stream()
+    and attach_network_to_traces()
+    
+    input:
+    :param st: obspy stream object
+    :type st: obspy.core.stream.Stream
+
+    :param bins: number of bins, that should be used, if overlap is set, it is used to calculate
+                       the size of each bin.
+    :type bins: int
+
+    :param refphase: If True, traces will be shifted to reference time of the bin, calculated by the reference phase.
+                     If Traces already aligned on a phase switch to False. 
+    :type refphase: str
+
+    :param overlap: degree of overlap of each bin, e.g 0.5 corresponds to 50 percent
+                    overlap ov each bin, to deactivate set to "None"
+    :type: float
+
+    :param order: Order of Nth-root stacking, default None
+    :type order: float or int
+
+    :param maxtimewindow: Maximum timewindow in seconds, symmetrical around theoretical phase arrival time, 
+                          in which to pick the maximum amplitude.
+
+    :param taup_model:
+
+    returns: 
+    :param bin_data: partial stacked data of the array in bins uniform distributed stacks
+    :type bin_data: array
+
+    Author: S. Schneider, 2016
+    Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
+    """
+
+    st_tmp = st.copy()
+
+    data = stream2array(st_tmp, normalize=True)
+
+    # Create list of distances from stations to array
+    epidist = np.zeros(len(st_tmp))
+    for i, trace in enumerate(st_tmp):
+        epidist[i] = trace.stats.distance
+
+    # Calculate the border of each bin
+    # and the new yinfo values.
+
+    # Resample the borders of the bin, to overlap, if activated
+    if overlap and not isinstance(overlap, bool):
+        # bin_size = (epidist.max() - epidist.min()) / bins
+        bin_size = bins
+        L = [(epidist.min(), epidist.min() + bin_size)]
+        y_resample = [epidist.min() + bin_size / 2.]
+        i = 0
+        while (L[i][0] + (1 - overlap) * bin_size) < epidist.max():
+            lower = L[i][0] + (1 - overlap) * bin_size
+            upper = lower + bin_size
+            L.append((lower, upper))
+            y_resample.append(lower + bin_size / 2.)
+            i += 1
+            if i == 100.:
+                break
+
+    else:
+        L = np.linspace(min(epidist), max(epidist), bins + 1)
+        L = zip(L, np.roll(L, -1))
+        L = L[0:len(L) - 1]
+
+        bin_size = abs(L[0][0] - L[0][1])
+
+        # Resample the y-axis information to new, equally distributed ones.
+        y_resample = np.linspace(min(min(L)) + bin_size / 2., max(max(L)) - bin_size / 2., bins + 1)
+        bin_distribution = np.zeros(len(y_resample))
+
+    # Preallocate some space in memory.
+    bin_data = np.zeros((len(y_resample), data.shape[1]))
+    m = TauPyModel(taup_model)
+    depth = st_tmp[0].stats.depth
+    delta = st_tmp[0].stats.delta
+
+    # Find newstarttimes.
+    nst_min = st_tmp[0].stats.starttime
+    nst_max = st_tmp[0].stats.starttime
+    for trace in st_tmp:
+        if trace.stats.starttime < nst_min: nst_min = trace.stats.starttime
+        if trace.stats.starttime > nst_max: nst_max = trace.stats.starttime
+
+    nst_delta = abs(nst_max - nst_min)
+    nst = []
+
+    for i, time in enumerate(L):
+        nst.append(nst_min + i * nst_delta / float(len(L) - 1.))
+
+    if maxtimewindow:
+        mtw = maxtimewindow / delta
+    else:
+        mtw = 0.
+
+    # Calculate theoretical arrivals of each bin.
+    yr_sampleindex = np.zeros(len(y_resample)).astype('int')
+    yi_sampleindex = np.zeros(len(epidist)).astype('int')
+
+    if refphase:
+        try:
+            for i, res_distance in enumerate(y_resample):
+                yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[refphase])[0].time / delta)
+
+            for i, epi_distance in enumerate(epidist):
+                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[refphase])[0].time / delta)
+        except:
+            for i, res_distance in enumerate(y_resample):
+                yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[refphase+'diff'])[0].time / delta)
+
+            for i, epi_distance in enumerate(epidist):
+                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[refphase+'diff'])[0].time / delta)       
+
+    # Loop through all bins.
+    for i, bins in enumerate(L):
+
+        # Loop through all traces.
+        for j, trace in enumerate(data):
+
+            # First bin.
+            if i == 0:
+                if epidist[j] <= bins[1]:
+                    if refphase:
+                        trace_shift, shif_index = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw,
+                                                            method=shiftmethod)
+                    else:
+                        trace_shift = trace
+                    stack_arr = np.vstack([bin_data[i], trace_shift])
+                    bin_data[i] = stack(stack_arr, order)
+
+            # Check if current trace is inside bin-boundaries.
+            if epidist[j] > bins[0] and epidist[j] <= bins[1]:
+                if refphase:
+                    trace_shift, shif_index = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw,
+                                                        method=shiftmethod)
+                else:
+                    trace_shift = trace
+
+                stack_arr = np.vstack([bin_data[i], trace_shift])
+                bin_data[i] = stack(stack_arr, order)
+
+            if overlap:
+                if i == len(L):
+                    if refphase:
+                        trace_shift, shif_index = shift2ref(trace, yr_sampleindex[i], yi_sampleindex[j], mtw,
+                                                            method=shiftmethod)
+                    else:
+                        trace_shift = trace
+
+                    stack_arr = np.vstack([bin_data[i], trace_shift])
+                    bin_data[i] = stack(stack_arr, order)
+
+    st_binned = array2stream(bin_data)
+
+    for i, trace in enumerate(st_binned):
+        trace.stats.network = st_tmp[0].stats.network
+        trace.stats.channel = st_tmp[0].stats.channel
+        trace.stats.starttime = nst[i]
+        trace.stats.sampling_rate = st_tmp[0].stats.sampling_rate
+        trace.stats.depth = st_tmp[0].stats.depth
+        trace.stats.distance = y_resample[i]
+        try:
+            trace.stats.processing = st_tmp[0].stats.processing
+        except:
+            trace.stats.processing = []
+        # trace.stats.processing.append(u'Partial Stacked, overlap %f, aligned on %s' % (overlap, str(align)))
+
+    return st_binned
 
 def gaps_fill_zeros(stream, inv, event, decimal_res=1):
     """
