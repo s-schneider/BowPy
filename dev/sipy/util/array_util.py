@@ -1062,7 +1062,7 @@ def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None, po
 
 
 def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic', \
-               cmap='seismic', tw=None, savefig=False, dpi=400, fs=25, power=4, marker='|', markerclr='red',labelfs=20, zoom=1):
+               cmap='seismic', tw=None, savefig=False, dpi=400, fs=25, power=4, marker='|', markerclr='red',labelfs=20, zoom=1, ticks=50, time_shift=0):
     if isinstance(inv, Inventory):
         attach_network_to_traces(st, inv)
         attach_coordinates_to_traces(st, inv, event)
@@ -1078,7 +1078,7 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
     else:
         sref = 0
 
-    vespa = data[0]*zoom
+    vespa = np.roll(data[0]*zoom, time_shift)
     taxis = data[1]
     urange = data[2]
 
@@ -1133,7 +1133,7 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
     if plot in ['contour', 'Contour']:
         if tw:
             tw = np.array(tw)
-            cax = ax.imshow(vespa, aspect='auto', extent=(tw.min(), tw.max(), urange.min(), urange.max()),
+            cax = ax.imshow(vespa[tw.min():tw.max()], aspect='auto', extent=(tw.min(), tw.max(), urange.min(), urange.max()),
                         origin='lower', cmap=cmap)
         else:
             cax = ax.imshow(vespa, aspect='auto', extent=(taxis.min(), taxis.max(), urange.min(), urange.max()),
@@ -1180,7 +1180,7 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
     # Plot all the traces of the Vespagram.
     else:
         ax.set_ylim(urange[0] - 0.5, urange[urange.size - 1] + 0.5)
-        ax.set_xticks(np.arange(taxis[0], taxis[taxis.size - 1], 100))
+        ax.set_xticks(np.arange(taxis[0], taxis[taxis.size - 1], ticks))
         for i, trace in enumerate(vespa):
             ax.plot(taxis, trace + urange[i], color='black')
 

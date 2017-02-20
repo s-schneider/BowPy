@@ -1,2 +1,0 @@
-#! /bin/bash
-/usr/local/TauP-2.1.2/bin/taup_time -mod ak135 -h -?- -station 0.000000e+00 1.100000e+02 -event 0.000000e+00 0.000000e+00 -pf ~/shfiles/TAUP_PHASE.STX
