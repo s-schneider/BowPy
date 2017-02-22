@@ -13,24 +13,7 @@ import warnings
 Basic collection of fundamental functions for the SiPy lib
 Author: S. Schneider 2016
 """
-def stream2array(stream, normalize=False):
-	sx = stream.copy()
-	x = np.zeros((len(sx), len(sx[0].data)))
-	for i, traces in enumerate(sx):
-		x[i] = traces.data
 
-	if normalize:
-		if x.max()==0:
-			print('Maximum value is 0')
-			return(x)
-
-		elif math.isnan(x.max()):
-			print('Maximum values are NaN, set to 0')
-			n   = np.isnan(x)
-			x[n]= 0.
-		
-		x = x / x.max()
-	return(x)
 
 def array2stream(ArrayData, st_original=None, network=None):
 	"""
@@ -72,6 +55,7 @@ def array2stream(ArrayData, st_original=None, network=None):
 
 	return stream
 
+
 def array2trace(ArrayData, st_original=None):
 	if ArrayData.ndim != 1:
 		try:
@@ -89,6 +73,7 @@ def array2trace(ArrayData, st_original=None):
 		trace.stats = st_original.stats
 
 	return trace
+
 
 def cat4stream(stream, client_name, stime=None, etime=None, minmag=None, lat=None, lon=None, mindepth=None):
 
@@ -113,96 +98,6 @@ def cat4stream(stream, client_name, stime=None, etime=None, minmag=None, lat=Non
 			print('No Catalog found')
 			return
 
-
-def inv4stream(stream, network, client_name):
-
-	start 	= stream[0].stats.starttime
-	end 	= stream[0].stats.endtime
-	client 	= Client(client_name)
-	inv 	= client.get_stations(network=network, starttime=start, endtime=end)
-
-	return inv
-
-
-def read_file(stream, inventory, catalog, array=False):
-	"""
-	function to read data files, such as MSEED, station-xml and quakeml, in a way of obspy.read
-	if need, pushes stream in an array for further processing
-	"""
-	st=obspy.read(stream)
-	inv=obspy.read_inventory(inventory)
-	cat=obspy.readEvents(catalog)
-
-	#pushing the trace data in an array
-	if array:
-		ArrayData=stream2array(st)
-		return(st, inv, cat, ArrayData)
-	else:
-		return(st, inv, cat)
-
-def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
-                 no_of_periods=1):
-    
-	deltax = 2*np.pi/len_of_traces
-	signal_len = len_of_traces * no_of_periods
-	data_temp = np.array([np.zeros(signal_len)])
-	t = []
-
-	# first trace
-	for i in range(signal_len):
-		data_temp[0][i] = np.sin(i*deltax)
-		t.append((float(i) + float(i)/signal_len)*2*np.pi/signal_len)
-		data = data_temp
-
-	# other traces
-	for i in range(no_of_traces)[1:]:
-		data = np.append(data, data_temp, axis=0)
-       
-       
-	return(data, t)
-
-def create_ricker(n_of_samples, n_of_traces, delta_traces = 1,  slope=0, n_of_ricker_samples = 100., width_of_ricker=2., shift_of_ricker=0):
-	"""
-	Creates n_of_traces Traces with a Ricker wavelet
-	:param n_of_samples: No of samplesw
-	:type  n_of_samples: int
-	
-	:param n_of_traces: No of traces
-	:type  n_of_traces: int
-
-	:param slope: Indexshift of the traces, shift is applied by the relation delta_t = delta_traces * slope
-	:type  slope: int
-
-	:param width_of_ricker: width_of_ricker parameter of Ricker-wavelet, default 2
-	:type  width_of_ricker: float
-
-	:param n_of_ricker_samples: Number of samples for ricker
-	:type  n_of_ricker_samples: int
-	"""
-
-	if n_of_samples < n_of_ricker_samples:
-		msg='Number of tracesamples lower than number of ricker samples'
-		raise IOError(msg)
-
-	data = np.zeros((n_of_traces, n_of_samples))	
-
-	trace = np.zeros(n_of_samples)
-	ricker_tmp = sp.signal.ricker(n_of_ricker_samples, width_of_ricker)
-	ricker = ricker_tmp/ricker_tmp.max()
-
-	trace[shift_of_ricker:shift_of_ricker+n_of_ricker_samples] = ricker
-
-	if slope != 0:
-		for i in range(data.shape[0]):
-			delta = np.floor( i * float(abs(slope) / float(delta_traces))).astype('int')
-			data[i] = np.roll(trace, delta)[:n_of_samples]	
-		if slope < 0:
-			data = np.flipud(data)	
-	elif slope == 0:	
-		for i, dt in enumerate(data):
-			data[i] = trace	
-
-	return data
 
 def create_deltasignal(no_of_traces=10, len_of_traces=30000,
                        multiple=False, multipdist=2, no_of_multip=1, slowness=None,
@@ -248,6 +143,119 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 
 	return(data, indices)
 
+
+def create_ricker(n_of_samples, n_of_traces, delta_traces = 1,  slope=0, n_of_ricker_samples = 100., width_of_ricker=2., shift_of_ricker=0):
+	"""
+	Creates n_of_traces Traces with a Ricker wavelet
+	:param n_of_samples: No of samplesw
+	:type  n_of_samples: int
+	
+	:param n_of_traces: No of traces
+	:type  n_of_traces: int
+
+	:param slope: Indexshift of the traces, shift is applied by the relation delta_t = delta_traces * slope
+	:type  slope: int
+
+	:param width_of_ricker: width_of_ricker parameter of Ricker-wavelet, default 2
+	:type  width_of_ricker: float
+
+	:param n_of_ricker_samples: Number of samples for ricker
+	:type  n_of_ricker_samples: int
+	"""
+
+	if n_of_samples < n_of_ricker_samples:
+		msg='Number of tracesamples lower than number of ricker samples'
+		raise IOError(msg)
+
+	data = np.zeros((n_of_traces, n_of_samples))	
+
+	trace = np.zeros(n_of_samples)
+	ricker_tmp = sp.signal.ricker(n_of_ricker_samples, width_of_ricker)
+	ricker = ricker_tmp/ricker_tmp.max()
+
+	trace[shift_of_ricker:shift_of_ricker+n_of_ricker_samples] = ricker
+
+	if slope != 0:
+		for i in range(data.shape[0]):
+			delta = np.floor( i * float(abs(slope) / float(delta_traces))).astype('int')
+			data[i] = np.roll(trace, delta)[:n_of_samples]	
+		if slope < 0:
+			data = np.flipud(data)	
+	elif slope == 0:	
+		for i, dt in enumerate(data):
+			data[i] = trace	
+
+	return data
+
+
+def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
+                 no_of_periods=1):
+    
+	deltax = 2*np.pi/len_of_traces
+	signal_len = len_of_traces * no_of_periods
+	data_temp = np.array([np.zeros(signal_len)])
+	t = []
+
+	# first trace
+	for i in range(signal_len):
+		data_temp[0][i] = np.sin(i*deltax)
+		t.append((float(i) + float(i)/signal_len)*2*np.pi/signal_len)
+		data = data_temp
+
+	# other traces
+	for i in range(no_of_traces)[1:]:
+		data = np.append(data, data_temp, axis=0)
+       
+       
+	return(data, t)
+
+
+def inv4stream(stream, network, client_name):
+
+	start 	= stream[0].stats.starttime
+	end 	= stream[0].stats.endtime
+	client 	= Client(client_name)
+	inv 	= client.get_stations(network=network, starttime=start, endtime=end)
+
+	return inv
+
+
+def maxrow(array):
+	rowsum=0
+	for i in range(len(array)):
+		if array[i].sum() > rowsum:
+			rowsum = array[i].sum()
+			max_row_index = i
+	return(max_row_index)
+
+
+def nextpow2(i):
+	#See Matlab documentary
+	n = 1
+	count = 0
+	while n < abs(i):
+		n *= 2
+		count+=1
+	return count
+
+
+def read_file(stream, inventory, catalog, array=False):
+	"""
+	function to read data files, such as MSEED, station-xml and quakeml, in a way of obspy.read
+	if need, pushes stream in an array for further processing
+	"""
+	st=obspy.read(stream)
+	inv=obspy.read_inventory(inventory)
+	cat=obspy.readEvents(catalog)
+
+	#pushing the trace data in an array
+	if array:
+		ArrayData=stream2array(st)
+		return(st, inv, cat, ArrayData)
+	else:
+		return(st, inv, cat)
+
+
 def standard_test_signal(snes1=1, snes2=3, noise=0, nonequi=False):
 	y, yindices = create_deltasignal(no_of_traces=200, len_of_traces=200,
 							multiple=True, multipdist=5, no_of_multip=1,
@@ -262,29 +270,6 @@ def standard_test_signal(snes1=1, snes2=3, noise=0, nonequi=False):
 	y_index = np.sort(np.unique(np.append(yindices, xindices)))
 	return(a, y_index)
 
-def maxrow(array):
-	rowsum=0
-	for i in range(len(array)):
-		if array[i].sum() > rowsum:
-			rowsum = array[i].sum()
-			max_row_index = i
-	return(max_row_index)
-
-def nextpow2(i):
-	#See Matlab documentary
-	n = 1
-	count = 0
-	while n < abs(i):
-		n *= 2
-		count+=1
-	return count
-
-def LCM(a,b):
-	"""
-	Calculates the least common multiple of two values
-	"""
-	import fractions
-	return abs(a * b) / fractions.gcd(a,b) if a and b else 0
 
 def stats(stream):
 	"""
@@ -295,3 +280,32 @@ def stats(stream):
 		print(trace.stats)
 
 	return
+
+
+def stream2array(stream, normalize=False):
+	sx = stream.copy()
+	x = np.zeros((len(sx), len(sx[0].data)))
+	for i, traces in enumerate(sx):
+		x[i] = traces.data
+
+	if normalize:
+		if x.max()==0:
+			print('Maximum value is 0')
+			return(x)
+
+		elif math.isnan(x.max()):
+			print('Maximum values are NaN, set to 0')
+			n   = np.isnan(x)
+			x[n]= 0.
+		
+		x = x / x.max()
+	return(x)
+
+
+def LCM(a,b):
+	"""
+	Calculates the least common multiple of two values
+	"""
+	import fractions
+	return abs(a * b) / fractions.gcd(a,b) if a and b else 0
+

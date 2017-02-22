@@ -46,6 +46,635 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details: http://www.gnu.org/licenses/
 """
 
+
+def convert_lsindex(ls_range, samplespacing):
+	n = len(ls_range)
+	fft_range = ls_range * n * samplespacing
+	return(fft_range)
+
+
+def cg_solver(A,b,x0=None,niter=10):
+	"""
+	Conjugate gradient solver for Ax = b lstsqs problems, as shown in Tomographic 
+	inversion via the conjugate gradient method, Scales, J. 1987
+	Expect a mxn Matrix A, a rhs b and an optional startvalue x0
+	
+	:param A:
+	:type A:
+	
+	:param dv:
+	:type dv:
+
+	:param x0:
+	:type x0:
+
+	:param niter:
+	:type niter:
+
+	returns
+
+	:param:
+	:type:
+	"""
+	
+	if A.shape[0] != A.shape[1]:
+		msg='Dimension missmatch, A should be NxN'
+		raise IOError(msg)
+	print("--- Using CG-method --- \n \nInitiating matrices... \n \n")
+
+	
+	
+	if x0.any(): x = x0
+	else: x = np.zeros(A.shape[1])
+
+	r = b - A.dot(x).real
+	p = r.copy()
+
+	print("Starting iterations. \n \n")
+
+	cont = True
+	k = 1
+	while cont:
+
+		alpha = np.dot(r,r) / np.dot(p,A.dot(p))
+		x_new = x + alpha * p
+		r_new = r - alpha * A.dot(p)
+		
+		beta = np.dot(r_new,r_new) / np.dot(r,r)
+		p_new = r_new + beta * p
+		
+		x = x_new.copy()
+		p = p_new.copy()
+
+
+		#mcalc = A.dot(x).real - b
+		#resnorm_old = resnorm
+		#resnorm = np.linalg.norm(mcalc.transpose().toarray(), 2)
+
+		#print("Misfit after %i iterations is : %f \n" % (int(k+1), resnorm) )
+		if k == niter: cont=False
+		#if resnorm < 1e-8: cont=False
+		#elif abs(resnorm - resnorm_old) < 1e-8: cont=False
+		k +=1
+
+	#solnorm = np.linalg.norm(x.toarray(), 2)
+	
+	return x_new #, resnorm, solnorm
+
+
+def create_filter(name, length, cutoff=None, ncorner=None):
+	
+	cut = float(cutoff)/float(length)
+	m 	= float(ncorner)
+
+	if name in ['butterworth', 'Butterworth']:
+		x = np.linspace(0, 1, length)
+		y = 1. / (1. + (x/float(cut))**(2.*ncorner))
+	
+	elif name in ['taper', 'Taper']:
+		shift	= 0.
+		fit = True
+		while fit:
+			cut += shift
+			x 		= np.linspace(0, 1, length)
+			y 		= (cut-x)*m + 0.5
+			y[y>1.] = 1.
+			y[y<0.] = 0.
+			if y.max() >= 1: fit=False
+			shift = 0.1
+		
+	else:
+		msg='No valid name for filter found.'
+		raise IOError(msg)
+
+	return y
+
+
+def create_iFFT2mtx(nx, ny):
+	"""
+	Take advantage of the use of scipy.sparse library.
+	Creates the Matrixoperator for an array x.
+	
+	:param x: Array to calculate the Operator for
+	:type x: array-like
+
+	returns
+	:param sparse_iFFT2mtx: 2D iFFT operator for matrix of shape of x.
+	:type sparse_iFFT2mtx: scipy.sparse.csr.csr_matrix
+
+	"""
+	N = nx * ny
+
+	iDFT1 = np.fft.fft(sparse.eye(nx).toarray().transpose()).conj().transpose()
+	iDFT2 = np.fft.fft(sparse.eye(ny).toarray().transpose()).conj().transpose()
+
+	# Create Sparse matrix, with iDFT1 ny-times repeatet on the diagonal.
+
+	# Initialze lil_matrix, to write diagonals in correct way.
+	tmp = sparse.lil_matrix((N,N), dtype='complex')
+	row = 0
+	for i in range(ny):
+		for j in range(nx):
+			tmp[row, (i)*nx:(i+1)*nx] = iDFT1[j,:]
+			row += 1
+
+		#Screen feedback.
+		prcnt = 50*(i+1) / float(ny) -1
+		if prcnt >=0 : print("%i %% done" % prcnt, end="\r")
+		sys.stdout.flush()	
+
+	# Export tmp to a diagonal sparse matrix.
+	sparse_iDFT1 = tmp.tocsc()
+
+	# Initialze lil_matrix for iDFT2 and export it to sparse.
+	tmp = sparse.lil_matrix((N,N), dtype='complex')
+	row = 0	
+	for i in range(ny):
+		for j in range(nx):
+			indx = np.arange(j,N,nx)
+			tmp[row,indx] = iDFT2[i,:]
+			row += 1
+
+		prcnt = (50*(i+1) / float(ny)) + 49
+		print("%i %% done" % prcnt, end="\r")
+		sys.stdout.flush()	
+	
+	sparse_iDFT2 = tmp.tocsc()
+	print("\n")
+	print("100 %% done \n")
+
+	# Calculate matrix dot-product iDFT2 * iDFT1 and divide it 
+	# by the number of all samples (nx * ny)
+	sparse_iFFT2mtx = sparse_iDFT2.dot(sparse_iDFT1)/float(N)
+	
+	return sparse_iFFT2mtx
+
+
+def dcg_solver(A, b, mu,niter,x0=None):
+	"""
+	Damped conjugate gradient solver for Ax = b lstsqs problems, as shown in Tomographic 
+	inversion via the conjugate gradient method, Scales, J. 1987
+	Expect a mxn Matrix A, a rhs b and an optional startvalue x0
+
+	minimizes the following problem by applying CGLS to:
+
+							|| (   A  )  	  ( b )	||^{2}	
+						min || (mu * I) *x 	- ( 0 )	||_{2}  
+				
+				==>		min || G * m - d || ^{2}_{2} 
+	
+	"""
+	print("--- Using dCG-method --- \n \nInitiating matrices... \n \n")
+	
+	# Create G matrix and d Vector.
+
+	I = mu**2. * sparse.identity(A.shape[0])
+	
+	G = sparse.lil_matrix(np.vstack((A.toarray(), I.toarray())))
+	G = G.tocsc()
+
+	d = np.hstack( (b, np.zeros(I.shape[0])) )
+
+
+	# Initialize startvalues.
+	try:
+		if not x0:
+			m = np.zeros(A.shape[1])
+			s = -d
+	except ValueError:
+		if x0.any(): 
+			m = x0
+			s = G.dot(m) - d
+	except:
+		msg = 'No valid input'
+		raise IOError(msg)
+
+	
+	beta_old 	= 0.
+	r 			= G.transpose().conjugate().dot(s)
+	p_old 		= np.zeros(r.shape)
+
+	print("Starting iterations. \n \n")
+
+	cont = True
+	k = 1
+	while cont:	
+
+		p 		= -r + beta_old * p_old
+		alpha 	= np.linalg.norm(r,2)**2. /  p.dot(G.transpose().conjugate().toarray()).dot(G.dot(p))
+		m_new 	= m + alpha * p
+		s_new 	= s + alpha * G.dot(p)
+		r_new	= G.transpose().conjugate().dot(s_new)
+		beta	= np.linalg.norm(r_new,2)**2. / np.linalg.norm(r,2)**2.
+	
+		m			= m_new.copy()
+		s			= s_new.copy()
+		r			= r_new.copy()
+		beta_old	= beta.copy()
+		p_old		= p.copy()
+		
+		misfit 	= np.linalg.norm(G.dot(m) - d, 2)
+		rnorm 	= np.linalg.norm(m,2)**2.
+
+		plt.ion()
+		plt.figure()		
+		plt.imshow(abs(m.reshape(20,300)),aspect='auto', interpolation='none')
+		plt.show()
+
+		if k == niter: cont=False
+		k +=1
+		
+		
+	x = m.copy()
+	return x
+
+
+def eval_fkarea(fkdata, no_of_phases, polygon, xlabel, xticks, ylabel, yticks):
+	"""
+	Calculates the mean of an area in the fk-domain, depending of the number of linear events.
+
+	Author: Simon Schneider, 2016
+	"""
+
+	indicies = get_polygon(abs(dsfk), polygon, xlabel, xticks, ylabel, yticks)
+
+
+	return fkdata_eval
+
+
+def extract_nonzero(array):
+	newarray = array[~np.all(array == 0, axis=1)]
+	newindex = np.unique(array.nonzero()[0])
+	return(newarray, newindex)
+
+
+def find_peaks(data, drange=None, peakpick='mod', mindist=0.2):
+	"""
+	Finds peaks in given 1D array, by search for values in data
+	that are higher than the two neighbours. Except first and last.
+	:param data: 1D array-like
+
+	:param drange: optional, range of the data distribution.
+
+	returns:
+	:param peaks: array with position on 0 axis and value on 1-axis.
+	"""
+
+	pos = []
+	peak = []
+	
+	# Loop through all values except first and last.
+	pick = None
+	for p, value in enumerate(data[1:len(data)-1]):
+		if peakpick in ['mod', 'MoD', 'Mod', 'MoP', 'Mop', 'mop']:
+			if value > data[p] and value > data[p+2] and value > data.mean():
+				pick = data[p+1]
+
+		elif isinstance(peakpick, float) or isinstance(peakpick, int):
+			if value > data[p] and value > data[p+2] and value > peakpick:
+				pick = data[p+1]
+
+		elif peakpick in ['all', 'All', 'AlL', 'ALl', 'ALL']:
+			if value > data[p] and value > data[p+2]:
+				pick = data[p+1]
+			elif value < data[p] and value < data[p+2]:
+				pick = data[p+1]
+
+		elif not peakpick:
+			if value > data[p] and value > data[p+2]:
+				pick = data[p+1]
+
+		if pick:		
+			if len(pos)>0 and abs(pos[len(pos)-1] - drange[p+1]) <= mindist:
+				pick = None
+				continue
+			else:		
+				pos.append(drange[p+1])			
+				peak.append(pick)
+
+			pick = None
+
+	peak = np.array(peak)
+
+	# If mean of picks is choosen.
+	if peakpick in ['MoP', 'Mop', 'mop']:
+		newpeak = []
+		newpos = []
+		for i, value in enumerate(peak):
+			if value > peak.mean():
+				newpeak.append(value)
+				newpos.append(pos[i])
+
+
+		peaks = np.append([newpos], [newpeak], axis=0)
+
+	else:
+		peaks = np.append([pos], [peak], axis=0)
+
+	return peaks
+
+
+def fktrafo(stream, normalize=True):
+	"""
+	Calculates the f,k - transformation of the data in stream. Returns the trafo as an array.
+
+	:param st: Stream
+	:type st: obspy.core.stream.Stream
+
+	:param inv: inventory
+	:type inv: obspy.station.inventory.Inventory
+
+	:param event: Event
+	:type event: obspy.core.event.Event
+
+	returns
+	:param fkdata: f,k - transformation of data in stream
+	:type fkdata: numpyndarray
+	"""
+	st_tmp = stream.copy()
+	ArrayData = stream2array(st_tmp, normalize)
+	
+	ix = ArrayData.shape[0]
+	iK = int(math.pow(2,nextpow2(ix)))
+	it = ArrayData.shape[1]
+	iF = int(math.pow(2,nextpow2(it)))
+
+	fkdata = np.fft.fft2(ArrayData, s=(iK,iF))
+	
+	return fkdata
+
+
+def ifktrafo(fkdata, stream, normalize=True):
+	"""
+	Calculates the inverse f,k - transformation of the data in fkdata. Returns the trafo as an array.
+
+	"""
+	StreamData= stream2array(stream)
+	ix   = StreamData.shape[0]
+	iK   = int(math.pow(2,nextpow2(ix)))
+	it   = StreamData.shape[1]
+	iF   = int(math.pow(2,nextpow2(it)))
+
+	fk_tmp = fkdata.copy()
+
+	ArrayData = np.fft.ifft2(fkdata, s=(iK,iF))
+	ArrayData = ArrayData[0:ix, 0:it]
+
+	return ArrayData
+
+
+def kill(data, stat):
+	"""
+	Deletes the trace of a selected station from the array
+
+	param data:	array data
+	type data:	np.array
+
+	param stat:	station(s)/trace(s) to be killed
+	type stat: int or list
+	"""
+
+	data = np.delete(data, stat, 0)
+	return(data)
+
+
+def line_cut(array, shape):
+	"""
+	Sets the array to zero, except for the 0 line and given features given in shape, acts as bandpass filter.
+	"Cuts" one line out + given shape. For detailed information look in sipy.filter.fk.fk_filter
+
+	:param array: array-like
+	:type  array: numpy.ndarray
+
+	:param shape: shape and filter Information
+	:type  shape: list
+	"""
+
+	fil=None
+	name = shape[0]
+	kwarg = shape[1] 
+	length = shape[2]
+	new_array = np.zeros(array.shape).astype('complex')
+	if name in ['spike', 'Spike']:
+		new_array[0] = array[0]
+		return new_array
+
+	elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
+		new_array[0] = array[0]
+		newrange = np.linspace(1, length, length).astype('int')
+		for i in newrange:
+			new_array[i] = array[i]
+			new_array[new_array.shape[0]-i] = array[new_array.shape[0]-i]			
+		return new_array
+
+	elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
+		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+
+	elif name in ['taper', 'Taper'] and isinstance(length, int):
+		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+
+	fil_rh = np.flipud(fil_lh)[::-1][0:][::-1]
+	fil = np.zeros(2*fil_lh.size)
+	fil[:fil.size/2] = fil_lh
+	fil[fil.size/2:] = fil_rh
+
+	new_array = array.transpose() * fil
+	new_array = new_array.transpose()
+
+	return(new_array)
+
+
+def line_set_zero(array, shape):
+	"""
+	Sets line zero in array + features given in shape, acts as bandstop filter.
+	For detailed information look in sipy.filter.fk.fk_filter
+
+	:param array: array-like
+	:type  array: numpy.ndarray
+
+	:param shape: shape and filter Information
+	:type  shape: list
+	"""
+
+
+	fil=None
+	name = shape[0]
+	kwarg = shape[1]
+	length = shape[2]
+	new_array = array
+
+	if name in ['spike', 'Spike']:
+		new_array[0] = np.zeros(array[0].size)
+		return new_array
+
+	elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
+		new_array[0] = np.zeros(array[0].size)
+		newrange = np.linspace(1, length, length).astype('int')
+		for i in newrange:
+			new_array[i] = np.zeros(array[new_array.shape[0]-i].size)
+			new_array[new_array.shape[0]-i] = np.zeros(array[new_array.shape[0]-i].size)
+		return new_array
+
+	elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
+		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+
+	elif name in ['taper', 'Taper'] and isinstance(length, int):
+		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+		# fil_lh = -1. * fil_lh + 1.
+
+	fil_rh = np.flipud(fil_lh)[::-1][1:][::-1]
+	fil = np.zeros(2*fil_lh.size)
+	fil[:fil.size/2] = fil_lh
+	fil[fil.size/2+1:] = fil_rh
+	newfil = np.ones(fil.shape)
+	newfil = newfil - fil
+	
+	new_array = array.transpose() * newfil
+	new_array = new_array.transpose()
+	return(new_array)
+
+
+def ls2ifft_prep(ls_periodogram, data):
+	"""
+	Converts a periodogram of the lombscargle function into an array, that can be used
+	to perform an IRFFT
+	"""
+	fft_prep = np.roll(ls_periodogram, 1)
+	N = data.size
+	a = 0
+	for i in range(N):
+		a = a + data[i]
+	a = a/N
+	fft_prep[0] = a
+	return(fft_prep)
+	
+
+def lstsqs(A,b,mu=0):
+
+	print("Calculating AhA")
+	Ah = A.conjugate().transpose()
+	AhA= Ah.dot(A)
+	
+	print("Calculating I")
+	I = sparse.identity(A.shape[0])
+	
+	tmp = AhA + mu*I
+	tmpI = sparse.linalg.inv(tmp)
+	
+	print("Calculating x")
+	x = tmpI.dot(Ah.dot(b))
+	print("..finished")
+	return x
+
+
+def makeMask(fkdata, slope, shape, rth=0.4, expl_cutoff=False):
+	"""
+	This function creates a Mask-array in shape of the original fkdata,
+	with straight lines (value = 1.) along the angles, given in slope and 0 everywhere else.
+	slope shows the position of L linear dominants in the f-k domain.
+
+	:param fkdata:
+
+	:param slope:
+
+	:param shape: shape[0] describes the shape of the lobes of the mask. Possible inputs are:
+				 -boxcar (default)
+				 -taper
+				 -butterworth
+
+				  shape[1] is an additional attribute to the shape of taper and butterworth, for:
+				 -taper: maskshape[1] = slope of sides
+				 -butterworth: maskshape[1] = number of poles
+				
+				 e.g.: maskshape['taper', 2] produces a symmetric taper with slope of side = 2.
+
+
+	:type  maskshape: list
+	
+	:param rth =  Resamplethreshhold, marks the border between 0 and 1 for the resampling
+	Returns 
+
+	:param W: Mask function W
+	"""
+	M 			= fkdata.copy()
+	
+	# Because of resolution issues, upsampling to double size
+	pnorm 		= 1/2. * ( float(M.shape[0]+1)/float(2. * M.shape[1]) )
+	
+	prange 		= slope * pnorm
+	Mask 		= np.zeros((M.shape[0], 2.*M.shape[1]))
+	maskshape 	= np.zeros((M.shape[0], 2.*M.shape[1]))
+	W 			= np.zeros((M.shape[0], 2.*M.shape[1]))
+	name 		= shape[0]
+	arg 		= shape[1]
+
+	if name in ['butterworth', 'Butterworth', 'taper', 'Taper']:
+		if not expl_cutoff:
+			cutoff 	= slope.size/2
+		else:
+			cutoff 	= expl_cutoff
+ 
+		if cutoff < 1: cutoff = 1
+		maskshape_tmp 	= create_filter(name, Mask.shape[0]/2, cutoff, arg)
+		maskshape_lh 	= np.tile(maskshape_tmp, Mask.shape[1]).reshape(Mask.shape[1], maskshape_tmp.size).transpose()
+		maskshape_rh 	= np.flipud(maskshape_lh)
+
+		maskshape[:maskshape.shape[0]/2,:] = maskshape_lh
+		maskshape[maskshape.shape[0]/2:,:] = maskshape_rh
+
+
+	for m in prange:
+		if m == 0.:
+			Mask[0,:] = 1.
+			Mask[1,:] = 1.
+			Mask[Mask.shape[0]-1,:] = 1.
+
+		for f in range(Mask.shape[1]):
+			Mask[:,f] = np.roll(Mask[:,f], -int(math.floor(f*m)))
+
+		if name in ['boxcar']:
+			Mask[0,:] = 1.
+		else:
+			Mask = maskshape.copy()
+
+		for f in range(Mask.shape[1]):
+			Mask[:,f] = np.roll(Mask[:,f], int(f*m))
+			
+		W += Mask		
+		Mask =  np.zeros((M.shape[0], 2.*M.shape[1]))
+
+	# Convolving each frequency slice of the mask with a boxcar
+	# of size L. Widens the the maskfunction along k-axis.
+	if name in ['boxcar']:
+		if arg:
+			b = sp.signal.boxcar(arg)
+		else:		
+			b = sp.signal.boxcar(slope.size)
+		for i, fslice in enumerate(W.conj().transpose()):
+			W[:,i] = sp.signal.convolve(fslice, b, mode=1)
+
+		W[np.where(W!=0)]=1.
+
+		W[np.where(W > 1.)]=1.
+
+	# Resample it to original size
+	Wr = np.flipud(sp.signal.resample(W, M.shape[1], axis=1))
+	Wr[ np.where(Wr > 1 ) ] = 1.
+	Wr[ np.where(Wr < 0 ) ] = 0.
+	if name in ['boxcar']:
+		Wr[ np.where(Wr > rth ) ] = 1.
+		Wr[ np.where(Wr < rth ) ] = 0.
+
+
+	Wlhs	= np.roll(Wr[:,0:Wr.shape[1]/2-1], shift=1, axis=0)
+	Wrhs	= Wr[:,1:Wr.shape[1]/2+1]
+	Wrhs 	= np.roll(np.flipud(np.fliplr(Wrhs)), shift=0, axis=0)
+
+	Wr[:,0:Wr.shape[1]/2-1] = Wlhs
+	Wr[:,Wr.shape[1]/2:] = Wrhs
+	return Wr
+
+
 def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphases=None, phaselabel=True, phaselabelclr='red', 
 		norm='all', clr='black', clrtrace=None, newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, 
 		fs=15, tw=None, verbose=False):
@@ -416,6 +1045,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			plt.show()
 			plt.ioff()
 
+
 def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, fs=15):
 	"""
 	Alpha Version!
@@ -466,6 +1096,7 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 		plt.show()
 		plt.ioff()
 
+
 def plotfk(data, fs=15, savefig=False, dpi=400, logscale=False, hold=False, cmap='jet'):
 	fig, ax = plt.subplots()
 	ax.set_xlabel('Normalized Wavenumber', fontsize=fs)
@@ -502,518 +1133,6 @@ def plotfk(data, fs=15, savefig=False, dpi=400, logscale=False, hold=False, cmap
 			ax.legend()
 			plt.show()
 
-
-def kill(data, stat):
-	"""
-	Deletes the trace of a selected station from the array
-
-	param data:	array data
-	type data:	np.array
-
-	param stat:	station(s)/trace(s) to be killed
-	type stat: int or list
-	"""
-
-	data = np.delete(data, stat, 0)
-	return(data)
-
-def line_cut(array, shape):
-	"""
-	Sets the array to zero, except for the 0 line and given features given in shape, acts as bandpass filter.
-	"Cuts" one line out + given shape. For detailed information look in sipy.filter.fk.fk_filter
-
-	:param array: array-like
-	:type  array: numpy.ndarray
-
-	:param shape: shape and filter Information
-	:type  shape: list
-	"""
-
-	fil=None
-	name = shape[0]
-	kwarg = shape[1] 
-	length = shape[2]
-	new_array = np.zeros(array.shape).astype('complex')
-	if name in ['spike', 'Spike']:
-		new_array[0] = array[0]
-		return new_array
-
-	elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
-		new_array[0] = array[0]
-		newrange = np.linspace(1, length, length).astype('int')
-		for i in newrange:
-			new_array[i] = array[i]
-			new_array[new_array.shape[0]-i] = array[new_array.shape[0]-i]			
-		return new_array
-
-	elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
-		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
-
-	elif name in ['taper', 'Taper'] and isinstance(length, int):
-		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
-
-	fil_rh = np.flipud(fil_lh)[::-1][0:][::-1]
-	fil = np.zeros(2*fil_lh.size)
-	fil[:fil.size/2] = fil_lh
-	fil[fil.size/2:] = fil_rh
-
-	new_array = array.transpose() * fil
-	new_array = new_array.transpose()
-
-	return(new_array)
-
-def line_set_zero(array, shape):
-	"""
-	Sets line zero in array + features given in shape, acts as bandstop filter.
-	For detailed information look in sipy.filter.fk.fk_filter
-
-	:param array: array-like
-	:type  array: numpy.ndarray
-
-	:param shape: shape and filter Information
-	:type  shape: list
-	"""
-
-
-	fil=None
-	name = shape[0]
-	kwarg = shape[1]
-	length = shape[2]
-	new_array = array
-
-	if name in ['spike', 'Spike']:
-		new_array[0] = np.zeros(array[0].size)
-		return new_array
-
-	elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
-		new_array[0] = np.zeros(array[0].size)
-		newrange = np.linspace(1, length, length).astype('int')
-		for i in newrange:
-			new_array[i] = np.zeros(array[new_array.shape[0]-i].size)
-			new_array[new_array.shape[0]-i] = np.zeros(array[new_array.shape[0]-i].size)
-		return new_array
-
-	elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
-		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
-
-	elif name in ['taper', 'Taper'] and isinstance(length, int):
-		fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
-		# fil_lh = -1. * fil_lh + 1.
-
-	fil_rh = np.flipud(fil_lh)[::-1][1:][::-1]
-	fil = np.zeros(2*fil_lh.size)
-	fil[:fil.size/2] = fil_lh
-	fil[fil.size/2+1:] = fil_rh
-	newfil = np.ones(fil.shape)
-	newfil = newfil - fil
-	
-	new_array = array.transpose() * newfil
-	new_array = new_array.transpose()
-	return(new_array)
-
-def extract_nonzero(array):
-	newarray = array[~np.all(array == 0, axis=1)]
-	newindex = np.unique(array.nonzero()[0])
-	return(newarray, newindex)
-
-def convert_lsindex(ls_range, samplespacing):
-	n = len(ls_range)
-	fft_range = ls_range * n * samplespacing
-	return(fft_range)
-
-def ls2ifft_prep(ls_periodogram, data):
-	"""
-	Converts a periodogram of the lombscargle function into an array, that can be used
-	to perform an IRFFT
-	"""
-	fft_prep = np.roll(ls_periodogram, 1)
-	N = data.size
-	a = 0
-	for i in range(N):
-		a = a + data[i]
-	a = a/N
-	fft_prep[0] = a
-	return(fft_prep)
-	
-def shift_array(array, shift_value=0, y_dist=False):
-	array_shift = array
-	try:
-		for i in range(len(array)):
-			array_shift[i] = np.roll(array[i], -shift_value*y_dist[i])
-	except (AttributeError, TypeError):
-		for i in range(len(array)):
-			array_shift[i] = np.roll(array[i], -shift_value*i)
-	return(array_shift)
-
-def makeMask(fkdata, slope, shape, rth=0.4, expl_cutoff=False):
-	"""
-	This function creates a Mask-array in shape of the original fkdata,
-	with straight lines (value = 1.) along the angles, given in slope and 0 everywhere else.
-	slope shows the position of L linear dominants in the f-k domain.
-
-	:param fkdata:
-
-	:param slope:
-
-	:param shape: shape[0] describes the shape of the lobes of the mask. Possible inputs are:
-				 -boxcar (default)
-				 -taper
-				 -butterworth
-
-				  shape[1] is an additional attribute to the shape of taper and butterworth, for:
-				 -taper: maskshape[1] = slope of sides
-				 -butterworth: maskshape[1] = number of poles
-				
-				 e.g.: maskshape['taper', 2] produces a symmetric taper with slope of side = 2.
-
-
-	:type  maskshape: list
-	
-	:param rth =  Resamplethreshhold, marks the border between 0 and 1 for the resampling
-	Returns 
-
-	:param W: Mask function W
-	"""
-	M 			= fkdata.copy()
-	
-	# Because of resolution issues, upsampling to double size
-	pnorm 		= 1/2. * ( float(M.shape[0]+1)/float(2. * M.shape[1]) )
-	
-	prange 		= slope * pnorm
-	Mask 		= np.zeros((M.shape[0], 2.*M.shape[1]))
-	maskshape 	= np.zeros((M.shape[0], 2.*M.shape[1]))
-	W 			= np.zeros((M.shape[0], 2.*M.shape[1]))
-	name 		= shape[0]
-	arg 		= shape[1]
-
-	if name in ['butterworth', 'Butterworth', 'taper', 'Taper']:
-		if not expl_cutoff:
-			cutoff 	= slope.size/2
-		else:
-			cutoff 	= expl_cutoff
- 
-		if cutoff < 1: cutoff = 1
-		maskshape_tmp 	= create_filter(name, Mask.shape[0]/2, cutoff, arg)
-		maskshape_lh 	= np.tile(maskshape_tmp, Mask.shape[1]).reshape(Mask.shape[1], maskshape_tmp.size).transpose()
-		maskshape_rh 	= np.flipud(maskshape_lh)
-
-		maskshape[:maskshape.shape[0]/2,:] = maskshape_lh
-		maskshape[maskshape.shape[0]/2:,:] = maskshape_rh
-
-
-	for m in prange:
-		if m == 0.:
-			Mask[0,:] = 1.
-			Mask[1,:] = 1.
-			Mask[Mask.shape[0]-1,:] = 1.
-
-		for f in range(Mask.shape[1]):
-			Mask[:,f] = np.roll(Mask[:,f], -int(math.floor(f*m)))
-
-		if name in ['boxcar']:
-			Mask[0,:] = 1.
-		else:
-			Mask = maskshape.copy()
-
-		for f in range(Mask.shape[1]):
-			Mask[:,f] = np.roll(Mask[:,f], int(f*m))
-			
-		W += Mask		
-		Mask =  np.zeros((M.shape[0], 2.*M.shape[1]))
-
-	# Convolving each frequency slice of the mask with a boxcar
-	# of size L. Widens the the maskfunction along k-axis.
-	if name in ['boxcar']:
-		if arg:
-			b = sp.signal.boxcar(arg)
-		else:		
-			b = sp.signal.boxcar(slope.size)
-		for i, fslice in enumerate(W.conj().transpose()):
-			W[:,i] = sp.signal.convolve(fslice, b, mode=1)
-
-		W[np.where(W!=0)]=1.
-
-		W[np.where(W > 1.)]=1.
-
-	# Resample it to original size
-	Wr = np.flipud(sp.signal.resample(W, M.shape[1], axis=1))
-	Wr[ np.where(Wr > 1 ) ] = 1.
-	Wr[ np.where(Wr < 0 ) ] = 0.
-	if name in ['boxcar']:
-		Wr[ np.where(Wr > rth ) ] = 1.
-		Wr[ np.where(Wr < rth ) ] = 0.
-
-
-	Wlhs	= np.roll(Wr[:,0:Wr.shape[1]/2-1], shift=1, axis=0)
-	Wrhs	= Wr[:,1:Wr.shape[1]/2+1]
-	Wrhs 	= np.roll(np.flipud(np.fliplr(Wrhs)), shift=0, axis=0)
-
-	Wr[:,0:Wr.shape[1]/2-1] = Wlhs
-	Wr[:,Wr.shape[1]/2:] = Wrhs
-	return Wr
-
-def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0, smoothing=False, interactive=False):
-	"""
-	Generates a distribution of slopes in a range given in prange.
-	Needs fkdata as input. 
-
-	k on the y-axis fkdata[0]
-	f on the x-axis fkdata[1]
-
-	:param fkdata: array-like dataset transformed to f-k domain.
-
-	:param prange: range of slopes, with minimum and maximum value
-				   Slopes are defined as nondimensional, by the formula
-
-							m = 1/2 * (ymax - ymin)/(xmax - xmin),
-
-				   respectively
-
-							p = 1/2 * (kmax - kmin)/(fmax - fmin).
-
-				   The factor 1/2 is due too the periodicity in the f-k domain.
-				
-	:type prange: array-like, tuple or list
-
-	:param pdelta: stepsize of slope-interval
-	:type pdelta: int
-	
-	:param peakpick: method to pick the peaks of distribution possible is:
-						mod - minimum mean of distribution (default)
-						mop  - minimum mean of peaks
-						float - minimum float value
-						None - pick all peaks
-					 
-	:type peakpick: int or float
-	
-	:param delta_threshold: Value to lower manually 
-	:type delta_threshold: int
-
-	:param smoothing: Parameter to smooth distribution
-	:type smoothing: float
-	
-	:param interactive: If True, picking by hand is enabled.
-	:type interactive: boolean
-
-	returns:
-
-	:param MD: Magnitude distribution of the slopes p
-	:type MD: 1D array, numpy.ndarray
-
-	:param prange: Range of slopes
-	:type prange: 1D array, numpy.ndarray
-
-
-	:param peaks: position ( peaks[0] ) and value ( peaks[1] ) of the peaks.
-	:type peaks: numpy.ndarray
-	"""
-
-	M = fkdata.copy()
-	Mt = M.conj().transpose()
-	fk_shift =	np.zeros(M.shape).astype('complex')
-	
-	pnorm = 1/2. * ( float(M.shape[0])/float(M.shape[1]) )
-
-	pmin = prange[0]
-	pmax = prange[1]
-	N = abs(pmax - pmin) / pdelta + 1
-	MD = np.zeros(N)
-	srange = np.linspace(pmin,pmax,N)
-
-	rend = float( len(srange) )
-	for i, delta in enumerate(srange):
-
-		p = delta*pnorm
-		for j, trace in enumerate(Mt):
-			shift = int(math.floor(p*j))		
-			fk_shift[:,j] = np.roll(trace, shift)
-		MD[i] = sum(abs(fk_shift[0,:])) / len(fk_shift[0,:])
-
-		prcnt = 100*(i+1) / rend
-		print("%i %% done" % prcnt, end="\r")
-		sys.stdout.flush()	
-
-	if interactive:
-		
-		peaks = pick_data(srange, MD, 'Slope in fk-domain', 'Magnitude of slope', 'Magnitude-Distribution')
-		for j,pairs in enumerate(peaks):
-			if len(pairs) > 1:
-				maxm = 0
-				for i, item in enumerate(pairs):
-					if item[1] > maxm:
-						maxm = item[1]
-						idx = i
-				peaks[j] = [(pairs[idx][0], maxm)]
-		peaks = np.array(peaks).reshape(len(peaks), 2).transpose()
-
-	else:
-		if smoothing:
-			blen = int(abs(pmin-pmax))*smoothing
-			if blen < 1 : blen=1
-			MDconv = sp.signal.convolve(MD, sp.signal.boxcar(blen),mode=1)
-		else:
-			MDconv=MD
-		peaks_first = find_peaks(MDconv, srange, peakpick='All', mindist=0.3)
-		peaks_first[1] = peaks_first[1]/peaks_first.max()*MD.max()
-
-		# Calculate envelope of the picked peaks, and pick the 
-		# peaks of the envelope.
-		peak_env = obsfilter.envelope( peaks_first[1] )
-		peaks_tmp = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean() + delta_threshold)		
-	
-		if peaks_tmp[0].size > 4:
-			peaks = find_peaks( peaks_tmp[1], peaks_tmp[0], 0.5 + delta_threshold)
-		else:
-			peaks = peaks_tmp
-	return MD, srange, peaks
-
-def find_peaks(data, drange=None, peakpick='mod', mindist=0.2):
-	"""
-	Finds peaks in given 1D array, by search for values in data
-	that are higher than the two neighbours. Except first and last.
-	:param data: 1D array-like
-
-	:param drange: optional, range of the data distribution.
-
-	returns:
-	:param peaks: array with position on 0 axis and value on 1-axis.
-	"""
-
-	pos = []
-	peak = []
-	
-	# Loop through all values except first and last.
-	pick = None
-	for p, value in enumerate(data[1:len(data)-1]):
-		if peakpick in ['mod', 'MoD', 'Mod', 'MoP', 'Mop', 'mop']:
-			if value > data[p] and value > data[p+2] and value > data.mean():
-				pick = data[p+1]
-
-		elif isinstance(peakpick, float) or isinstance(peakpick, int):
-			if value > data[p] and value > data[p+2] and value > peakpick:
-				pick = data[p+1]
-
-		elif peakpick in ['all', 'All', 'AlL', 'ALl', 'ALL']:
-			if value > data[p] and value > data[p+2]:
-				pick = data[p+1]
-			elif value < data[p] and value < data[p+2]:
-				pick = data[p+1]
-
-		elif not peakpick:
-			if value > data[p] and value > data[p+2]:
-				pick = data[p+1]
-
-		if pick:		
-			if len(pos)>0 and abs(pos[len(pos)-1] - drange[p+1]) <= mindist:
-				pick = None
-				continue
-			else:		
-				pos.append(drange[p+1])			
-				peak.append(pick)
-
-			pick = None
-
-	peak = np.array(peak)
-
-	# If mean of picks is choosen.
-	if peakpick in ['MoP', 'Mop', 'mop']:
-		newpeak = []
-		newpos = []
-		for i, value in enumerate(peak):
-			if value > peak.mean():
-				newpeak.append(value)
-				newpos.append(pos[i])
-
-
-		peaks = np.append([newpos], [newpeak], axis=0)
-
-	else:
-		peaks = np.append([pos], [peak], axis=0)
-
-	return peaks
-
-def find_subsets(numbers, target, bottom, top, minlen, partial=[], sets=[]):
-	"""
-	Generator to create all possible combinations of entrys in numbers, that sum up to target.
-	example:	for value in subset_sum([0,1,2,3,4], 5, 0, 0, minlen=2):
-					print value
-
-	output:		[0, 1, 4]
-				[0, 2, 3]
-				[1, 4]
-				[2, 3]
-	""" 
-
-	s = sum(partial)
-	if s >= target *( 1. - bottom) and s <= target * ( 1. + top):
-		if len(partial) >= minlen:
-			yield sets
-	if s > target:
-		return
- 
-	for i, n in enumerate(numbers): #np.diff(numbers)):
-		remaining = numbers[i+1:] # np.diff(numbers)[i+1:]
-		for item in find_subsets(remaining, target, bottom, top, minlen, partial + [n], sets + [numbers[i]]):
-			print(item)
-
-def create_iFFT2mtx(nx, ny):
-	"""
-	Take advantage of the use of scipy.sparse library.
-	Creates the Matrixoperator for an array x.
-	
-	:param x: Array to calculate the Operator for
-	:type x: array-like
-
-	returns
-	:param sparse_iFFT2mtx: 2D iFFT operator for matrix of shape of x.
-	:type sparse_iFFT2mtx: scipy.sparse.csr.csr_matrix
-
-	"""
-	N = nx * ny
-
-	iDFT1 = np.fft.fft(sparse.eye(nx).toarray().transpose()).conj().transpose()
-	iDFT2 = np.fft.fft(sparse.eye(ny).toarray().transpose()).conj().transpose()
-
-	# Create Sparse matrix, with iDFT1 ny-times repeatet on the diagonal.
-
-	# Initialze lil_matrix, to write diagonals in correct way.
-	tmp = sparse.lil_matrix((N,N), dtype='complex')
-	row = 0
-	for i in range(ny):
-		for j in range(nx):
-			tmp[row, (i)*nx:(i+1)*nx] = iDFT1[j,:]
-			row += 1
-
-		#Screen feedback.
-		prcnt = 50*(i+1) / float(ny) -1
-		if prcnt >=0 : print("%i %% done" % prcnt, end="\r")
-		sys.stdout.flush()	
-
-	# Export tmp to a diagonal sparse matrix.
-	sparse_iDFT1 = tmp.tocsc()
-
-	# Initialze lil_matrix for iDFT2 and export it to sparse.
-	tmp = sparse.lil_matrix((N,N), dtype='complex')
-	row = 0	
-	for i in range(ny):
-		for j in range(nx):
-			indx = np.arange(j,N,nx)
-			tmp[row,indx] = iDFT2[i,:]
-			row += 1
-
-		prcnt = (50*(i+1) / float(ny)) + 49
-		print("%i %% done" % prcnt, end="\r")
-		sys.stdout.flush()	
-	
-	sparse_iDFT2 = tmp.tocsc()
-	print("\n")
-	print("100 %% done \n")
-
-	# Calculate matrix dot-product iDFT2 * iDFT1 and divide it 
-	# by the number of all samples (nx * ny)
-	sparse_iFFT2mtx = sparse_iDFT2.dot(sparse_iDFT1)/float(N)
-	
-	return sparse_iFFT2mtx
 
 def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', dmethod='denoise', peaks=None, maskshape=None, dt=None, p=None, flow=None, fhigh=None, slidingwindow=False, overlap=0.5):
 	"""
@@ -1215,253 +1334,129 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', dmethod='de
 
 	return datap
 
-def cg_solver(A,b,x0=None,niter=10):
-	"""
-	Conjugate gradient solver for Ax = b lstsqs problems, as shown in Tomographic 
-	inversion via the conjugate gradient method, Scales, J. 1987
-	Expect a mxn Matrix A, a rhs b and an optional startvalue x0
-	
-	:param A:
-	:type A:
-	
-	:param dv:
-	:type dv:
 
-	:param x0:
-	:type x0:
-
-	:param niter:
-	:type niter:
-
-	returns
-
-	:param:
-	:type:
-	"""
-	
-	if A.shape[0] != A.shape[1]:
-		msg='Dimension missmatch, A should be NxN'
-		raise IOError(msg)
-	print("--- Using CG-method --- \n \nInitiating matrices... \n \n")
-
-	
-	
-	if x0.any(): x = x0
-	else: x = np.zeros(A.shape[1])
-
-	r = b - A.dot(x).real
-	p = r.copy()
-
-	print("Starting iterations. \n \n")
-
-	cont = True
-	k = 1
-	while cont:
-
-		alpha = np.dot(r,r) / np.dot(p,A.dot(p))
-		x_new = x + alpha * p
-		r_new = r - alpha * A.dot(p)
-		
-		beta = np.dot(r_new,r_new) / np.dot(r,r)
-		p_new = r_new + beta * p
-		
-		x = x_new.copy()
-		p = p_new.copy()
-
-
-		#mcalc = A.dot(x).real - b
-		#resnorm_old = resnorm
-		#resnorm = np.linalg.norm(mcalc.transpose().toarray(), 2)
-
-		#print("Misfit after %i iterations is : %f \n" % (int(k+1), resnorm) )
-		if k == niter: cont=False
-		#if resnorm < 1e-8: cont=False
-		#elif abs(resnorm - resnorm_old) < 1e-8: cont=False
-		k +=1
-
-	#solnorm = np.linalg.norm(x.toarray(), 2)
-	
-	return x_new #, resnorm, solnorm
-
-def dcg_solver(A, b, mu,niter,x0=None):
-	"""
-	Damped conjugate gradient solver for Ax = b lstsqs problems, as shown in Tomographic 
-	inversion via the conjugate gradient method, Scales, J. 1987
-	Expect a mxn Matrix A, a rhs b and an optional startvalue x0
-
-	minimizes the following problem by applying CGLS to:
-
-							|| (   A  )  	  ( b )	||^{2}	
-						min || (mu * I) *x 	- ( 0 )	||_{2}  
-				
-				==>		min || G * m - d || ^{2}_{2} 
-	
-	"""
-	print("--- Using dCG-method --- \n \nInitiating matrices... \n \n")
-	
-	# Create G matrix and d Vector.
-
-	I = mu**2. * sparse.identity(A.shape[0])
-	
-	G = sparse.lil_matrix(np.vstack((A.toarray(), I.toarray())))
-	G = G.tocsc()
-
-	d = np.hstack( (b, np.zeros(I.shape[0])) )
-
-
-	# Initialize startvalues.
+def shift_array(array, shift_value=0, y_dist=False):
+	array_shift = array
 	try:
-		if not x0:
-			m = np.zeros(A.shape[1])
-			s = -d
-	except ValueError:
-		if x0.any(): 
-			m = x0
-			s = G.dot(m) - d
-	except:
-		msg = 'No valid input'
-		raise IOError(msg)
+		for i in range(len(array)):
+			array_shift[i] = np.roll(array[i], -shift_value*y_dist[i])
+	except (AttributeError, TypeError):
+		for i in range(len(array)):
+			array_shift[i] = np.roll(array[i], -shift_value*i)
+	return(array_shift)
 
+
+def slope_distribution(fkdata, prange, pdelta, peakpick=None, delta_threshold=0, smoothing=False, interactive=False):
+	"""
+	Generates a distribution of slopes in a range given in prange.
+	Needs fkdata as input. 
+
+	k on the y-axis fkdata[0]
+	f on the x-axis fkdata[1]
+
+	:param fkdata: array-like dataset transformed to f-k domain.
+
+	:param prange: range of slopes, with minimum and maximum value
+				   Slopes are defined as nondimensional, by the formula
+
+							m = 1/2 * (ymax - ymin)/(xmax - xmin),
+
+				   respectively
+
+							p = 1/2 * (kmax - kmin)/(fmax - fmin).
+
+				   The factor 1/2 is due too the periodicity in the f-k domain.
+				
+	:type prange: array-like, tuple or list
+
+	:param pdelta: stepsize of slope-interval
+	:type pdelta: int
 	
-	beta_old 	= 0.
-	r 			= G.transpose().conjugate().dot(s)
-	p_old 		= np.zeros(r.shape)
-
-	print("Starting iterations. \n \n")
-
-	cont = True
-	k = 1
-	while cont:	
-
-		p 		= -r + beta_old * p_old
-		alpha 	= np.linalg.norm(r,2)**2. /  p.dot(G.transpose().conjugate().toarray()).dot(G.dot(p))
-		m_new 	= m + alpha * p
-		s_new 	= s + alpha * G.dot(p)
-		r_new	= G.transpose().conjugate().dot(s_new)
-		beta	= np.linalg.norm(r_new,2)**2. / np.linalg.norm(r,2)**2.
+	:param peakpick: method to pick the peaks of distribution possible is:
+						mod - minimum mean of distribution (default)
+						mop  - minimum mean of peaks
+						float - minimum float value
+						None - pick all peaks
+					 
+	:type peakpick: int or float
 	
-		m			= m_new.copy()
-		s			= s_new.copy()
-		r			= r_new.copy()
-		beta_old	= beta.copy()
-		p_old		= p.copy()
+	:param delta_threshold: Value to lower manually 
+	:type delta_threshold: int
+
+	:param smoothing: Parameter to smooth distribution
+	:type smoothing: float
+	
+	:param interactive: If True, picking by hand is enabled.
+	:type interactive: boolean
+
+	returns:
+
+	:param MD: Magnitude distribution of the slopes p
+	:type MD: 1D array, numpy.ndarray
+
+	:param prange: Range of slopes
+	:type prange: 1D array, numpy.ndarray
+
+
+	:param peaks: position ( peaks[0] ) and value ( peaks[1] ) of the peaks.
+	:type peaks: numpy.ndarray
+	"""
+
+	M = fkdata.copy()
+	Mt = M.conj().transpose()
+	fk_shift =	np.zeros(M.shape).astype('complex')
+	
+	pnorm = 1/2. * ( float(M.shape[0])/float(M.shape[1]) )
+
+	pmin = prange[0]
+	pmax = prange[1]
+	N = abs(pmax - pmin) / pdelta + 1
+	MD = np.zeros(N)
+	srange = np.linspace(pmin,pmax,N)
+
+	rend = float( len(srange) )
+	for i, delta in enumerate(srange):
+
+		p = delta*pnorm
+		for j, trace in enumerate(Mt):
+			shift = int(math.floor(p*j))		
+			fk_shift[:,j] = np.roll(trace, shift)
+		MD[i] = sum(abs(fk_shift[0,:])) / len(fk_shift[0,:])
+
+		prcnt = 100*(i+1) / rend
+		print("%i %% done" % prcnt, end="\r")
+		sys.stdout.flush()	
+
+	if interactive:
 		
-		misfit 	= np.linalg.norm(G.dot(m) - d, 2)
-		rnorm 	= np.linalg.norm(m,2)**2.
+		peaks = pick_data(srange, MD, 'Slope in fk-domain', 'Magnitude of slope', 'Magnitude-Distribution')
+		for j,pairs in enumerate(peaks):
+			if len(pairs) > 1:
+				maxm = 0
+				for i, item in enumerate(pairs):
+					if item[1] > maxm:
+						maxm = item[1]
+						idx = i
+				peaks[j] = [(pairs[idx][0], maxm)]
+		peaks = np.array(peaks).reshape(len(peaks), 2).transpose()
 
-		plt.ion()
-		plt.figure()		
-		plt.imshow(abs(m.reshape(20,300)),aspect='auto', interpolation='none')
-		plt.show()
-
-		if k == niter: cont=False
-		k +=1
-		
-		
-	x = m.copy()
-	return x
-
-
-def lstsqs(A,b,mu=0):
-
-	print("Calculating AhA")
-	Ah = A.conjugate().transpose()
-	AhA= Ah.dot(A)
-	
-	print("Calculating I")
-	I = sparse.identity(A.shape[0])
-	
-	tmp = AhA + mu*I
-	tmpI = sparse.linalg.inv(tmp)
-	
-	print("Calculating x")
-	x = tmpI.dot(Ah.dot(b))
-	print("..finished")
-	return x
-
-def create_filter(name, length, cutoff=None, ncorner=None):
-	
-	cut = float(cutoff)/float(length)
-	m 	= float(ncorner)
-
-	if name in ['butterworth', 'Butterworth']:
-		x = np.linspace(0, 1, length)
-		y = 1. / (1. + (x/float(cut))**(2.*ncorner))
-	
-	elif name in ['taper', 'Taper']:
-		shift	= 0.
-		fit = True
-		while fit:
-			cut += shift
-			x 		= np.linspace(0, 1, length)
-			y 		= (cut-x)*m + 0.5
-			y[y>1.] = 1.
-			y[y<0.] = 0.
-			if y.max() >= 1: fit=False
-			shift = 0.1
-		
 	else:
-		msg='No valid name for filter found.'
-		raise IOError(msg)
+		if smoothing:
+			blen = int(abs(pmin-pmax))*smoothing
+			if blen < 1 : blen=1
+			MDconv = sp.signal.convolve(MD, sp.signal.boxcar(blen),mode=1)
+		else:
+			MDconv=MD
+		peaks_first = find_peaks(MDconv, srange, peakpick='All', mindist=0.3)
+		peaks_first[1] = peaks_first[1]/peaks_first.max()*MD.max()
 
-	return y
-
-def fktrafo(stream, normalize=True):
-	"""
-	Calculates the f,k - transformation of the data in stream. Returns the trafo as an array.
-
-	:param st: Stream
-	:type st: obspy.core.stream.Stream
-
-	:param inv: inventory
-	:type inv: obspy.station.inventory.Inventory
-
-	:param event: Event
-	:type event: obspy.core.event.Event
-
-	returns
-	:param fkdata: f,k - transformation of data in stream
-	:type fkdata: numpyndarray
-	"""
-	st_tmp = stream.copy()
-	ArrayData = stream2array(st_tmp, normalize)
+		# Calculate envelope of the picked peaks, and pick the 
+		# peaks of the envelope.
+		peak_env = obsfilter.envelope( peaks_first[1] )
+		peaks_tmp = find_peaks( peaks_first[1], peaks_first[0], peak_env.mean() + delta_threshold)		
 	
-	ix = ArrayData.shape[0]
-	iK = int(math.pow(2,nextpow2(ix)))
-	it = ArrayData.shape[1]
-	iF = int(math.pow(2,nextpow2(it)))
-
-	fkdata = np.fft.fft2(ArrayData, s=(iK,iF))
-	
-	return fkdata
-
-def ifktrafo(fkdata, stream, normalize=True):
-	"""
-	Calculates the inverse f,k - transformation of the data in fkdata. Returns the trafo as an array.
-
-	"""
-	StreamData= stream2array(stream)
-	ix   = StreamData.shape[0]
-	iK   = int(math.pow(2,nextpow2(ix)))
-	it   = StreamData.shape[1]
-	iF   = int(math.pow(2,nextpow2(it)))
-
-	fk_tmp = fkdata.copy()
-
-	ArrayData = np.fft.ifft2(fkdata, s=(iK,iF))
-	ArrayData = ArrayData[0:ix, 0:it]
-
-	return ArrayData
-
-def eval_fkarea(fkdata, no_of_phases, polygon, xlabel, xticks, ylabel, yticks):
-	"""
-	Calculates the mean of an area in the fk-domain, depending of the number of linear events.
-
-	Author: Simon Schneider, 2016
-	"""
-
-	indicies = get_polygon(abs(dsfk), polygon, xlabel, xticks, ylabel, yticks)
-
-
-	return fkdata_eval
-	
+		if peaks_tmp[0].size > 4:
+			peaks = find_peaks( peaks_tmp[1], peaks_tmp[0], 0.5 + delta_threshold)
+		else:
+			peaks = peaks_tmp
+	return MD, srange, peaks
