@@ -309,6 +309,7 @@ def data_request(client_name, cat_client_name, start, end, minmag, net=None, sco
 	list_of_stream = streamall
 	return(list_of_stream, inventory, catalog)
 
+
 def create_insta_from_invcat(network, event, database):
 	import obspy
 	from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
@@ -377,6 +378,7 @@ def create_insta_from_invcat(network, event, database):
 		stream += x
 
 	return stream
+
 
 def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None, maxdepth=None, minlatitude=None, maxlatitude=None, minlongitude=None, maxlongitude=None):
 	import mechanize
@@ -490,6 +492,7 @@ def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None, maxdepth=
 		cat.append(event)
 
 	return cat
+
 
 def _chunking_list(keyword, list):
 	#taken from http://stackoverflow.com/questions/19575702/pythonhow-to-split-file-into-chunks-by-the-occurrence-of-the-header-word
