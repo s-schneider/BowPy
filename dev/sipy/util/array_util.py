@@ -1426,6 +1426,7 @@ def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, max
                     bin_data[i] = stack(stack_arr, order)
 
     st_binned = array2stream(bin_data)
+    st_binned.normalize()
 
     for i, trace in enumerate(st_binned):
         trace.stats.network = st_tmp[0].stats.network
