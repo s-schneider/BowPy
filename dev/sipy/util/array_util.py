@@ -1262,7 +1262,7 @@ def resample_distance(stream, inv=None, event=None, shiftmethod='fft', taup_mode
     return stream_res
 
 
-def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, maxtimewindow=None, shiftmethod='normal',
+def resample_partial_stack(st, bin_size, refphase='P', overlap=None, order=None, maxtimewindow=None, shiftmethod='normal',
                   taup_model='ak135'):
     """
     Will sort the traces into equally distributed bins and stack the bins.
@@ -1320,7 +1320,6 @@ def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, max
     # Resample the borders of the bin, to overlap, if activated
     if overlap and not isinstance(overlap, bool):
         # bin_size = (epidist.max() - epidist.min()) / bins
-        bin_size = bins
         L = [(epidist.min(), epidist.min() + bin_size)]
         y_resample = [epidist.min() + bin_size / 2.]
         i = 0
@@ -1334,14 +1333,13 @@ def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, max
                 break
 
     else:
-        L = np.linspace(min(epidist), max(epidist), bins + 1)
+        no_of_bins = math.ceil( ( epidist.max()-epidist.min() ) / bin_size )
+        L = np.linspace(min(epidist), max(epidist), no_of_bins + 1)
         L = zip(L, np.roll(L, -1))
         L = L[0:len(L) - 1]
 
-        bin_size = abs(L[0][0] - L[0][1])
-
         # Resample the y-axis information to new, equally distributed ones.
-        y_resample = np.linspace(min(min(L)) + bin_size / 2., max(max(L)) - bin_size / 2., bins + 1)
+        y_resample = np.linspace(min(min(L)) + bin_size / 2., max(max(L)) - bin_size / 2., no_of_bins)
         bin_distribution = np.zeros(len(y_resample))
 
     # Preallocate some space in memory.
