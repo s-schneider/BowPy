@@ -1435,6 +1435,7 @@ def resample_partial_stack(st, bins, refphase='P', overlap=None, order=None, max
         trace.stats.sampling_rate = st_tmp[0].stats.sampling_rate
         trace.stats.depth = st_tmp[0].stats.depth
         trace.stats.distance = y_resample[i]
+        trace.stats.origin = st_tmp[0].stats.origin
         try:
             trace.stats.processing = st_tmp[0].stats.processing
         except:

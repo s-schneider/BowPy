@@ -36,7 +36,7 @@ def ssa_denoise_recon(st, dt,p,flow,fhigh):
 	flow = 1
 	fhigh = 250
 
-	st_ssa = ssa_denoise(st, dt, p, flow, fhigh)
+	st_ssa = ssa_denoise_recon(st, dt, p, flow, fhigh)
 	"""
 	st_tmp = st.copy()
 	
