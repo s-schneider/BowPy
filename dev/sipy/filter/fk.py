@@ -612,7 +612,7 @@ def fk_reconstruct(st, slopes=[-10,10], deltaslope=0.05, slopepicking=False, smo
 	else:
 		return st_rec
 
-def pocs_recon(st, maxiter, alpha, dmethod='denoise', method='linear', beta=None, peaks=None, maskshape=None, 
+def pocs_recon(st, maxiter=None, alpha=None, dmethod='denoise', method='linear', beta=None, peaks=None, maskshape=None, 
 			   dt=None, p=None, flow=None, fhigh=None, slidingwindow=False, alpha_i_test=False):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
@@ -635,6 +635,8 @@ def pocs_recon(st, maxiter, alpha, dmethod='denoise', method='linear', beta=None
 	:param st_rec:
 	:type  st_rec:
 	"""
+	if not maxiter and not alpha and not alpha_i_test:
+		raise IOError('One of maxiter, alpha or alpha_i_test has to be chosen')
 
 	st_tmp 		= st.copy()
 	ArrayData 	= stream2array(st_tmp, normalize=True)
@@ -659,8 +661,10 @@ def pocs_recon(st, maxiter, alpha, dmethod='denoise', method='linear', beta=None
 		noft = range(ArrayData.shape[0])
 
 	if alpha_i_test:
-		alpha_range = np.linspace(50,99,11)
+		alpha_range = np.linspace(50,99,11)/100.
 		i_range		= np.flipud(np.arange(5,50))
+		test_length = float(alpha_range.size * i_range.size)
+		curr_step = 1.
 
 		alpha = 0.
 		maxiter = max(i_range)
@@ -669,16 +673,28 @@ def pocs_recon(st, maxiter, alpha, dmethod='denoise', method='linear', beta=None
 			for a in alpha_range:
 				ADrec = pocs(ArrayData, i, noft, a, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
 				Q = 10.*np.log( np.linalg.norm(ArrayData,2)**2. / np.linalg.norm(ArrayData - ADrec,2)**2. )
+
 				if Q > Qmax and maxiter < i:
 					alpha = a
 					maxiter = i
 					Qmax = Q
+
+				progress = 100. * (curr_step / test_length)
+				curr_step += 1.
+				print ('Progress of alpha-i test: %i %%' % int(progress), end='\r')
+				sys.stdout.flush()
+
+		ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
+
 	else:	
 		ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
 
 	#datap = ADfinal.copy()
 
 	st_rec 	= array2stream(ADfinal, st)
+
+	for trace in st_rec:
+		trace.stats.pocs =  {'alpha': alpha, 'iteration': maxiter}
 
 	return st_rec
 
