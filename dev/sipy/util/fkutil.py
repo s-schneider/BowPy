@@ -677,7 +677,7 @@ def makeMask(fkdata, slope, shape, rth=0.4, expl_cutoff=False):
 
 def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphases=None, phaselabel=True, phaselabelclr='red', 
 		norm='all', clr='black', clrtrace=None, newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, 
-		fs=15, tw=None, verbose=False):
+		fs=15, tw=None, time_shift=None, verbose=False):
 	"""
 	Alpha Version!
 	
@@ -762,7 +762,10 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			npts_max = st[0].stats.npts
 
 		data = stream2array(st)
-	
+
+		if time_shift:
+			data = np.roll(data, time_shift)
+			
 		spacing=2.
 		ax.set_xlim(tw.min(), tw.max())
 		isinv = False
@@ -1097,7 +1100,7 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 		plt.ioff()
 
 
-def plotfk(data, fs=15, savefig=False, dpi=400, logscale=False, hold=False, cmap='jet'):
+def plotfk(data, fs=15, savefig=False, dpi=400, logscale=False, hold=False, cmap='jet', Rmax=False):
 	fig, ax = plt.subplots()
 	ax.set_xlabel('Normalized Wavenumber', fontsize=fs)
 	ax.set_ylabel('Normalized Frequency', fontsize=fs)
@@ -1113,6 +1116,9 @@ def plotfk(data, fs=15, savefig=False, dpi=400, logscale=False, hold=False, cmap
 	if cmap in ['seismic']:
 		cbar = fig.colorbar(im)
 		cbar.set_clim(-data.max(), data.max())
+	elif Rmax:
+		cbar = fig.colorbar(im)
+		cbar.set_clim(0., Rmax)
 	else:
 		cbar = fig.colorbar(im)
 	cbar.ax.tick_params(labelsize=fs)

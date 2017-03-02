@@ -269,6 +269,7 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth'
 	# Convert to Stream object.
 	array_filtered = array_filtered[0:ix, 0:it]
 	stream_filtered = array2stream(array_filtered, st_original=st.copy())
+	stream_filtered.normalize()
 
 	return stream_filtered
 
@@ -613,7 +614,7 @@ def fk_reconstruct(st, slopes=[-10,10], deltaslope=0.05, slopepicking=False, smo
 		return st_rec
 
 def pocs_recon(st, maxiter=None, alpha=None, dmethod='denoise', method='linear', beta=None, peaks=None, maskshape=None, 
-			   dt=None, p=None, flow=None, fhigh=None, slidingwindow=False, alpha_i_test=False):
+			   dt=None, p=None, flow=None, fhigh=None, slidingwindow=False, alpha_i_test=False, st_org=None):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
@@ -637,6 +638,9 @@ def pocs_recon(st, maxiter=None, alpha=None, dmethod='denoise', method='linear',
 	"""
 	if not maxiter and not alpha and not alpha_i_test:
 		raise IOError('One of maxiter, alpha or alpha_i_test has to be chosen')
+	if alpha_i_test and not st_org:
+		raise IOError('For alpha_i_test an orignal stream is needed')
+
 
 	st_tmp 		= st.copy()
 	ArrayData 	= stream2array(st_tmp, normalize=True)
@@ -661,6 +665,11 @@ def pocs_recon(st, maxiter=None, alpha=None, dmethod='denoise', method='linear',
 		noft = range(ArrayData.shape[0])
 
 	if alpha_i_test:
+		ADref = stream2array(st_org)
+
+		if ADref.shape != ArrayData.shape:
+			raise IOError('Shapes of reference stream and reconstructed stream differ!')
+
 		alpha_range = np.linspace(50,99,11)/100.
 		i_range		= np.flipud(np.arange(5,50))
 		test_length = float(alpha_range.size * i_range.size)
@@ -672,16 +681,16 @@ def pocs_recon(st, maxiter=None, alpha=None, dmethod='denoise', method='linear',
 		for i in i_range:
 			for a in alpha_range:
 				ADrec = pocs(ArrayData, i, noft, a, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
-				Q = 10.*np.log( np.linalg.norm(ArrayData,2)**2. / np.linalg.norm(ArrayData - ADrec,2)**2. )
+				Q = 10.*np.log( np.linalg.norm(ADref,2)**2. / np.linalg.norm(ADref - ADrec,2)**2. )
 
-				if Q > Qmax and maxiter < i:
+				if Q >= Qmax: # and maxiter > i:
 					alpha = a
 					maxiter = i
 					Qmax = Q
 
 				progress = 100. * (curr_step / test_length)
 				curr_step += 1.
-				print ('Progress of alpha-i test: %i %%' % int(progress), end='\r')
+				print ('Progress of alpha-i test: %i %%, current Q: %f, current Qmax: %f' % ( int(progress),Q ,Qmax ), end='\r')
 				sys.stdout.flush()
 
 		ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
