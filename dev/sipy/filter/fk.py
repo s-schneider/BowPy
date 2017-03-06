@@ -614,7 +614,7 @@ def fk_reconstruct(st, slopes=[-10,10], deltaslope=0.05, slopepicking=False, smo
 		return st_rec
 
 def pocs_recon(st, maxiter=None, alpha=None, dmethod='denoise', method='linear', beta=None, peaks=None, maskshape=None, 
-			   dt=None, p=None, flow=None, fhigh=None, slidingwindow=False, alpha_i_test=False, st_org=None):
+			   dt=None, p=None, flow=None, fhigh=None, slidingwindow=False, alpha_i_test=False, st_org=None, plotfeedback=False):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
@@ -680,7 +680,7 @@ def pocs_recon(st, maxiter=None, alpha=None, dmethod='denoise', method='linear',
 		Qmax = 0.
 		for i in i_range:
 			for a in alpha_range:
-				ADrec = pocs(ArrayData, i, noft, a, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
+				ADrec = pocs(ArrayData, i, noft, a, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow, plotfeedback=plotfeedback)
 				Q = 10.*np.log( np.linalg.norm(ADref,2)**2. / np.linalg.norm(ADref - ADrec,2)**2. )
 
 				if Q >= Qmax: # and maxiter > i:
@@ -695,15 +695,15 @@ def pocs_recon(st, maxiter=None, alpha=None, dmethod='denoise', method='linear',
 
 		ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
 
-	else:	
-		ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
+	else:
+		ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow, plotfeedback=plotfeedback)
 
 	#datap = ADfinal.copy()
 
 	st_rec 	= array2stream(ADfinal, st)
 
-	for trace in st_rec:
-		trace.stats.pocs =  {'alpha': alpha, 'iteration': maxiter}
+	for trace in noft:
+		st_rec[trace].stats.pocs =  {'alpha': alpha, 'iteration': maxiter}
 
 	return st_rec
 

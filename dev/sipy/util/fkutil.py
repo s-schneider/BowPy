@@ -22,6 +22,7 @@ from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attac
 from sipy.util.picker import pick_data, FollowDotCursor
 from sipy.filter.ssa import fx_ssa
 import datetime
+import time
 import scipy as sp
 import scipy.signal as signal
 from scipy import sparse
@@ -675,8 +676,8 @@ def makeMask(fkdata, slope, shape, rth=0.4, expl_cutoff=False):
 	return Wr
 
 
-def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markphases=None, phaselabel=True, phaselabelclr='red', 
-		norm='all', clr='black', clrtrace=None, newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, 
+def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidistances=None, markphases=None, phaselabel=True, phaselabelclr='red', 
+		norm='all', clr=None, clrtrace=None, newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, 
 		fs=15, tw=None, time_shift=None, verbose=False):
 	"""
 	Alpha Version!
@@ -739,10 +740,16 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 		if ylabel:
 			ax.set_ylabel(ylabel, fontsize=fs)
 
-		ax.tick_params(axis='both', which='major', labelsize=fs)	
+		ax.tick_params(axis='both', which='major', labelsize=fs)
+		clr  = 'black'
+		cclr = 'black'
+
 	else:
 		ax 	= plt.gca()
 		fig = plt.gcf()
+		if not clr:
+			clr  = 'blue'
+			cclr = 'blue'
 
 
 	if isinstance(st, Stream):
@@ -770,7 +777,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 		ax.set_xlim(tw.min(), tw.max())
 		isinv = False
 		isevent = False
-		cclr = clr
+		
 
 		# Check if inventory and catalog is input, then calculate distances etc. 
 		if isinstance(inv, Inventory): isinv   = True
@@ -866,10 +873,17 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 							cclr = clrtrace[j]
 						else:
 							cclr = clr
+					except TypeError:
+						if clrtrace in st[j].stats:
+							cclr = 'red'
+						else:
+							cclr = clr
 					except:
 						cclr = clr
 
-					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
+					if stationlabel:
+						ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
+
 					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
 					ax.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color=phaselabelclr )
 					if verbose:
@@ -893,11 +907,19 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 							cclr = clrtrace[j]
 						else:
 							cclr = clr
+					except TypeError:
+						if clrtrace in st[j].stats:
+							cclr = 'red'
+						else:
+							cclr = clr
 					except:
 						cclr = clr
 
 					fig.gca().yaxis.set_major_locator(plt.NullLocator())
-					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),spacing*j+0.1))
+
+					if stationlabel:
+						ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),spacing*j+0.1))
+
 					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ spacing*j, color=cclr)
 					ax.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color=phaselabelclr )
 					if verbose:
@@ -933,7 +955,10 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 						cclr = clr
 				except:
 					cclr = clr
-				ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist[j]+0.1))
+
+				if stationlabel:
+					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist[j]+0.1))
+
 				ax.plot(t_axis, zoom*trace[npts_min: npts_max] + y_dist[j], color=cclr)
 
 			else:
@@ -947,6 +972,11 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 								cclr = clrtrace[j]
 							else:
 								cclr = clr
+						except TypeError:
+							if clrtrace in st[j].stats:
+								cclr = 'red'
+							else:
+								cclr = clr
 						except:
 							cclr = clr
 
@@ -956,7 +986,10 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 						
 					if st[j].stats.distance < ymin: ymin = st[j].stats.distance
 					if st[j].stats.distance > ymax: ymax = st[j].stats.distance
-					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
+
+					if stationlabel:
+						ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
+
 					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
 
 				else:
@@ -970,7 +1003,10 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 						cclr = clr
 
 					fig.gca().yaxis.set_major_locator(plt.NullLocator())
-					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),spacing*j+0.1))
+
+					if stationlabel:
+						ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),spacing*j+0.1))
+
 					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ spacing*j, color=cclr)			
 
 			yold = y_dist
@@ -1049,7 +1085,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, epidistances=None, markp
 			plt.ioff()
 
 
-def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, fs=15):
+def plot_data(data, zoom=1, y_dist=1, label=None, clr=None, newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, fs=15):
 	"""
 	Alpha Version!
 	Time axis has no time-ticks --> Working on right now
@@ -1070,10 +1106,13 @@ def plot_data(data, zoom=1, y_dist=1, label=None, clr='black', newfigure=True, s
 		ax.tick_params(axis='both', which='major', labelsize=fs)	
 		ticks = mpl.ticker.FuncFormatter(lambda r, pos: '{0:g}'.format(r/y_dist))
 		ax.yaxis.set_major_formatter(ticks)
+		clr='black'
 
 	else:
 		ax 	= plt.gca()
 		fig = plt.gcf()
+		if not clr:
+			clr='blue'
 
 	for i, trace in enumerate(data):
 		if isinstance(y_dist,int):
@@ -1140,7 +1179,7 @@ def plotfk(data, fs=15, savefig=False, dpi=400, logscale=False, hold=False, cmap
 			plt.show()
 
 
-def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', dmethod='denoise', peaks=None, maskshape=None, dt=None, p=None, flow=None, fhigh=None, slidingwindow=False, overlap=0.5):
+def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', dmethod='denoise', peaks=None, maskshape=None, dt=None, p=None, flow=None, fhigh=None, slidingwindow=False, overlap=0.5, plotfeedback=False):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
@@ -1187,7 +1226,6 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', dmethod='de
 	ADold = ArrayData.copy()
 	ADnew = ArrayData.copy()
 	ADfinal = np.zeros(ArrayData.shape).astype('complex')
-
 	if method in ('linear', 'exp'):
 		if slidingwindow:
 			if dmethod in ('reconstruct'):
@@ -1229,7 +1267,30 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', dmethod='de
 					if loc >= data.shape[1]: inside=False
 	
 		else:
-			if dmethod in ('reconstruct'):
+			if dmethod in ('denoise', 'de-noise'):
+				raise IOError('Under Construction')
+				# fkdata_tmp = np.zeros(fkdata.shape)
+				# ADtemp = ArrayData.copy()
+				# for i in range(maxiter):
+				# 	data_tmp 	= ADtemp.copy()
+				# 	fkdata 		= np.fft.fft2(data_tmp, s=(iK,iF))
+				# 	fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
+
+				# 	if method in ('linear'):
+				# 		threshold 	= threshold * alpha
+				# 	elif method in ('exp'):
+				# 		threshold 	= threshold * sp.exp(-(i+1) * alpha)
+
+				# 	fkdata_tmp 	= (fkdata_tmp + fkdata)/2.
+
+				# 	data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
+				# 	ADtemp[n] 	= data_tmp[n]
+
+				# ADfinal = ADtemp.copy()
+
+				# threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
+
+			elif dmethod in ('reconstruct', 'Reconstruct'):
 				ADtemp = ArrayData.copy()
 				for i in range(maxiter):
 					data_tmp 	= ADtemp.copy()
@@ -1243,37 +1304,17 @@ def pocs(data, maxiter, noft, alpha=0.9, beta=None, method='linear', dmethod='de
 
 					data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
 					ADtemp[noft] 	= data_tmp[noft]
-					name = str(i) + '.png'
-					# plt.ion()
-					# plotfk(fkdata)
-					# fig = plt.gcf()
-					# fig.set_size_inches(7,8)
-					# fig.savefig(name)
-					# plt.ioff()
+					if plotfeedback:
+						print('plotting')
+						plot(ADtemp, newfigure=False)
+						time.sleep(2)
+
+
 				ADfinal = ADtemp.copy()
 
 				threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
 			
-			elif dmethod in ('denoise', 'de-noise'):
-				for n in noft:
-					ADtemp = ArrayData.copy()
-					for i in range(maxiter):
-						data_tmp 	= ADtemp.copy()
-						fkdata 		= np.fft.fft2(data_tmp, s=(iK,iF))
-						fkdata[ np.where(abs(fkdata) < threshold)] 	= 0. + 0j
 
-						if method in ('linear'):
-							threshold 	= threshold * alpha
-						elif method in ('exp'):
-							threshold 	= threshold * sp.exp(-(i+1) * alpha)
-
-						data_tmp 	= np.fft.ifft2(fkdata, s=(iK,iF)).real[0:ix, 0:it].copy()
-						ADtemp[n] 	= data_tmp[n]
-						#save = 'pocsdata' + str(i) + '.png'
-						#plot(data_tmp, ylabel='Distance(m)', xlabel='Time(s)', fs=22, yinfo=2, savefig=save)
-					ADfinal = ADtemp.copy()
-
-				threshold = abs(np.fft.fft2(ADfinal, s=(iK,iF)).max())
 
 	elif method in ('mask'):
 		W 		= makeMask(fkdata, peaks[0], maskshape)
