@@ -677,7 +677,7 @@ def makeMask(fkdata, slope, shape, rth=0.4, expl_cutoff=False):
 
 
 def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidistances=None, markphases=None, phaselabel=True, phaselabelclr='red', 
-		norm='all', clr=None, clrtrace=None, newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, 
+		norm=False, clr=None, clrtrace=None, newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, 
 		fs=15, tw=None, time_shift=None, verbose=False):
 	"""
 	Alpha Version!
@@ -714,6 +714,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidi
 						>>>		clrtrace = {1: 'red', 7: 'green'}
 						>>>		trace 1 in red
 						>>>		trace 7 in green
+					or
+					attribute a trace, so only traces with that attribute are plot in red, e.g.:
+						clrtrace='pocs', clrtrace='empty'
 							
 	type  clrtrace: list 
 

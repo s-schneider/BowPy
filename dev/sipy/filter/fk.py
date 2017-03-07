@@ -701,6 +701,7 @@ def pocs_recon(st, maxiter=None, alpha=None, dmethod='denoise', method='linear',
 	#datap = ADfinal.copy()
 
 	st_rec 	= array2stream(ADfinal, st)
+	st_rec.normalize()
 
 	for trace in noft:
 		st_rec[trace].stats.pocs =  {'alpha': alpha, 'iteration': maxiter}
