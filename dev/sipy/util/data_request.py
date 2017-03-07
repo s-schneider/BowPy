@@ -387,7 +387,8 @@ def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None, maxdepth=
 
 	"""
 	Description
-	I am using mechanize. My attempt is just preliminary, for the current globalcmt.org site. 
+	I am using mechanize. My attempt is just preliminary, for the current globalcmt.org site. It is possible to store Moment Tensor information
+	in the catalog file.
 	"""
 
 	#Split numbers and text
@@ -417,7 +418,7 @@ def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None, maxdepth=
 	if mindepth    : br.form['lhd']   = str(mindepth)
 	if maxdepth    : br.form['uhd']   = str(maxdepth)
 
-	print("Submitting parameters to globalcmt.")
+	print("Submitting parameters to globalcmt.org ")
 	req = br.submit()
 	print("Retrieving data, creating catalog.")
 
@@ -433,7 +434,7 @@ def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None, maxdepth=
 	for line in data_chunked:
 		for element in line:
 			if 'event name' in element:
-				for content in element:
+				try:
 					org       = line[1].split()
 					year      = int(r.match(org[0]).groups()[1])
 					mon       = int(org[1])
@@ -442,6 +443,16 @@ def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None, maxdepth=
 					minute    = int(org[4])
 					sec_temp  = int(org[5].split('.')[0])
 					msec_temp = int(org[5].split('.')[1])
+
+				except:
+					org       = line[1].split()
+					year      = int(org[1]) 
+					mon       = int(org[2])
+					day       = int(org[3])
+					hour      = int(org[4])
+					minute    = int(org[5])
+					sec_temp  = int(org[6].split('.')[0])
+					msec_temp = int(org[6].split('.')[1])
 
 				origins_temp = UTCDateTime(year, mon, day, hour, minute, sec_temp, msec_temp)
 				#adding time shift located in line[3]
