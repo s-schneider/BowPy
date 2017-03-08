@@ -1,13 +1,20 @@
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 import matplotlib.pyplot as plt
+import obspy
 from obspy import UTCDateTime
 from obspy.clients.fdsn import Client
 from obspy import Stream
 from obspy.geodetics import locations2degrees, gps2dist_azimuth
+from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy.taup import TauPyModel
 from obspy.core.event import Catalog, Event, Magnitude, Origin, MomentTensor
 import sys
-
+import instaseis as ins
+import numpy as np
+import scipy as sp
+from sipy.util.array_util import get_coords
+import os
+import datetime
 from sipy.util.array_util import center_of_gravity, plot_map, attach_network_to_traces, attach_coordinates_to_traces, geometrical_center
 
 def data_request(client_name, cat_client_name, start, end, minmag, net=None, scode="*", channels="*", minlat=None,
@@ -311,31 +318,6 @@ def data_request(client_name, cat_client_name, start, end, minmag, net=None, sco
 
 
 def create_insta_from_invcat(network, event, database):
-	import obspy
-	from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
-	from obspy import read as read_st
-	from obspy import read_inventory as read_inv
-	from obspy import read_events as read_cat
-	from obspy.taup import TauPyModel
-
-	import numpy
-	import numpy as np
-	import matplotlib.pyplot as plt
-	import matplotlib as mpl
-	import scipy as sp
-	import scipy.signal as signal
-	from numpy import genfromtxt
-
-	from sipy.util.array_util import get_coords
-
-	import os
-	import datetime
-
-	import sipy.filter.fk as fk
-	from sipy.filter.fk import fk_filter
-	import sipy.util.fkutil as fku
-	import instaseis as ins
-
 	"""
 	This function creates synthetic data using the given network and event information, with the database of instaseis
 
