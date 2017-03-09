@@ -678,7 +678,7 @@ def makeMask(fkdata, slope, shape, rth=0.4, expl_cutoff=False):
 
 def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidistances=None, markphases=None, phaselabel=True, phaselabelclr='red', 
 		norm=False, clr=None, clrtrace=None, newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, t_axis=None, 
-		fs=15, tw=None, time_shift=None, verbose=False):
+		fs=15, tw=None, time_shift=None, verbose=False, kind='classic', labelfs=20):
 	"""
 	Alpha Version!
 	
@@ -823,152 +823,57 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidi
 			ymin = st[0].stats.distance
 			ymax = st[0].stats.distance
 
-		for j, trace in enumerate(data):
-
-			# Normalize trace, if set to 'trace'
-			if norm in ['trace']:
-				trace = trace/trace.max()
-
+		if markphases and isinv and isevent:
 			try:
-				y_dist = st[j].stats.distance
+				origin = event.origins[0]['time']
+				depth = event.origins[0]['depth']/1000.
 			except:
-				y_dist = yold + 1
+				origin = st[0].stats.origin
+				depth = st[0].stats.depth
 
-			if markphases and isinv and isevent:
+			m = TauPyModel('ak135')
+
+
+
+		if kind in ('classic', 'Classic'):
+			for j, trace in enumerate(data):
+
+				# Normalize trace, if set to 'trace'
+				if norm in ['trace']:
+					trace = trace/trace.max()
+
 				try:
-					origin = st[0].stats.origin
-				except AttributeError:
-					origin = event.origins[0]['time']
+					y_dist = st[j].stats.distance
 				except:
-					msg=('No origin-time found in stream or event-file')
-					raise IOError(msg)
+					y_dist = yold + 1
 
-				m = TauPyModel('ak135')
-				arrivals = m.get_travel_times(depth, y_dist, phase_list=markphases)
-				timetable = [ [], [] ]
+				if markphases and isinv and isevent:
 
-				for k, phase in enumerate(arrivals):
-					phase_name = phase.name
-					t = phase.time
-					phase_time = origin + t - st[j].stats.starttime
-					Phase_npt = int(phase_time/st[j].stats.delta)
-					Phase = Phase_npt * st[j].stats.delta
+					arrivals = m.get_travel_times(depth, y_dist, phase_list=markphases)
+					timetable = [ [], [] ]
+					for k, phase in enumerate(arrivals):
+						phase_name = phase.name
+						t = phase.time
+						phase_time = origin + t - st[j].stats.starttime
+						Phase_npt = int(phase_time/st[j].stats.delta)
+						Phase = Phase_npt * st[j].stats.delta
 
-					if Phase < t_axis.min() or Phase > t_axis.max():
-						continue	
-					else:
-						timetable[0].append(phase_name)
-						timetable[1].append(Phase)
-
-				if not timetable[0] or not timetable[1]:
-					print('Phases not in Seismogram')
-					plt.close('all')
-					return
-
-				if yinfo:
-					if not ylabel: ax.set_ylabel("Distance(deg)", fontsize=fs)
-
-					if st[j].stats.distance < ymin: ymin = st[j].stats.distance
-					if st[j].stats.distance > ymax: ymax = st[j].stats.distance
-
-					try:
-						if j in clrtrace: 
-							cclr = clrtrace[j]
+						if Phase < t_axis.min() or Phase > t_axis.max():
+							continue	
 						else:
-							cclr = clr
-					except TypeError:
-						if clrtrace in st[j].stats:
-							cclr = 'red'
-						else:
-							cclr = clr
-					except:
-						cclr = clr
+							timetable[0].append(phase_name)
+							timetable[1].append(Phase)
 
-					if stationlabel:
-						ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
+					if not timetable[0] or not timetable[1]:
+						print('Phases not in Seismogram')
+						plt.close('all')
+						return
 
-					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
-					ax.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color=phaselabelclr )
-					if verbose:
-						print(timetable[1] + st[j].stats.shifttime)
-						ax.plot( (timetable[1] + st[j].stats.shifttime, timetable[1] + st[j].stats.shifttime), \
-								(-1+y_dist,1+y_dist), color=phaselabelclr )
-
-					if phaselabel:
-						for time, key in enumerate(timetable[0]):
-							ax.annotate('%s' % key, xy=(timetable[1][time],y_dist))
-							if verbose:
-								ax.annotate('%s' % key, xy=(timetable[1][time] + st[j].stats.shifttime, y_dist))
-					else:
-						continue
-
-				else:
-					if not ylabel: ax.set_ylabel("No. of trace", fontsize=fs)
-
-					try:
-						if j in clrtrace: 
-							cclr = clrtrace[j]
-						else:
-							cclr = clr
-					except TypeError:
-						if clrtrace in st[j].stats:
-							cclr = 'red'
-						else:
-							cclr = clr
-					except:
-						cclr = clr
-
-					fig.gca().yaxis.set_major_locator(plt.NullLocator())
-
-					if stationlabel:
-						ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),spacing*j+0.1))
-
-					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ spacing*j, color=cclr)
-					ax.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color=phaselabelclr )
-					if verbose:
-						print(st[j].stats.shifttime)
-						print(timetable[1] + st[j].stats.shifttime)
-
-						ax.plot( (timetable[1] + st[j].stats.shifttime, timetable[1] + st[j].stats.shifttime), \
-								(-1+spacing*j,1+spacing*j), color=phaselabelclr )
-
-					if phaselabel:
-						for time, key in enumerate(timetable[0]):
-							ax.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
-							if verbose:
-								ax.annotate('%s' % key, xy=(timetable[1][time] + st[j].stats.shifttime, spacing*j))
-					else:
-						continue
-
-			elif markphases and not isinv:
-				msg='markphases needs Inventory Information, not found.'
-				raise IOError(msg)	
-	
-			elif markphases and not isevent:
-				msg='markphases needs Event Information, not found.'
-				raise IOError(msg)		
-				
-			elif type(epidistances) == numpy.ndarray or type(epidistances)==list:
-				y_dist = epidistances
-				if not ylabel: ax.set_ylabel("Distance(deg)", fontsize=fs)
-				try:
-					if j in clrtrace: 
-						cclr = clrtrace[j]
-					else:
-						cclr = clr
-				except:
-					cclr = clr
-
-				if stationlabel:
-					ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist[j]+0.1))
-
-				ax.plot(t_axis, zoom*trace[npts_min: npts_max] + y_dist[j], color=cclr)
-
-			else:
-				if yinfo:
-
-					try:
+					if yinfo:
 						if not ylabel: ax.set_ylabel("Distance(deg)", fontsize=fs)
+
+						if st[j].stats.distance < ymin: ymin = st[j].stats.distance
+						if st[j].stats.distance > ymax: ymax = st[j].stats.distance
 
 						try:
 							if j in clrtrace: 
@@ -983,20 +888,73 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidi
 						except:
 							cclr = clr
 
-					except:
-						msg='Oops, something not found.'
-						raise IOError(msg)
-						
-					if st[j].stats.distance < ymin: ymin = st[j].stats.distance
-					if st[j].stats.distance > ymax: ymax = st[j].stats.distance
+						if stationlabel:
+							ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
 
-					if stationlabel:
-						ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
+						ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
+						ax.plot( (timetable[1],timetable[1]),(-1+y_dist,1+y_dist), color=phaselabelclr )
+						if verbose:
+							print(timetable[1] + st[j].stats.shifttime)
+							ax.plot( (timetable[1] + st[j].stats.shifttime, timetable[1] + st[j].stats.shifttime), \
+									(-1+y_dist,1+y_dist), color=phaselabelclr )
 
-					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
+						if phaselabel:
+							for time, key in enumerate(timetable[0]):
+								ax.annotate('%s' % key, xy=(timetable[1][time],y_dist))
+								if verbose:
+									ax.annotate('%s' % key, xy=(timetable[1][time] + st[j].stats.shifttime, y_dist))
+						else:
+							continue
 
-				else:
-					if not ylabel: ax.set_ylabel("No. of trace", fontsize=fs)
+					else:
+						if not ylabel: ax.set_ylabel("No. of trace", fontsize=fs)
+
+						try:
+							if j in clrtrace: 
+								cclr = clrtrace[j]
+							else:
+								cclr = clr
+						except TypeError:
+							if clrtrace in st[j].stats:
+								cclr = 'red'
+							else:
+								cclr = clr
+						except:
+							cclr = clr
+
+						fig.gca().yaxis.set_major_locator(plt.NullLocator())
+
+						if stationlabel:
+							ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),spacing*j+0.1))
+
+						ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ spacing*j, color=cclr)
+						ax.plot( (timetable[1],timetable[1]),(-1+spacing*j,1+spacing*j), color=phaselabelclr )
+						if verbose:
+							print(st[j].stats.shifttime)
+							print(timetable[1] + st[j].stats.shifttime)
+
+							ax.plot( (timetable[1] + st[j].stats.shifttime, timetable[1] + st[j].stats.shifttime), \
+									(-1+spacing*j,1+spacing*j), color=phaselabelclr )
+
+						if phaselabel:
+							for time, key in enumerate(timetable[0]):
+								ax.annotate('%s' % key, xy=(timetable[1][time],spacing*j))
+								if verbose:
+									ax.annotate('%s' % key, xy=(timetable[1][time] + st[j].stats.shifttime, spacing*j))
+						else:
+							continue
+
+				elif markphases and not isinv:
+					msg='markphases needs Inventory Information, not found.'
+					raise IOError(msg)	
+		
+				elif markphases and not isevent:
+					msg='markphases needs Event Information, not found.'
+					raise IOError(msg)		
+					
+				elif type(epidistances) == numpy.ndarray or type(epidistances)==list:
+					y_dist = epidistances
+					if not ylabel: ax.set_ylabel("Distance(deg)", fontsize=fs)
 					try:
 						if j in clrtrace: 
 							cclr = clrtrace[j]
@@ -1005,14 +963,116 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidi
 					except:
 						cclr = clr
 
-					fig.gca().yaxis.set_major_locator(plt.NullLocator())
-
 					if stationlabel:
-						ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),spacing*j+0.1))
+						ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist[j]+0.1))
 
-					ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ spacing*j, color=cclr)			
+					ax.plot(t_axis, zoom*trace[npts_min: npts_max] + y_dist[j], color=cclr)
 
-			yold = y_dist
+				else:
+					if yinfo:
+
+						try:
+							if not ylabel: ax.set_ylabel("Distance(deg)", fontsize=fs)
+
+							try:
+								if j in clrtrace: 
+									cclr = clrtrace[j]
+								else:
+									cclr = clr
+							except TypeError:
+								if clrtrace in st[j].stats:
+									cclr = 'red'
+								else:
+									cclr = clr
+							except:
+								cclr = clr
+
+						except:
+							msg='Oops, something not found.'
+							raise IOError(msg)
+							
+						if st[j].stats.distance < ymin: ymin = st[j].stats.distance
+						if st[j].stats.distance > ymax: ymax = st[j].stats.distance
+
+						if stationlabel:
+							ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),y_dist+0.1))
+
+						ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ y_dist, color=cclr)
+
+					else:
+						if not ylabel: ax.set_ylabel("No. of trace", fontsize=fs)
+						try:
+							if j in clrtrace: 
+								cclr = clrtrace[j]
+							else:
+								cclr = clr
+						except:
+							cclr = clr
+
+						fig.gca().yaxis.set_major_locator(plt.NullLocator())
+
+						if stationlabel:
+							ax.annotate('%s' % st[j].stats.station, xy=(1 + tw.min(),spacing*j+0.1))
+
+						ax.plot(t_axis,zoom*trace[npts_min: npts_max]+ spacing*j, color=cclr)			
+
+				yold = y_dist
+
+		elif kind in ['contour', 'Contour']:
+			yrange = np.arange(len(st))
+
+			try:
+				cax = ax.imshow(data[tw.min():tw.max()], aspect='auto', extent=(tw.min(), tw.max(), yrange.min(), yrange.max()),
+								origin='lower', cmap='seismic')
+			except:
+				cax = ax.imshow(data, aspect='auto', extent=(t_axis.min(), t_axis.max(), yrange.min(), yrange.max()),
+								origin='lower', cmap='seismic')
+
+			
+			if markphases and isinv and isevent:
+
+				stats = np.arange(len(st))
+				for j in stats:
+
+					arrivals = m.get_travel_times(depth, st[j].stats.distance, phase_list=markphases)
+					timetable = [ [], [] ]
+
+					for phase in arrivals:
+						t = phase.time
+						phase_time = origin + t - st[j].stats.starttime
+						Phase_npt = int(phase_time / st[j].stats.delta)
+						tPhase = Phase_npt * st[j].stats.delta
+						name = phase.name
+
+						if tPhase > t_axis.max() or tPhase < t_axis.min():
+							continue
+
+						ax.autoscale(False)
+
+						ax.plot( (tPhase, tPhase), (-labelfs/100. +j, labelfs/100.+j), color='red')
+
+						if j == stats.max():
+							if name in [u'P^220P']:
+								ax.annotate('$P^{220}P$', xy=(tPhase, j), xytext=(tPhase + 1, j+1.2),
+											fontsize=labelfs, color='black')
+
+							elif name in [u'P^410P']:
+								ax.annotate('$P^{410}P$', xy=(tPhase, j), xytext=(tPhase + 1, j+1.2),
+											fontsize=labelfs, color='black')
+
+							elif name in [u'P^660P']:
+								ax.annotate('$P^{660}P$', xy=(tPhase, j), xytext=(tPhase + 1, j+1.2),
+											fontsize=labelfs, color='black')
+
+							else:
+								ax.annotate('$%s$' % name, xy=(tPhase, j), xytext=(tPhase + 1, j+1.2),
+											fontsize=labelfs, color='black')
+
+			cbar = fig.colorbar(cax, format='%.1f')
+			cbar.set_clim(-1, 1)
+			cbar.ax.tick_params(labelsize=fs)
+			cbar.ax.set_ylabel('A', fontsize=fs)
+
 
 
 		if yinfo:
@@ -1044,8 +1104,13 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidi
 			markphases=False
 
 		if markphases:
-			origin = event.origins[0]['time']
-			depth = event.origins[0]['depth']/1000.
+			try:
+				origin = event.origins[0]['time']
+				depth = event.origins[0]['depth']/1000.
+			except:
+				origin = st.stats.origin
+				depth = st.stats.depth
+
 			m = TauPyModel('ak135')
 			arrivals = m.get_travel_times(depth, y_dist, phase_list=markphases)
 			timetable = [ [], [] ]
