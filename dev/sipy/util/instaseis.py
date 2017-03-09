@@ -194,7 +194,7 @@ def writeQuakeML(catfile, tofe, lat, lon, depth):
 
 	return
 
-def writeStationML(invfile, ):
+def writeStationML(invfile, lats, lons):
 
 	with open( invfile, "w") as fh:
 		fh.write("<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n")
@@ -208,20 +208,23 @@ def writeStationML(invfile, ):
 		fh.write("    <SelectedNumberStations>20</SelectedNumberStations>\n")
 
 		j=0
-		for i in station_range:
-			slon=i
-			lat=54.0
-			name="X"+str(int(j))
-			fh.write("    <Station code=\"%s\" endDate=\"2011-11-17T23:59:59+00:00\" restrictedStatus=\"open\" startDate=\"2010-01-08T00:00:00+00:00\">\n" % name)
-			fh.write("      <Latitude unit=\"DEGREES\">%f</Latitude>\n" % lat)
-			fh.write("      <Longitude unit=\"DEGREES\">%f</Longitude>\n" % slon)
-			fh.write("      <Elevation>0.0</Elevation>\n")
-			fh.write("      <Site>\n")
-			fh.write("        <Name> %s </Name>\n" % name)
-			fh.write("      </Site>\n")
-			fh.write("    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>\n")
-			fh.write("    </Station>\n")
-			j += 1
+		ncount = 0
+		for i in lats:
+			for j in lons:
+				slat=i
+				slon=j
+				ncount += 1
+				name="X" + str(ncount)
+				fh.write("    <Station code=\"%s\" endDate=\"2011-11-17T23:59:59+00:00\" restrictedStatus=\"open\" startDate=\"2010-01-08T00:00:00+00:00\">\n" % name)
+				fh.write("      <Latitude unit=\"DEGREES\">%f</Latitude>\n" % slat)
+				fh.write("      <Longitude unit=\"DEGREES\">%f</Longitude>\n" % slon)
+				fh.write("      <Elevation>0.0</Elevation>\n")
+				fh.write("      <Site>\n")
+				fh.write("        <Name> %s </Name>\n" % name)
+				fh.write("      </Site>\n")
+				fh.write("    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>\n")
+				fh.write("    </Station>\n")
+				j += 1
 		fh.write("  </Network>\n")
 		fh.write("</FDSNStationXML>")
 
