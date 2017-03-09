@@ -23,9 +23,9 @@ from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array,
 from sipy.util.base import nextpow2, array2stream, array2trace, stream2array
 from sipy.util.picker import get_polygon
 
-def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth', 4, 4], phase=None, polygon=12, normalize=True, stack=False,
+def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth', 4, 4], phase=None, polygon=4, normalize=True, stack=False,
 					slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], 
-					order=4., peakinput=False, eval_mean=1):
+					order=4., peakinput=False, eval_mean=1, fs=25):
 	"""
 	Import stream, the function applies an 2D FFT, removes a certain window around the
 	desired phase to surpress a slownessvalue corresponding to a wavenumber and applies an 2d iFFT.
@@ -206,12 +206,12 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth'
 			st_al = alignon(st_tmp, inv, event, phase)
 			ArrayData = stream2array(st_al, normalize)
 			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
-			array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-													  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean)
+			array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency domain f in Hz', \
+													  yticks=f_axis, xlabel=r'wavenumber domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean, fs=fs)
 
 		else:
-			array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-													  yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean)
+			array_filtered_fk = _fk_eliminate_polygon(array_fk, polygon, ylabel=r'frequency domain f in Hz', \
+													  yticks=f_axis, xlabel=r'wavenumber domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean, fs=fs)
 
 
 	elif ftype in ("extract-polygon"):
@@ -224,11 +224,11 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth'
 			st_al = alignon(st_tmp, inv, event, phase)
 			ArrayData = stream2array(st_al, normalize)
 			array_fk = np.fft.fft2(ArrayData, s=(iK,iF))
-			array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-												yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean)
+			array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency domain f in Hz', \
+												yticks=f_axis, xlabel=r'wavenumber domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean, fs=fs)
 		else:
-			array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency-domain f in $\frac{1}{Hz}$', \
-												yticks=f_axis, xlabel=r'wavenumber-domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean)
+			array_filtered_fk = _fk_extract_polygon(array_fk, polygon, ylabel=r'frequency domain f in Hz', \
+												yticks=f_axis, xlabel=r'wavenumber domain k in $\frac{1}{^{\circ}}$', xticks=k_axis, eval_mean=eval_mean, fs=fs)
 
 
 	elif ftype in ("mask"):
@@ -238,7 +238,7 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth'
 		array_filtered_fk =  array_fk * W
 		array_filtered = np.fft.ifft2(array_filtered_fk)
 		stream_filtered = array2stream(array_filtered, st_original=st.copy())
-		return stream_filtered
+		return stream_filtered, array_fk, W
 
 
 	elif ftype in ("fk"):
@@ -269,6 +269,7 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth'
 	# Convert to Stream object.
 	array_filtered = array_filtered[0:ix, 0:it]
 	stream_filtered = array2stream(array_filtered, st_original=st.copy())
+	stream_filtered.normalize()
 
 	return stream_filtered
 
@@ -277,7 +278,7 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth'
 """
 FFT FUNCTIONS 
 """
-def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], 
+def fk_reconstruct(st, slopes=[-10,10], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], 
 					method='denoise', solver="iterative",  mu=5e-2, tol=1e-12, fulloutput=False, peakinput=False, alpha=0.9):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
@@ -608,12 +609,12 @@ def fk_reconstruct(st, slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoot
 		st_rec = array2stream(data_rec, st)
 
 	if fulloutput and not pocs:
-		return st_rec, FH, dv, Dv, Dv_rec, Ts, Yw
+		return st_rec, FH, dv, Dv, Dv_rec, Ts, Yw, W
 	else:
-		return st_rec #, x[8], x[4]
+		return st_rec
 
-def pocs_recon(st, maxiter, alpha, dmethod='denoise', method='linear', beta=None, peaks=None, maskshape=None, 
-			   dt=None, p=None, flow=None, fhigh=None, slidingwindow=False):
+def pocs_recon(st, maxiter=None, alpha=None, dmethod='denoise', method='linear', beta=None, peaks=None, maskshape=None, 
+			   dt=None, p=None, flow=None, fhigh=None, slidingwindow=False, alpha_i_test=False, st_org=None, plotfeedback=False):
 	"""
 	This functions reconstructs missing signals in the f-k domain, using the original data,
 	including gaps, filled with zeros. It applies the projection onto convex sets (pocs) algorithm in
@@ -635,6 +636,11 @@ def pocs_recon(st, maxiter, alpha, dmethod='denoise', method='linear', beta=None
 	:param st_rec:
 	:type  st_rec:
 	"""
+	if not maxiter and not alpha and not alpha_i_test:
+		raise IOError('One of maxiter, alpha or alpha_i_test has to be chosen')
+	if alpha_i_test and not st_org:
+		raise IOError('For alpha_i_test an orignal stream is needed')
+
 
 	st_tmp 		= st.copy()
 	ArrayData 	= stream2array(st_tmp, normalize=True)
@@ -657,16 +663,52 @@ def pocs_recon(st, maxiter, alpha, dmethod='denoise', method='linear', beta=None
 		
 	elif dmethod in ('denoise', 'de-noise'):
 		noft = range(ArrayData.shape[0])
-	
-	ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
+
+	if alpha_i_test:
+		ADref = stream2array(st_org)
+
+		if ADref.shape != ArrayData.shape:
+			raise IOError('Shapes of reference stream and reconstructed stream differ!')
+
+		alpha_range = np.linspace(50,99,11)/100.
+		i_range		= np.flipud(np.arange(5,50))
+		test_length = float(alpha_range.size * i_range.size)
+		curr_step = 1.
+
+		alpha = 0.
+		maxiter = max(i_range)
+		Qmax = 0.
+		for i in i_range:
+			for a in alpha_range:
+				ADrec = pocs(ArrayData, i, noft, a, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow, plotfeedback=plotfeedback)
+				Q = 10.*np.log( np.linalg.norm(ADref,2)**2. / np.linalg.norm(ADref - ADrec,2)**2. )
+
+				if Q >= Qmax: # and maxiter > i:
+					alpha = a
+					maxiter = i
+					Qmax = Q
+
+				progress = 100. * (curr_step / test_length)
+				curr_step += 1.
+				print ('Progress of alpha-i test: %i %%, current Q: %f, current Qmax: %f' % ( int(progress),Q ,Qmax ), end='\r')
+				sys.stdout.flush()
+
+		ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow)
+
+	else:
+		ADfinal = pocs(ArrayData, maxiter, noft, alpha, beta, method, dmethod, peaks, maskshape, dt, p, flow, fhigh, slidingwindow, plotfeedback=plotfeedback)
 
 	#datap = ADfinal.copy()
 
 	st_rec 	= array2stream(ADfinal, st)
+	st_rec.normalize()
+
+	for trace in noft:
+		st_rec[trace].stats.pocs =  {'alpha': alpha, 'iteration': maxiter}
 
 	return st_rec
 
-def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None, eval_mean=1):
+def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None, eval_mean=1, fs=25):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
@@ -686,7 +728,7 @@ def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yt
 		dsfk_tmp 					= dsfk_eval.copy()
 
 	#indicies = get_polygon(np.log(abs(dsfk)), polygon, xlabel, xticks, ylabel, yticks)
-	indicies = get_polygon(abs(dsfk_tmp), polygon, xlabel, xticks, ylabel, yticks)
+	indicies = get_polygon(abs(dsfk_tmp), polygon, xlabel, xticks, ylabel, yticks, fs)
 
 	# Create new array, only contains extractet energy, pointed to with indicies
 	dsfk_extract 										= np.zeros(dsfk_tmp.shape)
@@ -705,7 +747,7 @@ def _fk_extract_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yt
 	return data_fk
 
 
-def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None, eval_mean=1):
+def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, yticks=None, eval_mean=1, fs=25):
 	"""
 	Only use with the function fk_filter!
 	Function to test the fk workflow with synthetic data
@@ -725,7 +767,7 @@ def _fk_eliminate_polygon(data, polygon, xlabel=None, xticks=None, ylabel=None, 
 		dsfk_tmp 					= dsfk_eval.copy()
 
 	#indicies = get_polygon(np.log(abs(dsfk)), polygon, xlabel, xticks, ylabel, yticks)
-	indicies = get_polygon(abs(dsfk_tmp), polygon, xlabel, xticks, ylabel, yticks)
+	indicies = get_polygon(abs(dsfk_tmp), polygon, xlabel, xticks, ylabel, yticks, fs)
 
 	# Create new array, only contains extractet energy, pointed to with indicies
 	dsfk_elim 										= np.ones(dsfk_tmp.shape)

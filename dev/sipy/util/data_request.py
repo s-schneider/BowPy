@@ -3,15 +3,14 @@ import matplotlib.pyplot as plt
 from obspy import UTCDateTime
 from obspy.clients.fdsn import Client
 from obspy import Stream
-import obspy
-import numpy as np
 from obspy.geodetics import locations2degrees, gps2dist_azimuth
 from obspy.taup import TauPyModel
+from obspy.core.event import Catalog, Event, Magnitude, Origin, MomentTensor
 import sys
 
 from sipy.util.array_util import center_of_gravity, plot_map, attach_network_to_traces, attach_coordinates_to_traces, geometrical_center
 
-def data_request(client_name, start, end, minmag, net=None, scode="*", channels="*", minlat=None,
+def data_request(client_name, cat_client_name, start, end, minmag, net=None, scode="*", channels="*", minlat=None,
                  maxlat=None,minlon=None,maxlon=None, station_minlat=None,
                  station_maxlat=None, station_minlon=None, station_maxlon=None, mindepth=None, maxdepth=None, 
                  radialcenterlat=None, radialcenterlon=None, minrad=None, maxrad=None,
@@ -25,6 +24,10 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 	:param client_name: Name of desired fdsn client, for a list of all clients see: 
 		                https://docs.obspy.org/tutorial/code_snippets/retrieving_data_from_datacenters.html
 	:type  client_name:  string
+
+	:param cat_client_name: Name of Event catalog
+
+	:type  cat_client_name: string
 
 	:param start, end: starttime, endtime
 	:type : UTCDateTime
@@ -74,36 +77,71 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 	:param: list_of_stream, Inventory, Catalog
 	:type: list, obspy, obspy 
 
-	### Example ###
+
+
+	### Example 1 ###
 
 	from obspy import UTCDateTime
-	start = UTCDateTime(2003,1,1,0,0)
-	end = UTCDateTime(2013,12,31,0,0)
-	list_of_stream, inventory, cat = data_request('IRIS', start, end, 8.6, 'TA', minlat=34., maxlat=50., minlon=-125., maxlon=-116.)
+	from sipy.util.data_request import data_request
+
+	start = UTCDateTime(2010,1,1,0,0)
+	end = UTCDateTime(2010,12,31,0,0)
+	minmag = 8
+	station = '034A'
+	list_of_stream, inventory, cat = data_request('IRIS', start, end, minmag, net='TA', scode=station)
 	
-	st = list_of_stream[2]
+	st = list_of_stream[0]
+	st = st.select(channel='BHZ')
 	st.normalize()
-	inv = inventory[2]
+	inv = inventory[0]
+
+	st.plot()
+	inv.plot()
+	cat.plot()
+
+	### Example 2 ###
 
 	from obspy import UTCDateTime
-	start = UTCDateTime(2016,01,01,0,0)
-	end = UTCDateTime(2016,04,27,0,0)
-	list_of_stream, inventory, cat = data_request('IRIS', start, end, 3.5, station_radialcenterlat=54., 
-	station_radialcenterlon=-117., station_minrad=0., station_maxrad=2., minlat=49., maxlat=59., minlon=-125., maxlon=-110.)
+	from sipy.util.data_request import data_request
+
+	start = UTCDateTime(2010,1,1,0,0)
+	end = UTCDateTime(2010,12,31,0,0)
+	minmag = 8
+	station = '034A'
+	client = 'IRIS'
+	cat_client = 'globalcmt'
+	list_of_stream, inventory, cat = data_request(client, cat_client, start, end, minmag, net='TA', scode=station)
+	
+	st = list_of_stream[0]
+	st = st.select(channel='BHZ')
+	st.normalize()
+	inv = inventory[0]
+
+	st.plot()
+	inv.plot()
+	cat.plot()
+
 	"""
 
 	data =[]
 	stream = Stream()
 	streamall = []
-	client = Client(client_name)
-
-	try:
-		catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, maxdepth=maxdepth, mindepth=mindepth, latitude=radialcenterlat, longitude=radialcenterlon, minradius=minrad, maxradius=maxrad,minlatitude=minlat, maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
-
-	except:
-		print("No events found for given parameters.")
-		return
 	
+
+	#build in different approach for catalog search, using urllib
+
+	if cat_client_name == 'globalcmt':
+		catalog = request_gcmt(starttime=start, endtime=end, minmagnitude=minmag, mindepth=mindepth, maxdepth=maxdepth, minlatitude=minlat, maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
+		client = Client(client_name)
+	else:	
+		client = Client(client_name)
+		try:
+			catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, mindepth=mindepth, maxdepth=maxdepth, latitude=radialcenterlat, longitude=radialcenterlon, minradius=minrad, maxradius=maxrad,minlatitude=minlat, maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
+
+		except:
+			print("No events found for given parameters.")
+			return
+
 	print("Following events found: \n")
 	print(catalog)
 	m = TauPyModel(model="ak135")
@@ -123,7 +161,7 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 			inventory = client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
 			 								minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
 			 								latitude=station_radialcenterlat, longitude=station_radialcenterlon, minradius=station_minrad, maxradius=station_maxrad)
-			print(inventory)
+			print("Inventory found.")
 		except:
 			print("No Inventory found for given parameters")
 			return
@@ -256,12 +294,12 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 		stream = Stream()
 
 	if savefile:
-		 stname = str(origin_t).split('.')[0] + ".MSEED"
-		 invname = stname + "_inv.xml"
-		 catname = stname + "_cat.xml"
-		 stream.write(stname, format=file_format)
-		 inventory.write(invname, format="STATIONXML")
-		 catalog.write(catname, format="QUAKEML")
+		stname = str(origin_t).split('.')[0] + ".MSEED"
+		invname = stname + "_inv.xml"
+		catname = stname + "_cat.xml"
+		stream.write(stname, format=file_format)
+		inventory.write(invname, format="STATIONXML")
+		catalog.write(catname, format="QUAKEML")
 
 	plt.ion()
 	#invall.plot()
@@ -271,7 +309,8 @@ def data_request(client_name, start, end, minmag, net=None, scode="*", channels=
 	list_of_stream = streamall
 	return(list_of_stream, inventory, catalog)
 
-def create_insta_from_invcat(network, event):
+
+def create_insta_from_invcat(network, event, database):
 	import obspy
 	from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
 	from obspy import read as read_st
@@ -297,8 +336,21 @@ def create_insta_from_invcat(network, event):
 	import sipy.util.fkutil as fku
 	import instaseis as ins
 
+	"""
+	This function creates synthetic data using the given network and event information, with the database of instaseis
 
-	db 		= ins.open_db("/Users/Simon/dev/instaseis/10s_PREM_ANI_FORCES")
+	:param network: Desired Network, for which the data is generated
+	:type  network: obspy.core.inventory.Network
+
+	:param event: Event, for wich the data is generated. The event must have stored the moment tensor (e.g. given by glogalcmt.org)
+	:type  event: obspy.core.event.Event
+
+	:param database: Link to the database, e.g. the path on your harddrive
+	:type  database: str
+	"""
+
+
+	db 		= ins.open_db(database)
 
 	tofe 	= event.origins[0].time
 	lat 	= event.origins[0].latitude 
@@ -307,12 +359,12 @@ def create_insta_from_invcat(network, event):
 
 	source = ins.Source(
 	latitude=lat, longitude=lon, depth_in_m=depth,
-	m_rr = 0.526e26 / 1E7,
-	m_tt = -2.1e26 / 1E7,
-	m_pp = -1.58e26 / 1E7,
-	m_rt = 1.08e+26 / 1E7,
-	m_rp = 2.05e+26 / 1E7,
-	m_tp = 0.607e+26 / 1E7,
+	m_rr = event.MomentTensor.m_rr,
+	m_tt = event.MomentTensor.m_tt,
+	m_pp = event.MomentTensor.m_pp,
+	m_rt = event.MomentTensor.m_rt,
+	m_rp = event.MomentTensor.m_rp,
+	m_tp = event.MomentTensor.m_tp,
 	origin_time=tofe
 	)
 
@@ -328,4 +380,133 @@ def create_insta_from_invcat(network, event):
 	return stream
 
 
+def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None, maxdepth=None, minlatitude=None, maxlatitude=None, minlongitude=None, maxlongitude=None):
+	import mechanize
+	from mechanize import Browser
+	import re
+
+	"""
+	Description
+	I am using mechanize. My attempt is just preliminary, for the current globalcmt.org site. 
+	"""
+
+	#Split numbers and text
+	r = re.compile("([a-zA-Z]+)([0-9]+)")
+
+
+	br = Browser()
+	br.open('http://www.globalcmt.org/CMTsearch.html')
+	#Site has just one form
+	br.select_form(nr=0)
+
+	br.form['yr']    = str(starttime.year)
+	br.form['mo']    = str(starttime.month)
+	br.form['day']   = str(starttime.day)
+	br.form['oyr']   = str(endtime.year)
+	br.form['omo']   = str(endtime.month)
+	br.form['oday']  = str(endtime.day)
+	br.form['list']  = ['4']
+	br.form['itype'] = ['ymd']
+	br.form['otype'] = ['ymd']
+
+	if minmagnitude: br.form['lmw']   = str(minmagnitude)
+	if minlatitude : br.form['llat']  = str(minlatitude)
+	if maxlatitude : br.form['ulat']  = str(maxlatitude)
+	if minlongitude: br.form['llon']  = str(minlongitude)
+	if maxlongitude: br.form['ulon']  = str(maxlongitude)
+	if mindepth    : br.form['lhd']   = str(mindepth)
+	if maxdepth    : br.form['uhd']   = str(maxdepth)
+
+	print("Submitting parameters to globalcmt.")
+	req = br.submit()
+	print("Retrieving data, creating catalog.")
+
+	data = []
+	for line in req:
+		data.append(line) 
+
+	data_chunked = _chunking_list(keyword='\n', list=data)
+	origins = []
+	magnitudes = []
+	tensor = []
+
+	for line in data_chunked:
+		for element in line:
+			if 'event name' in element:
+				for content in element:
+					org       = line[1].split()
+					year      = int(r.match(org[0]).groups()[1])
+					mon       = int(org[1])
+					day       = int(org[2])
+					hour      = int(org[3])
+					minute    = int(org[4])
+					sec_temp  = int(org[5].split('.')[0])
+					msec_temp = int(org[5].split('.')[1])
+
+				origins_temp = UTCDateTime(year, mon, day, hour, minute, sec_temp, msec_temp)
+				#adding time shift located in line[3]
+				origin       = origins_temp + float(line[3].split()[2])
+				magnitude    = float(line[1].split()[10])
+				latitude     = float(line[5].split()[1])
+				longitude    = float(line[6].split()[1])
+				depth        = 1000. * float(line[7].split()[1])
+				m_rr         = float(line[8].split()[1])
+				m_tt         = float(line[9].split()[1])
+				m_pp         = float(line[10].split()[1])
+				m_rt         = float(line[11].split()[1])
+				m_rp         = float(line[12].split()[1])
+				m_tp         = float(line[13].split()[1])
+
+				magnitudes.append( ("Mw", magnitude) )
+				origins.append( (latitude, longitude, depth, origin) )
+				tensor.append( (m_rr, m_tt, m_pp, m_rt, m_rp, m_tp) )
+
+	cat = Catalog()
+
+	for mag, org, ten in zip(magnitudes, origins, tensor):
+		# Create magnitude object.
+		magnitude = Magnitude()
+
+
+		magnitude.magnitude_type = mag[0]
+		magnitude.mag = mag[1]
+		# Write origin object.
+		origin = Origin()
+		origin.latitude = org[0]
+		origin.longitude = org[1]
+		origin.depth = org[2]
+		origin.time = org[3]
+		# Create event object and append to catalog object.
+		event = Event()
+		event.magnitudes.append(magnitude)
+		event.origins.append(origin)
+
+		event.MomentTensor = MomentTensor()
+		event.MomentTensor.m_rr = ten[0]
+		event.MomentTensor.m_tt = ten[1]
+		event.MomentTensor.m_pp = ten[2]
+		event.MomentTensor.m_rt = ten[3]
+		event.MomentTensor.m_rp = ten[4]
+		event.MomentTensor.m_tp = ten[5]
+
+		cat.append(event)
+
+	return cat
+
+
+def _chunking_list(keyword, list):
+	#taken from http://stackoverflow.com/questions/19575702/pythonhow-to-split-file-into-chunks-by-the-occurrence-of-the-header-word
+	chunks = []
+	current_chunk = []
+
+	for line in list:
+
+		if line.startswith(keyword) and current_chunk:
+			chunks.append(current_chunk[:])
+			current_chunk = []
+
+		current_chunk.append(line)
+	chunks.append(current_chunk)
+
+	return chunks
 

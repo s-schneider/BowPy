@@ -36,10 +36,10 @@ import sipy.util.array_util as au
 
 from sipy.util.data_request import data_request
 from sipy.filter.fk import fk_filter, fk_reconstruct, pocs_recon
-from sipy.util.fkutil import  nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx, fktrafo
+from sipy.util.fkutil import  nextpow2, slope_distribution, makeMask, create_iFFT2mtx, fktrafo
 from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
 stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, attach_epidist2coords, epidist2nparray, epidist2list, \
-alignon, partial_stack, gaps_fill_zeros, vespagram
+alignon, resample_partial_stack, gaps_fill_zeros, vespagram
 from sipy.util.picker import get_polygon
 
 import os
@@ -74,10 +74,14 @@ def qtest_pocs(st_rec, st_orginal, alpharange, irange):
 			Q = 10.*np.log(Q_tmp)	
 			Qall.append([alpha, i, Q])
 
+	Qmax = [0,0,0]
+	for i in Qall:
+		if i[2] > Qmax[2]: Qmax = i
+
 
 	return Qall
 
-def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None, fs=20):
+def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None, fs=20, cmap='Blues', cbarlim=None):
 
 	if isinstance(alpharange, numpy.ndarray):
 		yrange  = alpharange
@@ -108,13 +112,15 @@ def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None, fs=20):
 	Qmax[np.unravel_index(maxindex, Qmat.shape)] = 10000
 
 	extent =(alpharange.min(), alpharange.max(), irange.min(), irange.max())
-	im = ax.imshow(Qplot, aspect='auto', origin='lower', interpolation='none',cmap='Blues', extent=extent)
+	im = ax.imshow(Qplot, aspect='auto', origin='lower', interpolation='none',cmap=cmap, extent=extent)
 	ax.set_ylabel('No of iterations', fontsize=fs)
 	ax.set_xlabel(r'$\alpha$', fontsize=fs)
 	ax.tick_params(axis='both', which='both', labelsize=fs)
 	cbar = fig.colorbar(im)
 	cbar.ax.set_ylabel('Q', fontsize=fs)
 	cbar.ax.tick_params(labelsize=fs)
+	if cbarlim:
+		cbar.set_clim(cbarlim[0], cbarlim[1])
 
 	# Customize major tick labels
 
