@@ -1022,10 +1022,10 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidi
 			yrange = np.arange(len(st))
 
 			try:
-				cax = ax.imshow(data[tw.min():tw.max()], aspect='auto', extent=(tw.min(), tw.max(), yrange.min(), yrange.max()),
+				cax = ax.imshow(zoom*data[tw.min():tw.max()], aspect='auto', extent=(tw.min(), tw.max(), yrange.min(), yrange.max()),
 								origin='lower', cmap='seismic')
 			except:
-				cax = ax.imshow(data, aspect='auto', extent=(t_axis.min(), t_axis.max(), yrange.min(), yrange.max()),
+				cax = ax.imshow(zoom*data, aspect='auto', extent=(t_axis.min(), t_axis.max(), yrange.min(), yrange.max()),
 								origin='lower', cmap='seismic')
 
 			
