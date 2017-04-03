@@ -9,7 +9,7 @@ from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2
 from obspy.taup import TauPyModel
 from obspy.core.event import Catalog, Event, Magnitude, Origin, MomentTensor
 import sys
-import instaseis as ins
+
 import numpy as np
 import scipy as sp
 from sipy.util.array_util import get_coords
@@ -332,14 +332,14 @@ def create_insta_from_invcat(network, event, database):
 	"""
 
 
-	db 		= ins.open_db(database)
+	db 		= instaseis.open_db(database)
 
 	tofe 	= event.origins[0].time
 	lat 	= event.origins[0].latitude 
 	lon 	= event.origins[0].longitude
 	depth 	= event.origins[0].depth
 
-	source = ins.Source(
+	source = instaseis.Source(
 	latitude=lat, longitude=lon, depth_in_m=depth,
 	m_rr = event.MomentTensor.m_rr,
 	m_tt = event.MomentTensor.m_tt,
@@ -353,7 +353,7 @@ def create_insta_from_invcat(network, event, database):
 	stream = Stream()
 	tmp = []
 	for station in network:
-		rec = ins.Receiver(latitude=str(station.latitude), longitude=str(station.longitude), network=str(network.code), station=str(station.code) )
+		rec = instaseis.Receiver(latitude=str(station.latitude), longitude=str(station.longitude), network=str(network.code), station=str(station.code) )
 		tmp.append(db.get_seismograms(source=source, receiver=rec))
 
 	for x in tmp:

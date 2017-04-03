@@ -703,8 +703,14 @@ def pocs_recon(st, maxiter=None, alpha=None, dmethod='denoise', method='linear',
 	st_rec 	= array2stream(ADfinal, st)
 	st_rec.normalize()
 
+	if alpha_i_test:
+		for trace in st_rec:
+			trace.stats.pocs =  {'alpha': alpha, 'iteration': maxiter, 'Q': Qmax}
+	else:
+		for trace in st_rec:
+			trace.stats.pocs =  {'alpha': alpha, 'iteration': maxiter}
 	for trace in noft:
-		st_rec[trace].stats.pocs =  {'alpha': alpha, 'iteration': maxiter}
+		st_rec[trace].stats.recon = True	
 
 	return st_rec
 

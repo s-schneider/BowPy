@@ -8,7 +8,7 @@ from sipy.util.fkutil import nextpow2
 from sipy.util.base import stream2array, array2stream
 import sys
 
-def ssa_denoise_recon(st, dt,p,flow,fhigh):
+def ssa_denoise_recon(st, p, flow, fhigh):
 	"""
 	SSA method, that de-noises the data given in stream by a rank reduction of the singular values of the
 	Hankel matrix, created from the data in st and the sampling interval of the traces, to p.
@@ -41,6 +41,8 @@ def ssa_denoise_recon(st, dt,p,flow,fhigh):
 	st_tmp = st.copy()
 	
 	data = stream2array(st_tmp)
+
+	dt = st_tmp[0].stats.delta
 
 	data_ssa = fx_ssa(data,dt,p,flow,fhigh)
 	
