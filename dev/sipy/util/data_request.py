@@ -167,13 +167,14 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 			inventory = client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
 			 								minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
 			 								latitude=station_radialcenterlat, longitude=station_radialcenterlon, minradius=station_minrad, maxradius=station_maxrad)
-			print("Inventory found.")
+			print("Inventory with %i networks, containing %i stations found." % (len(inventory), len(inventory.get_contents()['stations'])))
 		except:
 			print("No Inventory found for given parameters")
 			return
 		
 		for network in inventory:
 
+			print("%i networks")
 			elat = event.origins[0].latitude
 			elon = event.origins[0].longitude
 			depth = event.origins[0].depth/1000.
