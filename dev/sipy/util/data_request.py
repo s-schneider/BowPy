@@ -305,7 +305,7 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 		stream = Stream()
 
 	if savefile:
-		stname = str(origin_t).split('.')[0] + ".MSEED"
+		stname = str(origin_t).split('.')[0] + "." + file_format
 		invname = stname + "_inv.xml"
 		catname = stname + "_cat.xml"
 		stream.write(stname, format=file_format)
