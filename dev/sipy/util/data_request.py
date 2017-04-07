@@ -174,7 +174,7 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 		
 		for network in inventory:
 
-			print("%i networks")
+			print("Searching in network: %s" % network.code)
 			elat = event.origins[0].latitude
 			elon = event.origins[0].longitude
 			depth = event.origins[0].depth/1000.
@@ -224,11 +224,14 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 
 					Ptime = P_arrival_time.time
 					tstart = UTCDateTime(event.origins[0].time + Ptime - t_before_first_arrival * 60)
-					tend = UTCDateTime(event.origins[0].time + Ptime + t_after_first_arrival * 60)
+					if normal_mode_data:
+						tend = UTCDateTime(event.origins[0].time + Ptime + 50 * 60 * 60)
+					else:
+						tend = UTCDateTime(event.origins[0].time + Ptime + t_after_first_arrival * 60)
 
 					try:
 						if normal_mode_data:
-							streamreq = client.get_waveforms(network=network.code, station=station.code, location='*', channel=channels, starttime=tstart, attach_response=True, longestonly=True)
+							streamreq = client.get_waveforms(network=network.code, station=station.code, location='*', channel=channels, starttime=tstart, endtime=tend, attach_response=True, longestonly=True)
 						else:
 							streamreq = client.get_waveforms(network=network.code, station=station.code, location='*', channel=channels, starttime=tstart, endtime=tend, attach_response=True)
 						no_of_stations += 1
@@ -247,9 +250,10 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 			 								latitude=station_radialcenterlat, longitude=station_radialcenterlon, minradius=station_minrad, maxradius=station_maxrad)
 					except:
 						continue
+				print('\n')
 
 
-			# If not checking each station individually.
+			# If not, checking each station individually.
 			else:
 				for station in network:
 					epidist = locations2degrees(station.latitude,station.longitude,elat,elon)
