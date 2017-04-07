@@ -17,7 +17,7 @@ import os
 import datetime
 from sipy.util.array_util import center_of_gravity, plot_map, attach_network_to_traces, attach_coordinates_to_traces, geometrical_center
 
-def data_request(client_name, cat_client_name, start, end, minmag, net=None, scode="*", channels="*", minlat=None,
+def data_request(client_name, start, end, minmag, cat_client_name=None, net=None, scode="*", channels="*", minlat=None,
                  maxlat=None,minlon=None,maxlon=None, station_minlat=None,
                  station_maxlat=None, station_minlon=None, station_maxlon=None, mindepth=None, maxdepth=None, 
                  radialcenterlat=None, radialcenterlon=None, minrad=None, maxrad=None,
@@ -32,15 +32,15 @@ def data_request(client_name, cat_client_name, start, end, minmag, net=None, sco
 		                https://docs.obspy.org/tutorial/code_snippets/retrieving_data_from_datacenters.html
 	:type  client_name:  string
 
-	:param cat_client_name: Name of Event catalog
-
-	:type  cat_client_name: string
-
 	:param start, end: starttime, endtime
 	:type : UTCDateTime
 
 	:param minmag: Minimum magnitude of event
 	:type  minmag: float
+
+	:param cat_client_name: Name of Event catalog, default is "None", resulting in catalog search, defined by client_name
+
+	:type  cat_client_name: string
 
 	:param net: Network code for which to search data for
 	:type  net: string
@@ -152,7 +152,6 @@ def data_request(client_name, cat_client_name, start, end, minmag, net=None, sco
 	print("Following events found: \n")
 	print(catalog)
 	m = TauPyModel(model="ak135")
-	Plist = ["P", "Pdiff", "p"]
 	for event in catalog:
 		print("\n")
 		print("########################################")
@@ -185,9 +184,9 @@ def data_request(client_name, cat_client_name, start, end, minmag, net=None, sco
 				slat = cog['latitude']
 				slon = cog['longitude']			
 				epidist = locations2degrees(slat,slon,elat,elon)
-				arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist,
-							                        phase_list=Plist)
+				arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist)
 
+				#Checking for first arrival time
 				P_arrival_time = arrivaltime[0]
 
 				Ptime = P_arrival_time.time
@@ -219,9 +218,7 @@ def data_request(client_name, cat_client_name, start, end, minmag, net=None, sco
 				for station in network:
 
 					epidist = locations2degrees(station.latitude,station.longitude,elat,elon)
-					arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist,
-								                        phase_list=Plist)
-
+					arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist)
 					P_arrival_time = arrivaltime[0]
 
 					Ptime = P_arrival_time.time
@@ -252,10 +249,9 @@ def data_request(client_name, cat_client_name, start, end, minmag, net=None, sco
 			else:
 				for station in network:
 					epidist = locations2degrees(station.latitude,station.longitude,elat,elon)
-					arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist,
-								                        phase_list=Plist)
+					arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist)
 
-
+					#Checking for first arrival time
 					P_arrival_time = arrivaltime[0]
 
 					Ptime = P_arrival_time.time
