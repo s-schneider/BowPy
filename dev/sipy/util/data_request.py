@@ -22,7 +22,7 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
                  station_maxlat=None, station_minlon=None, station_maxlon=None, mindepth=None, maxdepth=None, 
                  radialcenterlat=None, radialcenterlon=None, minrad=None, maxrad=None,
                  station_radialcenterlat=None, station_radialcenterlon=None, station_minrad=None, station_maxrad=None,
-                 azimuth=None, baz=False, t_before_first_arrival=1, t_after_first_arrival=9, savefile=False, file_format='SAC'):
+                 azimuth=None, baz=False, t_before_first_arrival=1, t_after_first_arrival=9, savefile=False, file_format='SAC', normal_mode_data=False):
 	"""
 	Searches in a given Database for seismic data. Restrictions in terms of starttime, endtime, network etc can be made.
 	If data is found it returns a stream variable, with the waveforms, an inventory with all station and network information
@@ -227,7 +227,10 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 					tend = UTCDateTime(event.origins[0].time + Ptime + t_after_first_arrival * 60)
 
 					try:
-						streamreq = client.get_waveforms(network=network.code, station=station.code, location='*', channel=channels, starttime=tstart, endtime=tend, attach_response=True)
+						if normal_mode_data:
+							streamreq = client.get_waveforms(network=network.code, station=station.code, location='*', channel=channels, starttime=tstart, attach_response=True, longestonly=True)
+						else:
+							streamreq = client.get_waveforms(network=network.code, station=station.code, location='*', channel=channels, starttime=tstart, endtime=tend, attach_response=True)
 						no_of_stations += 1
 						print("Downloaded data for %i of %i available stations!" % (no_of_stations, network.selected_number_of_stations), end='\r' )
 						sys.stdout.flush()
