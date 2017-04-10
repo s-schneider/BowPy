@@ -327,15 +327,16 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 
     # Calculate the event-station distances.
     if event:
-        event_lat = event.origins[0].latitude
-        event_lng = event.origins[0].longitude
-        event_dpt = event.origins[0].depth / 1000.
+        event_lat    = event.origins[0].latitude
+        event_lng    = event.origins[0].longitude
+        event_dpt    = event.origins[0].depth / 1000.
         event_origin = event.origins[0].time
         for value in coords.values():
-            value["distance"] = locations2degrees(
+                value["distance"] = locations2degrees(
                 value["latitude"], value["longitude"], event_lat, event_lng)
-            value["depth"] = event_dpt
-            value["origin"] = event_origin
+                value["depth"]    = event_dpt
+                value["origin"]   = event_origin
+                value["back_azimuth"] = gps2dist_azimuth(value["latitude"], value["longitude"], event_lat, event_lng)[2]
     else:
         print("No Event information found, distance and origin information will NOT be set!")
 
@@ -343,16 +344,17 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
     if isinstance(stream, Stream):
         for trace in stream:
             try:
-                station = ".".join(trace.id.split(".")[:2])
-                value = coords[station]
-                trace.stats.coordinates = AttribDict()
-                trace.stats.coordinates.latitude = value["latitude"]
+                station                           = ".".join(trace.id.split(".")[:2])
+                value                             = coords[station]
+                trace.stats.coordinates           = AttribDict()
+                trace.stats.coordinates.latitude  = value["latitude"]
                 trace.stats.coordinates.longitude = value["longitude"]
                 trace.stats.coordinates.elevation = value["elevation"]
                 if event:
-                    trace.stats.distance = value["distance"]
-                    trace.stats.depth = value["depth"]
-                    trace.stats.origin = value["origin"]
+                    trace.stats.distance     = value["distance"]
+                    trace.stats.depth        = value["depth"]
+                    trace.stats.origin       = value["origin"]
+                    trace.stats.back_azimuth = value["back_azimuth"]
             except:
                 continue
 
