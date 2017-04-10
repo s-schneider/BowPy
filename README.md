@@ -6,7 +6,7 @@ Installation:
 
 - clone/download the repo
 
-- cd into FK-Toolbox
+- cd into Seismic-Toolbox
 
 - chmod 755 INSTALL.sh
 

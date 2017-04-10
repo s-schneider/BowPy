@@ -210,6 +210,23 @@ def create_sine( no_of_traces=10, len_of_traces=30000, samplingrate = 30000,
 	return(data, t)
 
 
+def cut2shortest(stream):
+	"""
+	Cuts traces in stream to the same length. Looks for the latest beginning and the earliest ending of traces in stream,
+	which will be the new reference times.
+	"""
+	start = stream[0].stats.starttime
+	end   = stream[0].stats.endtime
+	for trace in stream:
+		if trace.stats.starttime > start:
+			start = trace.stats.starttime
+		if trace.stats.endtime < end:
+			end = trace.stats.endtime
+
+	stream.trim(start, end)
+	return stream
+
+
 def inv4stream(stream, network, client_name):
 
 	start 	= stream[0].stats.starttime
@@ -258,9 +275,10 @@ def read_file(stream, inventory, catalog, array=False):
 
 def split2stations(stream):
 	"""
-	Splits a stream in a list of streams, sorted by the stations inside stream object.
+	Splits a stream in a list of streams, sorted by the stations inside stream object. Merges traces with the same ID to one trace.
 	"""
 	stream.sort(['station'])
+	stream.merge()
 
 	stream_list = []
 	st_tmp = Stream()
@@ -276,6 +294,7 @@ def split2stations(stream):
 			statname = trace.stats.station
 			st_tmp = Stream()
 			st_tmp.append(trace)
+
 	stream_list.append(st_tmp)
 
 	return(stream_list)
