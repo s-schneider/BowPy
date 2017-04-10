@@ -338,7 +338,7 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
                 value["origin"]   = event_origin
                 value["back_azimuth"] = gps2dist_azimuth(value["latitude"], value["longitude"], event_lat, event_lng)[2]
     else:
-        print("No Event information found, distance and origin information will NOT be set!")
+        print("No Event information found, distance, origin and back-azmuth will NOT be set!")
 
     # Attach the information to the traces.
     if isinstance(stream, Stream):

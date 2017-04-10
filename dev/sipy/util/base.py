@@ -256,6 +256,31 @@ def read_file(stream, inventory, catalog, array=False):
 		return(st, inv, cat)
 
 
+def split2stations(stream):
+	"""
+	Splits a stream in a list of streams, sorted by the stations inside stream object.
+	"""
+	stream.sort(['station'])
+
+	stream_list = []
+	st_tmp = Stream()
+
+	statname = stream[0].stats.station
+	for trace in stream:
+		#Collect traces from same station
+		if trace.stats.station == statname:
+			st_tmp.append(trace)
+
+		else:
+			stream_list.append(st_tmp)
+			statname = trace.stats.station
+			st_tmp = Stream()
+			st_tmp.append(trace)
+	stream_list.append(st_tmp)
+
+	return(stream_list)
+
+
 def standard_test_signal(snes1=1, snes2=3, noise=0, nonequi=False):
 	y, yindices = create_deltasignal(no_of_traces=200, len_of_traces=200,
 							multiple=True, multipdist=5, no_of_multip=1,
