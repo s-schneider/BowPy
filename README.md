@@ -1,5 +1,5 @@
-# FK-Toolbox
-Development of a f-k method toolbox applicable to seismological array data 
+# Seismic-Toolbox
+Development of a toolbox applicable to seismological array data, containing f-k methods for data reconstruction and filtering
 
 
 Installation:
