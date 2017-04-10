@@ -1,4 +1,4 @@
-# Seismic-Toolbox
+# Seismic-Toolbox: SiPy
 Development of a toolbox applicable to seismological array data, containing f-k methods for data reconstruction and filtering
 
 
