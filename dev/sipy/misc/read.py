@@ -11,9 +11,9 @@ from sipy.util.array_util import attach_network_to_traces, attach_coordinates_to
 import warnings
 
 
-def read_st(input, network=None, client_name=None):
+def read_st(input, format=None, network=None, client_name=None):
 
-	stream = read(input)
+	stream = read(input, format)
 
 	try:
 		if stream[0].stats._format == 'Q':
