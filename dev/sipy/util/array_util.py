@@ -436,6 +436,26 @@ def attach_network_to_traces(stream, inventory):
                     continue
                 stream.meta.network = network.code
 
+def attach_event_origin_to_traces(stream, event):
+    """
+    Attaches origin-time and event depth to traces.
+    """
+
+    if isinstance(stream, Stream):
+        for trace in stream:
+            if trace.stats._format == 'AH' :
+                trace.stats.ah.event.latitude    = event.origins[0].latitude
+                trace.stats.ah.event.longitude   = event.origins[0].longitude
+                trace.stats.ah.event.depth       = event.origins[0].depth
+                trace.stats.ah.event.origin_time = event.origins[0].time
+
+    if isinstance(stream, Trace):
+            if stream.stats._format == 'AH' :
+                stream.stats.ah.event.latitude    = event.origins[0].latitude
+                stream.stats.ah.event.longitude   = event.origins[0].longitude
+                stream.stats.ah.event.depth       = event.origins[0].depth
+                stream.stats.ah.event.origin_time = event.origins[0].time
+
 
 def center_of_gravity(inventory):
     lats, lngs, hgts = __coordinate_values(inventory)
