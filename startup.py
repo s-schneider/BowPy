@@ -30,7 +30,6 @@ try:
 	import sipy.util.fkutil as fku
 	import sipy.util.base as base
 	import sipy.util.array_util as au
-	import sipy.util.tests as tests
 
 	from sipy.misc.read import read_st
 	from sipy.filter.fk import pocs_recon
