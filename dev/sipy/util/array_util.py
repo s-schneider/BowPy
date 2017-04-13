@@ -371,7 +371,8 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
                 stream.stats.depth = value["depth"]
                 stream.stats.origin = value["origin"]
         except:
-            return
+            raise TypeError
+            
 
 
 def attach_epidist2coords(inventory, event, stream=None):

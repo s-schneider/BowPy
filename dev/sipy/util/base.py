@@ -273,7 +273,7 @@ def read_file(stream, inventory, catalog, array=False):
 		return(st, inv, cat)
 
 
-def split2stations(stream):
+def split2stations(stream, merge=True):
 	"""
 	Splits a stream in a list of streams, sorted by the stations inside stream object. Merges traces with the same ID to one trace.
 	"""
@@ -289,13 +289,14 @@ def split2stations(stream):
 			st_tmp.append(trace)
 
 		else:
-			st_tmp.merge()
+
+			if merge: st_tmp.merge()
 			stream_list.append(st_tmp)
 			statname = trace.stats.station
 			st_tmp = Stream()
 			st_tmp.append(trace)
 
-	st_tmp.merge()
+	if merge: st_tmp.merge()
 	stream_list.append(st_tmp)
 
 	return(stream_list)
