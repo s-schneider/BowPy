@@ -6,6 +6,7 @@ import obspy
 from obspy.clients.fdsn import Client
 from obspy import UTCDateTime, Stream, Inventory, Trace, read
 from obspy.core.inventory.network import Network
+from obspy.core.util.attribdict import AttribDict
 import warnings
 
 
@@ -245,6 +246,26 @@ def maxrow(array):
 			max_row_index = i
 	return(max_row_index)
 
+def merge_or_keep_longest(stream):
+
+	try:
+		stream.merge()
+	except:
+		channels = AttribDict()
+
+		for i, tr in enumerate(stream):
+			if tr.stats.channel in channels:
+				if tr.stats.npts < channels[tr.stats.channel][0]:
+					stream.remove(tr)
+				else:
+					stream.remove(stream[channels[tr.stats.channel][1]])
+
+			else:
+				#Append the name of channel, samplingpoints and number of trace so channels
+				channels[tr.stats.channel] = [tr.stats.npts, i]
+
+	return stream
+
 
 def nextpow2(i):
 	#See Matlab documentary
@@ -290,13 +311,13 @@ def split2stations(stream, merge=True):
 
 		else:
 
-			if merge: st_tmp.merge()
+			if merge: merge_or_keep_longest(st_tmp)
 			stream_list.append(st_tmp)
 			statname = trace.stats.station
 			st_tmp = Stream()
 			st_tmp.append(trace)
 
-	if merge: st_tmp.merge()
+	if merge: merge_or_keep_longest(st_tmp)
 	stream_list.append(st_tmp)
 
 	return(stream_list)
