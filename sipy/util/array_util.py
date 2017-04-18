@@ -327,6 +327,7 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 
     # Calculate the event-station distances.
     if event:
+        attach_event_origin_to_traces(stream, event)
         event_lat    = event.origins[0].latitude
         event_lng    = event.origins[0].longitude
         event_dpt    = event.origins[0].depth / 1000.
