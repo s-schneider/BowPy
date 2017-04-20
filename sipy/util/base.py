@@ -255,11 +255,10 @@ def maxrow(array):
 			max_row_index = i
 	return(max_row_index)
 
-def merge_or_keep_longest(stream):
+def merge_or_keep_longest(stream, merge=False):
 
-	try:
-		stream.merge()
-	except:
+	def _keep_longest(stream)
+
 		channels = AttribDict()
 
 		for i, tr in enumerate(stream):
@@ -272,6 +271,18 @@ def merge_or_keep_longest(stream):
 			else:
 				#Append the name of channel, samplingpoints and number of trace so channels
 				channels[tr.stats.channel] = [tr.stats.npts, i]
+
+		return stream
+
+	if merge:
+		try:
+			stream.merge()
+		except:
+			stream = _keep_longest(stream)
+
+	else:
+
+		stream = _keep_longest(stream)
 
 	return stream
 
@@ -303,7 +314,7 @@ def read_file(stream, inventory, catalog, array=False):
 		return(st, inv, cat)
 
 
-def split2stations(stream, merge=True, keep_masked=False):
+def split2stations(stream, keep_longest=False, merge=False, keep_masked=False):
 	"""
 	Splits a stream in a list of streams, sorted by the stations inside stream object. Merges traces with the same ID to one trace.
 	"""
@@ -326,14 +337,14 @@ def split2stations(stream, merge=True, keep_masked=False):
 			st_tmp = Stream()
 			st_tmp.append(trace)
 
-	if merge: merge_or_keep_longest(st_tmp)
+	if merge: merge_or_keep_longest(st_tmp, merge)
 	stream_list.append(st_tmp)
 
 	if not keep_masked:
 		for station in stream_list:
 			station.sort(['channel'])
 			for trace in station:
-				if type(trace.data) == numpy.ma.core.MaskedArray:
+				if type(trace.data) == np.ma.core.MaskedArray:
 					stream_list.remove(station)
 					break
 
