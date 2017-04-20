@@ -260,19 +260,18 @@ def keep_longest(stream):
 	keeps the longest record of each channel
 	"""
 
-	st_tmp = stream.copy()
+	st_tmp = Stream()
+	st_tmp.sort(['npts'])
 	channels = AttribDict()
 
 	for i, tr in enumerate(stream):
-		if tr.stats.channel in channels:
-			if tr.stats.npts < channels[tr.stats.channel][0]:
-				st_tmp.remove(tr)
-			else:
-				st_tmp.remove(stream[channels[tr.stats.channel][1]])
 
+		if tr.stats.channel in channels:
+			continue
 		else:
 			#Append the name of channel, samplingpoints and number of trace so channels
 			channels[tr.stats.channel] = [tr.stats.npts, i]
+			st_tmp.append(stream[i])
 
 	stream = st_tmp
 
@@ -322,7 +321,6 @@ def split2stations(stream, merge_traces=None, keep_masked=False):
 
 	statname = stream[0].stats.station
 	for trace in stream:
-		print(trace)
 		#Collect traces from same station
 		if trace.stats.station == statname:
 			st_tmp.append(trace)
