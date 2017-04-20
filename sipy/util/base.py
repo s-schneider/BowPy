@@ -257,7 +257,7 @@ def maxrow(array):
 
 def merge_or_keep_longest(stream, merge=False):
 
-	def _keep_longest(stream)
+    def _keep_longest(stream):
 
 		channels = AttribDict()
 
