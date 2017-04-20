@@ -255,34 +255,26 @@ def maxrow(array):
 			max_row_index = i
 	return(max_row_index)
 
-def merge_or_keep_longest(stream, merge=False):
+def keep_longest(stream):
+	"""
+	keeps the longest record of each channel
+	"""
 
-	def _keep_longest(stream):
+	st_tmp = stream.copy()
+	channels = AttribDict()
 
-		channels = AttribDict()
-
-		for i, tr in enumerate(stream):
-			if tr.stats.channel in channels:
-				if tr.stats.npts < channels[tr.stats.channel][0]:
-					stream.remove(tr)
-				else:
-					stream.remove(stream[channels[tr.stats.channel][1]])
-
+	for i, tr in enumerate(stream):
+		if tr.stats.channel in channels:
+			if tr.stats.npts < channels[tr.stats.channel][0]:
+				st_tmp.remove(tr)
 			else:
-				#Append the name of channel, samplingpoints and number of trace so channels
-				channels[tr.stats.channel] = [tr.stats.npts, i]
+				st_tmp.remove(stream[channels[tr.stats.channel][1]])
 
-		return stream
+		else:
+			#Append the name of channel, samplingpoints and number of trace so channels
+			channels[tr.stats.channel] = [tr.stats.npts, i]
 
-	if merge:
-		try:
-			stream.merge()
-		except:
-			stream = _keep_longest(stream)
-
-	else:
-
-		stream = _keep_longest(stream)
+	stream = st_tmp
 
 	return stream
 
@@ -314,9 +306,14 @@ def read_file(stream, inventory, catalog, array=False):
 		return(st, inv, cat)
 
 
-def split2stations(stream, keep_longest=False, merge=False, keep_masked=False):
+def split2stations(stream, merge_traces=None, keep_masked=False):
 	"""
 	Splits a stream in a list of streams, sorted by the stations inside stream object. Merges traces with the same ID to one trace.
+	:param stream:
+	:type  stream:
+
+	:param merge_traces: defines if traces should be merged, or just the longest continious record is kept.
+	:type  merge_traces: bool or none
 	"""
 	stream.sort(['station'])
 
@@ -325,26 +322,42 @@ def split2stations(stream, keep_longest=False, merge=False, keep_masked=False):
 
 	statname = stream[0].stats.station
 	for trace in stream:
+		print(trace)
 		#Collect traces from same station
 		if trace.stats.station == statname:
 			st_tmp.append(trace)
 
 		else:
 
-			if merge: merge_or_keep_longest(st_tmp)
+			if merge_traces == True: 
+				try:
+					st_tmp.merge()
+				except:
+					st_tmp = keep_longest(st_tmp)
+			elif merge_traces == False:
+				st_tmp = keep_longest(st_tmp)
+
+
 			stream_list.append(st_tmp)
 			statname = trace.stats.station
 			st_tmp = Stream()
 			st_tmp.append(trace)
 
-	if merge: merge_or_keep_longest(st_tmp, merge)
+	if merge_traces == True: 
+		try:
+			st_tmp.merge()
+		except:
+			st_tmp = keep_longest(st_tmp)
+	elif merge_traces == False:
+				st_tmp = keep_longest(st_tmp)
+
 	stream_list.append(st_tmp)
 
 	if not keep_masked:
 		for station in stream_list:
 			station.sort(['channel'])
 			for trace in station:
-				if type(trace.data) == np.ma.core.MaskedArray:
+				if type(trace.data) == numpy.ma.core.MaskedArray:
 					stream_list.remove(station)
 					break
 
