@@ -237,6 +237,15 @@ def inv4stream(stream, network, client_name):
 
 	return inv
 
+def list2stream(list):
+
+	stream = Stream()
+	for station in list:
+		for trace in station:
+			stream.append(trace)
+
+	return stream
+
 
 def maxrow(array):
 	rowsum=0
@@ -294,7 +303,7 @@ def read_file(stream, inventory, catalog, array=False):
 		return(st, inv, cat)
 
 
-def split2stations(stream, merge=True):
+def split2stations(stream, merge=True, keep_masked=False):
 	"""
 	Splits a stream in a list of streams, sorted by the stations inside stream object. Merges traces with the same ID to one trace.
 	"""
@@ -319,6 +328,15 @@ def split2stations(stream, merge=True):
 
 	if merge: merge_or_keep_longest(st_tmp)
 	stream_list.append(st_tmp)
+
+	if not keep_masked:
+		for station in stream_list:
+			station.sort(['channel'])
+			for trace in station:
+				if type(trace.data) == numpy.ma.core.MaskedArray:
+					stream_list.remove(station)
+					break
+
 
 	return(stream_list)
 
