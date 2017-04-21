@@ -355,7 +355,7 @@ def split2stations(stream, merge_traces=None, keep_masked=False):
 		for station in stream_list:
 			station.sort(['channel'])
 			for trace in station:
-				if type(trace.data) == numpy.ma.core.MaskedArray:
+				if type(trace.data) == np.ma.core.MaskedArray:
 					stream_list.remove(station)
 					break
 
