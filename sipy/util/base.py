@@ -305,7 +305,7 @@ def read_file(stream, inventory, catalog, array=False):
 		return(st, inv, cat)
 
 
-def split2stations(stream, merge_traces=None, keep_masked=False):
+def split2stations(stream, min_len=None, merge_traces=None, keep_masked=False):
 	"""
 	Splits a stream in a list of streams, sorted by the stations inside stream object. Merges traces with the same ID to one trace.
 	:param stream:
@@ -351,7 +351,7 @@ def split2stations(stream, merge_traces=None, keep_masked=False):
 
 	stream_list.append(st_tmp)
 
-	if not keep_masked:
+	if not keep_masked or min_len:
 		for station in stream_list:
 			station.sort(['channel'])
 			for trace in station:
@@ -359,6 +359,9 @@ def split2stations(stream, merge_traces=None, keep_masked=False):
 					stream_list.remove(station)
 					break
 
+				elif trace.stats.npts < min_len:
+					stream_list.remove(station)
+					break
 
 	return(stream_list)
 
