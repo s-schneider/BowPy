@@ -27,24 +27,24 @@ from obspy import read_events as read_cat
 from obspy import UTCDateTime
 
 import sipy
-import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
-import sipy.filter.fk as fk
-import sipy.filter.radon as radon
-import sipy.util.fkutil as fku
-import sipy.util.base as base
-import sipy.util.array_util as au
-import sipy.util.tests as tests
+import bowpy.misc.Muenster_Array_Seismology_Vespagram as MAS
+import bowpy.filter.fk as fk
+import bowpy.filter.radon as radon
+import bowpy.util.fkutil as fku
+import bowpy.util.base as base
+import bowpy.util.array_util as au
+import bowpy.util.tests as tests
 
-from sipy.misc.read import read_st
-from sipy.filter.fk import pocs_recon
-from sipy.util.data_request import data_request
-from sipy.util.base import cat4stream, inv4stream
-from sipy.filter.fk import fk_filter, fk_reconstruct
-from sipy.util.fkutil import  nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx, plotfk, fktrafo
-from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
+from bowpy.misc.read import read_st
+from bowpy.filter.fk import pocs_recon
+from bowpy.util.data_request import data_request
+from bowpy.util.base import cat4stream, inv4stream
+from bowpy.filter.fk import fk_filter, fk_reconstruct
+from bowpy.util.fkutil import  nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx, plotfk, fktrafo
+from bowpy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
 stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, attach_epidist2coords, epidist2nparray, epidist2list, \
 alignon, partial_stack, gaps_fill_zeros, vespagram, rm, cut, plot_vespa
-from sipy.util.picker import get_polygon
+from bowpy.util.picker import get_polygon
 
 ##########
 st = read_st('../data/workfiles/UT_24_10_09/FKFIL_PREP.pickle')
@@ -65,7 +65,7 @@ stn.normalize(global_max=True)
 #### TEST ROUTINE FOR MAINPHASE AND PRECURSOR WITH DIFFERENT DELTA U ###
 def test(x, case, nf=True):
 	from obspy import Stream, Trace
-	from sipy.util.array_util import stack
+	from bowpy.util.array_util import stack
 	import sys
 	n_of_samples 		= 2000
 	n_of_traces 		= 20
@@ -460,14 +460,14 @@ import scipy as sp
 import scipy.signal as signal
 from numpy import genfromtxt
 
-from sipy.util.array_util import get_coords
+from bowpy.util.array_util import get_coords
 
 import os
 import datetime
 
-import sipy.filter.fk as fk
-from sipy.filter.fk import fk_filter
-import sipy.util.fkutil as fku
+import bowpy.filter.fk as fk
+from bowpy.filter.fk import fk_filter
+import bowpy.util.fkutil as fku
 import instaseis as ins
 
 uniform=False
@@ -773,7 +773,7 @@ plt.draw()
 plt.show()
 
 
-from sipy.util.fkutil import create_filter
+from bowpy.util.fkutil import create_filter
 fs = 22
 
 fig, ax = plt.subplots()

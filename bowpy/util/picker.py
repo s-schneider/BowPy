@@ -182,7 +182,7 @@ def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, ytick
     :param no_of_vert: number of vertices, default 4, 
     :type no_of_vert: int
     """
-    from sipy.util.polygon_interactor import PolygonInteractor
+    from bowpy.util.polygon_interactor import PolygonInteractor
     from matplotlib.patches import Polygon
     
     no_of_vert = int(no_of_vert)

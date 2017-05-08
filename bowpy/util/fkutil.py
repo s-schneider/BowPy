@@ -17,10 +17,10 @@ from obspy.taup import TauPyModel
 from obspy.core.event.event import Event
 from obspy import Stream, Trace, Inventory
 from obspy.core.inventory.network import Network
-from sipy.util.base import nextpow2, stream2array
-from sipy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces
-from sipy.util.picker import pick_data, FollowDotCursor
-from sipy.filter.ssa import fx_ssa
+from bowpy.util.base import nextpow2, stream2array
+from bowpy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces
+from bowpy.util.picker import pick_data, FollowDotCursor
+from bowpy.filter.ssa import fx_ssa
 import datetime
 import time
 import scipy as sp
@@ -442,7 +442,7 @@ def kill(data, stat):
 def line_cut(array, shape):
 	"""
 	Sets the array to zero, except for the 0 line and given features given in shape, acts as bandpass filter.
-	"Cuts" one line out + given shape. For detailed information look in sipy.filter.fk.fk_filter
+	"Cuts" one line out + given shape. For detailed information look in bowpy.filter.fk.fk_filter
 
 	:param array: array-like
 	:type  array: numpy.ndarray
@@ -488,7 +488,7 @@ def line_cut(array, shape):
 def line_set_zero(array, shape):
 	"""
 	Sets line zero in array + features given in shape, acts as bandstop filter.
-	For detailed information look in sipy.filter.fk.fk_filter
+	For detailed information look in bowpy.filter.fk.fk_filter
 
 	:param array: array-like
 	:type  array: numpy.ndarray

@@ -10,18 +10,18 @@ import numpy
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from sipy.util.array_util import get_coords
+from bowpy.util.array_util import get_coords
 import datetime
 import scipy as sp
 import scipy.signal as signal
 from scipy import sparse
 from scipy.optimize import fmin_cg
 
-from sipy.util.array_util import epidist2nparray, attach_epidist2coords, alignon, stack
-from sipy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array,\
+from bowpy.util.array_util import epidist2nparray, attach_epidist2coords, alignon, stack
+from bowpy.util.fkutil import ls2ifft_prep, line_cut, line_set_zero, shift_array,\
 							find_peaks, slope_distribution, makeMask, create_iFFT2mtx, cg_solver, lstsqs, pocs
-from sipy.util.base import nextpow2, array2stream, array2trace, stream2array
-from sipy.util.picker import get_polygon
+from bowpy.util.base import nextpow2, array2stream, array2trace, stream2array
+from bowpy.util.picker import get_polygon
 
 def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth', 2, 2], phase=None, polygon=4, normalize=True, stack=False,
 					slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None], 
@@ -390,17 +390,17 @@ def fk_reconstruct(st, slopes=[-10,10], deltaslope=0.05, slopepicking=False, smo
 
 				#Example around PP.
 				stream_org = st.copy()
-				d = sipy.util.array_util.stream2array(stream_org)
+				d = bowpy.util.array_util.stream2array(stream_org)
 				ArrayData = np.zeros((d.shape[0], 300))
 				for i, trace in enumerate(d):
 					ArrayData[i,:]=trace[400:700]
-				stream = sipy.util.array_util.array2stream(ArrayData, stream_org)
+				stream = bowpy.util.array_util.array2stream(ArrayData, stream_org)
 	
-				dssa = sipy.filter.fk.fk_reconstruct(stream, mu=5e-2, method='interpolate')
+				dssa = bowpy.filter.fk.fk_reconstruct(stream, mu=5e-2, method='interpolate')
 				
-				stream_ssa = sipy.util.array_util.array2stream(dssa, stream)
+				stream_ssa = bowpy.util.array_util.array2stream(dssa, stream)
 
-				sipy.util.fkutil.plot(stream_ssa)
+				bowpy.util.fkutil.plot(stream_ssa)
 
 	Author: S. Schneider, 2016
 	Reference:	Mostafa Naghizadeh, Seismic data interpolation and de-noising in the frequency-wavenumber

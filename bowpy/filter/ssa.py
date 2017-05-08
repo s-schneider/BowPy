@@ -4,8 +4,8 @@ import numpy as np
 from numpy import dot
 import math
 import scipy as sp
-from sipy.util.fkutil import nextpow2
-from sipy.util.base import stream2array, array2stream
+from bowpy.util.fkutil import nextpow2
+from bowpy.util.base import stream2array, array2stream
 import sys
 
 def ssa_denoise_recon(st, p, flow, fhigh):
@@ -71,7 +71,7 @@ def ssa(d,nw,p,ssa_flag):
 		import numpy as np
 		from numpy import cos
 		import matplotlib.pyplot as plt
-		from sipy.filter.ssa import ssa
+		from bowpy.filter.ssa import ssa
 		import scipy.io as sio
 		
 		rand =  sio.loadmat("../../mtz_ssa/randomnumbers.mat")

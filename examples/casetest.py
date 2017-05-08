@@ -30,20 +30,20 @@ from obspy import read_inventory as read_inv
 from obspy import read_events as read_cat
 
 import sipy
-import sipy.misc.Muenster_Array_Seismology_Vespagram as MAS
-import sipy.filter.fk as fk
-import sipy.filter.radon as radon
-import sipy.util.fkutil as fku
-import sipy.util.base as base
-import sipy.util.array_util as au
+import bowpy.misc.Muenster_Array_Seismology_Vespagram as MAS
+import bowpy.filter.fk as fk
+import bowpy.filter.radon as radon
+import bowpy.util.fkutil as fku
+import bowpy.util.base as base
+import bowpy.util.array_util as au
 
-from sipy.util.data_request import data_request
-from sipy.filter.fk import fk_filter, fktrafo, fk_reconstruct, pocs_recon
-from sipy.util.fkutil import  nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx
-from sipy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
+from bowpy.util.data_request import data_request
+from bowpy.filter.fk import fk_filter, fktrafo, fk_reconstruct, pocs_recon
+from bowpy.util.fkutil import  nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx
+from bowpy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
 stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, attach_epidist2coords, epidist2nparray, epidist2list, \
 alignon, partial_stack, gaps_fill_zeros, vespagram
-from sipy.util.picker import get_polygon
+from bowpy.util.picker import get_polygon
 
 import os
 import sys

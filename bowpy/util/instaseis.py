@@ -10,13 +10,13 @@ import scipy as sp
 import scipy.signal as signal
 from numpy import genfromtxt
 
-from sipy.util.array_util import get_coords
+from bowpy.util.array_util import get_coords
 
 import os
 import datetime
-import sipy.filter.fk as fk
-from sipy.filter.fk import fk_filter
-import sipy.util.fkutil as fku
+import bowpy.filter.fk as fk
+from bowpy.filter.fk import fk_filter
+import bowpy.util.fkutil as fku
 import instaseis as ins
 
 def create_quake_origins(time=None, lat=None, lon=None, depth_in_m=None, m_rr=None, m_tt=None, m_pp=None, m_rt=None, m_rp=None, m_tp=None, event=None):

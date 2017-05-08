@@ -6,8 +6,8 @@ from obspy.clients.fdsn import Client
 from obspy import UTCDateTime, Stream, Inventory, Trace, read
 from obspy.core.inventory.network import Network
 
-from sipy.util.base import cat4stream, inv4stream
-from sipy.util.array_util import attach_network_to_traces, attach_coordinates_to_traces
+from bowpy.util.base import cat4stream, inv4stream
+from bowpy.util.array_util import attach_network_to_traces, attach_coordinates_to_traces
 import warnings
 
 

@@ -4,13 +4,13 @@ import numpy as np
 import scipy.io as sio
 import datetime
 import math
-from sipy.util.fkutil import nextpow2
+from bowpy.util.fkutil import nextpow2
 from scipy.signal import hilbert
 from scipy import sparse
 import matplotlib.pyplot as plt
 
-import sipy.filter.radon as radon
-import sipy.util.fkutil as fku
+import bowpy.filter.radon as radon
+import bowpy.util.fkutil as fku
 
 
 data = sio.loadmat("../data/mtz_radon/data.mat")
@@ -45,7 +45,7 @@ plt.show()
 
 
 # Pick Phase here!
-indicies = sipy.util.picker.get_polygon(R, no_of_vert=8, xlabel=r'$\tau$', ylabel='p')
+indicies = bowpy.util.picker.get_polygon(R, no_of_vert=8, xlabel=r'$\tau$', ylabel='p')
 
 
 

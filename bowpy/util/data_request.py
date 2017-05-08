@@ -12,10 +12,10 @@ import sys
 
 import numpy as np
 import scipy as sp
-from sipy.util.array_util import get_coords
+from bowpy.util.array_util import get_coords
 import os
 import datetime
-from sipy.util.array_util import center_of_gravity, plot_map, attach_network_to_traces, attach_coordinates_to_traces, geometrical_center
+from bowpy.util.array_util import center_of_gravity, plot_map, attach_network_to_traces, attach_coordinates_to_traces, geometrical_center
 
 def data_request(client_name, start, end, minmag, cat_client_name=None, net=None, scode="*", channels="*", minlat=None,
                  maxlat=None,minlon=None,maxlon=None, station_minlat=None,
@@ -89,7 +89,7 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 	### Example 1 ###
 
 	from obspy import UTCDateTime
-	from sipy.util.data_request import data_request
+	from bowpy.util.data_request import data_request
 
 	start = UTCDateTime(2010,1,1,0,0)
 	end = UTCDateTime(2010,12,31,0,0)
@@ -109,7 +109,7 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 	### Example 2 ###
 
 	from obspy import UTCDateTime
-	from sipy.util.data_request import data_request
+	from bowpy.util.data_request import data_request
 
 	start = UTCDateTime(2010,1,1,0,0)
 	end = UTCDateTime(2010,12,31,0,0)

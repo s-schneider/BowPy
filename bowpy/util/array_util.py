@@ -21,7 +21,7 @@ from obspy.geodetics.base import locations2degrees, gps2dist_azimuth, \
 from obspy.taup import TauPyModel
 from obspy.taup.taup_geo import add_geo_to_arrivals
 
-from sipy.util.base import nextpow2, stream2array, array2stream, array2trace
+from bowpy.util.base import nextpow2, stream2array, array2stream, array2trace
 
 """
 Collection of useful functions for processing seismological array data
@@ -616,7 +616,7 @@ def find_closest_station(inventory, stream, latitude, longitude,
 
 def gaps_fill_zeros(stream, inv, event, decimal_res=1):
     """
-    WARNING: Use this method only for synthetics, for real data prefer sipy.util.fkutil.partial_stack
+    WARNING: Use this method only for synthetics, for real data prefer bowpy.util.fkutil.partial_stack
     Fills the gaps inbetween irregular distributed traces 
     in Stream with zero-padded Traces for further work.
 
@@ -1711,7 +1711,7 @@ def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None, po
 	:type vespa: numpy.ndarray
 
 	example:	import obspy
-				from sipy.util.array_util import vespagram
+				from bowpy.util.array_util import vespagram
 
 				stream = obspy.read("../data/synthetics_uniform/SUNEW.QHD")
 				inv = obspy.read_inventory("../data/synthetics_uniform/SUNEW_inv.xml")
