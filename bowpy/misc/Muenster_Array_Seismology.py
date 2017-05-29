@@ -1741,7 +1741,7 @@ def __coordinate_values(inventory):
 
 def plot(inventory, projection="local"):
     """
-    Function to plot the geometry of the array, 
+    Function to plot the geometry of the array,
     including its center of gravity and geometrical center
 
     :type inventory: obspy.core.inventory.inventory.Inventory
@@ -1752,7 +1752,7 @@ def plot(inventory, projection="local"):
 
     * ``"global"`` (Will plot the whole world.)
     * ``"ortho"`` (Will center around the mean lat/long.)
-    * ``"local"`` (Will plot around local events)   
+    * ``"local"`` (Will plot around local events)
     """
     if inventory:
         inventory.plot(projection, show=False)
@@ -1820,7 +1820,7 @@ def find_closest_station(inventory, latitude, longitude,
     min_distance_station = None
 
     lats, lngs, hgt = __coordinate_values(inventory)
-    
+
     x = latitude
     y = longitude
     z = absolute_height_in_km
@@ -1886,20 +1886,20 @@ def plot_transfer_function(stream, inventory, sx=(-10, 10), sy=(-10, 10), sls=0.
 
 
 def plot_gcp(slat, slon, qlat, qlon, plat, plon, savefigure=None):
-    
     global m
     # lon_0 is central longitude of projection, lat_0 the central latitude.
-    # resolution = 'c' means use crude resolution coastlines, 'l' means low, 'h' high etc.
-    # zorder is the plotting level, 0 is the lowest, 1 = one level higher ...   
-    #m = Basemap(projection='nsper',lon_0=20, lat_0=25,resolution='c')
-    m = Basemap(projection='kav7',lon_0=-45, resolution='c')   
+    # resolution = 'c' means use crude resolution coastlines, 'l' means low,
+    # 'h' high etc.
+    # zorder is the plotting level, 0 is the lowest, 1 = one level higher ...
+    # m = Basemap(projection='nsper',lon_0=20, lat_0=25,resolution='c')
+    m = Basemap(projection='kav7', lon_0=-45, resolution='c')
     qx, qy = m(qlon, qlat)
     sx, sy = m(slon, slat)
     px, py = m(plon, plat)
     m.drawmapboundary(fill_color='#B4FFFF')
-    m.fillcontinents(color='#00CC00',lake_color='#B4FFFF', zorder=0)
+    m.fillcontinents(color='#00CC00', lake_color='#B4FFFF', zorder=0)
     #import event coordinates, with symbol (* = Star)
-    m.scatter(qx, qy, 80, marker='*', color= '#004BCB', zorder=2)
+    m.scatter(qx, qy, 80, marker='*', color='#004BCB', zorder=2)
     #import station coordinates, with symbol (^ = triangle)
     m.scatter(sx, sy, 80, marker='^', color='red', zorder=2)
     #import bouncepoints coord.
@@ -1911,13 +1911,13 @@ def plot_gcp(slat, slon, qlat, qlon, plat, plon, savefigure=None):
     try:
         for i in range(len(qlat)):
             m.drawgreatcircle(qlon[i], qlat[i], slon[i], slat[i], linewidth = 1, color = 'black', zorder=1)
-    except TypeError:       
+    except TypeError:
         m.drawgreatcircle(qlon, qlat, slon, slat, linewidth = 1, color = 'black', zorder=1)
     # draw parallels and meridians.
     m.drawparallels(np.arange(-90.,120.,30.), zorder=1)
     m.drawmeridians(np.arange(0.,420.,60.), zorder=1)
     plt.title("")
-    
+
     if savefigure:
         plt.savefig('plot_gcp.png', format="png", dpi=900)
     else:

@@ -13,31 +13,30 @@ import warnings
 
 def read_st(input, format=None, network=None, client_name=None):
 
-	stream = read(input, format)
+    stream = read(input, format)
 
-	try:
-		if stream[0].stats._format == 'Q':
-			for i, trace in enumerate(stream):
-				stream[i].stats.distance= trace.stats.sh['DISTANCE']
-				stream[i].stats.depth   = trace.stats.sh['DEPTH']
-				stream[i].stats.origin  = trace.stats.sh['ORIGIN']
-	except:
-		msg = 'No Q-file'
+    try:
+        if stream[0].stats._format == 'Q':
+            for i, trace in enumerate(stream):
+                stream[i].stats.distance = trace.stats.sh['DISTANCE']
+                stream[i].stats.depth = trace.stats.sh['DEPTH']
+                stream[i].stats.origin = trace.stats.sh['ORIGIN']
+    except:
+        msg = 'No Q-file'
 
-	if isinstance(network, str):
-		if isinstance(client_name, str):
-			client = Client(client_name)
-			try:
-				cat 	= cat4stream(stream, client_name)
-				inv 	= inv4stream(stream, network, client_name)
+    if isinstance(network, str):
+        if isinstance(client_name, str):
+            try:
+                cat = cat4stream(stream, client_name)
+                inv = inv4stream(stream, network, client_name)
 
-				attach_coordinates_to_traces(stream, inv, cat[0])
-				attach_network_to_traces(stream , inv)
-				print('Stream input with Meta-Information read.')
-				return stream
-			except:
-				msg = 'Error with Input: network or client_name wrong?'
-				raise IOError(msg)
-	else:
-		print('Stream input without Meta-Information read.')
-		return stream
+                attach_coordinates_to_traces(stream, inv, cat[0])
+                attach_network_to_traces(stream, inv)
+                print('Stream input with Meta-Information read.')
+                return stream
+            except:
+                msg = 'Error with Input: network or client_name wrong?'
+                raise IOError(msg)
+    else:
+        print('Stream input without Meta-Information read.')
+        return stream
