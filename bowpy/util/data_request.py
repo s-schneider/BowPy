@@ -19,7 +19,7 @@ from bowpy.util.array_util import center_of_gravity, plot_map, attach_network_to
 
 def data_request(client_name, start, end, minmag, cat_client_name=None, net=None, scode="*", channels="*", minlat=None,
                  maxlat=None,minlon=None,maxlon=None, station_minlat=None,
-                 station_maxlat=None, station_minlon=None, station_maxlon=None, mindepth=None, maxdepth=None, 
+                 station_maxlat=None, station_minlon=None, station_maxlon=None, mindepth=None, maxdepth=None,
                  radialcenterlat=None, radialcenterlon=None, minrad=None, maxrad=None,
                  station_radialcenterlat=None, station_radialcenterlon=None, station_minrad=None, station_maxrad=None,
                  azimuth=None, baz=False, t_before_first_arrival=1, t_after_first_arrival=9, savefile=False, file_format='SAC', normal_mode_data=False):
@@ -28,7 +28,7 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 	If data is found it returns a stream variable, with the waveforms, an inventory with all station and network information
 	and a catalog with the event information.
 
-	:param client_name: Name of desired fdsn client, for a list of all clients see: 
+	:param client_name: Name of desired fdsn client, for a list of all clients see:
 		                https://docs.obspy.org/tutorial/code_snippets/retrieving_data_from_datacenters.html
 	:type  client_name:  string
 
@@ -48,7 +48,7 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 	:param scode: Station code for which to search data for
 	:type  scode: string
 
-	:param channels: Used channels of stations 
+	:param channels: Used channels of stations
 	:type  channels: string
 
 	:param minlat, maxlat, minlon, maxlon: Coordinate-window of interest
@@ -72,17 +72,17 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 	:param t_before_first_arrival, t_before_after_arrival: Length of the seismograms, startingpoint, minutes before 1st arrival and
 															minutes after 1st arrival.
 	:type  t_before_first_arrival, t_before_after_arrival: float, int
-	
+
 	:param savefile: if True, Stream, Inventory and Catalog will be saved local, in the current directory.
 	:type  savefile: bool
 
 	:param format: File-format of the data, for supported formats see: https://docs.obspy.org/packages/autogen/obspy.core.stream.Stream.write.html#obspy.core.stream.Stream.write
 	:type  format: string
-	
+
 	returns
 
 	:param: list_of_stream, Inventory, Catalog
-	:type: list, obspy, obspy 
+	:type: list, obspy, obspy
 
 
 
@@ -96,7 +96,7 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 	minmag = 8
 	station = '034A'
 	list_of_stream, inventory, cat = data_request('IRIS', start, end, minmag, net='TA', scode=station)
-	
+
 	st = list_of_stream[0]
 	st = st.select(channel='BHZ')
 	st.normalize()
@@ -118,7 +118,7 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 	client = 'IRIS'
 	cat_client = 'globalcmt'
 	list_of_stream, inventory, cat = data_request(client, cat_client, start, end, minmag, net='TA', scode=station)
-	
+
 	st = list_of_stream[0]
 	st = st.select(channel='BHZ')
 	st.normalize()
@@ -133,14 +133,14 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 	data =[]
 	stream = Stream()
 	streamall = []
-	
+
 
 	#build in different approach for catalog search, using urllib
 
 	if cat_client_name == 'globalcmt':
 		catalog = request_gcmt(starttime=start, endtime=end, minmagnitude=minmag, mindepth=mindepth, maxdepth=maxdepth, minlatitude=minlat, maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
 		client = Client(client_name)
-	else:	
+	else:
 		client = Client(client_name)
 		try:
 			catalog = client.get_events(starttime=start, endtime=end, minmagnitude=minmag, mindepth=mindepth, maxdepth=maxdepth, latitude=radialcenterlat, longitude=radialcenterlon, minradius=minrad, maxradius=maxrad,minlatitude=minlat, maxlatitude=maxlat, minlongitude=minlon, maxlongitude=maxlon)
@@ -171,7 +171,7 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 		except:
 			print("No Inventory found for given parameters")
 			return
-		
+
 		for network in inventory:
 
 			print("Searching in network: %s" % network.code)
@@ -183,7 +183,7 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 			if azimuth or baz:
 				cog=center_of_gravity(network)
 				slat = cog['latitude']
-				slon = cog['longitude']			
+				slon = cog['longitude']
 				epidist = locations2degrees(slat,slon,elat,elon)
 				arrivaltime = m.get_travel_times(source_depth_in_km=depth, distance_in_degree=epidist)
 
@@ -201,14 +201,14 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 				if azimuth:
 					print("Looking for events in the azimuth range of %f to %f" % (azimuth[0], azimuth[1]) )
 					center_az = gps2dist_azimuth(clat, clon, elat, elon)[1]
-					if center_az > azimuth[1] and center_az < azimuth[0]: 
+					if center_az > azimuth[1] and center_az < azimuth[0]:
 						print("Geometrical center of Array out of azimuth bounds, \ncheking if single stations fit")
 						array_fits = False
 
 				elif baz:
 					print("Looking for events in the back azimuth range of %f to %f" %(baz[0], baz[1]))
 					center_baz = gps2dist_azimuth(clat, clon, elat, elon)[2]
-					if center_baz > baz[1] and center_baz < baz[0]: 
+					if center_baz > baz[1] and center_baz < baz[0]:
 						print("Geometrical center of Array out of back azimuth bounds, \ncheking if single stations fit")
 						array_fits = False
 
@@ -243,7 +243,7 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 								inventory_used 	+= client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
 			 								minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
 			 								latitude=station_radialcenterlat, longitude=station_radialcenterlon, minradius=station_minrad, maxradius=station_maxrad)
-									
+
 						except:
 								inventory_used 	 = client.get_stations(network=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
 			 								minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
@@ -318,6 +318,8 @@ def data_request(client_name, start, end, minmag, cat_client_name=None, net=None
 	plt.ioff()
 	inventory = invall
 	list_of_stream = streamall
+
+    paz = st[0].stats.response.get_paz()
 	return(list_of_stream, inventory, catalog)
 
 
@@ -339,7 +341,7 @@ def create_insta_from_invcat(network, event, database):
 	db 		= instaseis.open_db(database)
 
 	tofe 	= event.origins[0].time
-	lat 	= event.origins[0].latitude 
+	lat 	= event.origins[0].latitude
 	lon 	= event.origins[0].longitude
 	depth 	= event.origins[0].depth
 
@@ -410,7 +412,7 @@ def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None, maxdepth=
 
 	data = []
 	for line in req:
-		data.append(line) 
+		data.append(line)
 
 	data_chunked = _chunking_list(keyword='\n', list=data)
 	origins = []
@@ -432,7 +434,7 @@ def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None, maxdepth=
 
 				except:
 					org       = line[1].split()
-					year      = int(org[1]) 
+					year      = int(org[1])
 					mon       = int(org[2])
 					day       = int(org[3])
 					hour      = int(org[4])
@@ -506,4 +508,3 @@ def _chunking_list(keyword, list):
 	chunks.append(current_chunk)
 
 	return chunks
-
