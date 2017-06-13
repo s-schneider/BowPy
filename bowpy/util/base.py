@@ -7,7 +7,6 @@ from obspy.clients.fdsn import Client
 from obspy import Stream, Trace
 from obspy.core.inventory.network import Network
 from obspy.core.util.attribdict import AttribDict
-from bowpy.fkutil import line_set_zero, extract_nonzero
 
 
 """
@@ -452,3 +451,99 @@ def LCM(a, b):
     """
     import fractions
     return abs(a * b) / fractions.gcd(a, b) if a and b else 0
+
+
+def line_cut(array, shape):
+    """
+    Sets the array to zero, except for the 0 line and given features given in shape, acts as bandpass filter.
+    "Cuts" one line out + given shape. For detailed information look in bowpy.filter.fk.fk_filter
+
+    :param array: array-like
+    :type  array: numpy.ndarray
+
+    :param shape: shape and filter Information
+    :type  shape: list
+    """
+
+    fil=None
+    name = shape[0]
+    kwarg = shape[1]
+    length = shape[2]
+    new_array = np.zeros(array.shape).astype('complex')
+    if name in ['spike', 'Spike']:
+        new_array[0] = array[0]
+        return new_array
+
+    elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
+        new_array[0] = array[0]
+        newrange = np.linspace(1, length, length).astype('int')
+        for i in newrange:
+            new_array[i] = array[i]
+            new_array[new_array.shape[0]-i] = array[new_array.shape[0]-i]
+        return new_array
+
+    elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
+        fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+
+    elif name in ['taper', 'Taper'] and isinstance(length, int):
+        fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+
+    fil_rh = np.flipud(fil_lh)[::-1][0:][::-1]
+    fil = np.zeros(2*fil_lh.size)
+    fil[:fil.size/2] = fil_lh
+    fil[fil.size/2:] = fil_rh
+
+    new_array = array.transpose() * fil
+    new_array = new_array.transpose()
+
+    return(new_array)
+
+
+def line_set_zero(array, shape):
+    """
+    Sets line zero in array + features given in shape, acts as bandstop filter.
+    For detailed information look in bowpy.filter.fk.fk_filter
+
+    :param array: array-like
+    :type  array: numpy.ndarray
+
+    :param shape: shape and filter Information
+    :type  shape: list
+    """
+
+
+    fil=None
+    name = shape[0]
+    kwarg = shape[1]
+    length = shape[2]
+    new_array = array
+
+    if name in ['spike', 'Spike']:
+        new_array[0] = np.zeros(array[0].size)
+        return new_array
+
+    elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
+        new_array[0] = np.zeros(array[0].size)
+        newrange = np.linspace(1, length, length).astype('int')
+        for i in newrange:
+            new_array[i] = np.zeros(array[new_array.shape[0]-i].size)
+            new_array[new_array.shape[0]-i] = np.zeros(array[new_array.shape[0]-i].size)
+        return new_array
+
+    elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
+        fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+
+    elif name in ['taper', 'Taper'] and isinstance(length, int):
+        fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+        # fil_lh = -1. * fil_lh + 1.
+
+    fil_rh = np.flipud(fil_lh)[::-1][1:][::-1]
+    fil = np.zeros(2*fil_lh.size)
+    fil[:fil.size/2] = fil_lh
+    fil[fil.size/2+1:] = fil_rh
+    newfil = np.ones(fil.shape)
+    newfil = newfil - fil
+
+    new_array = array.transpose() * newfil
+    new_array = new_array.transpose()
+    return(new_array)

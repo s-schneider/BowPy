@@ -45,9 +45,9 @@ def alignon(st, inv=None, event=None, phase=None, ref=0, maxtimewindow=0, xcorr=
     """
     Aligns traces on a given phase and truncates the starts to the latest beginning and the ends
     to the earliest end.
-    
+
     :param st: stream
-    
+
     :param inv: inventory
 
     :param event: Eventdata
@@ -58,7 +58,7 @@ def alignon(st, inv=None, event=None, phase=None, ref=0, maxtimewindow=0, xcorr=
     :param ref: name or index of reference station, to which the others are aligned
     :type ref: int or str
 
-    :param maxtimewindow: Maximum timewindow in seconds, symmetrical around theoretical phase arrival time, 
+    :param maxtimewindow: Maximum timewindow in seconds, symmetrical around theoretical phase arrival time,
                           in which to pick the maximum amplitude.
                           Also possible to input a list with time before and after the theoretical pick.
 
@@ -66,7 +66,7 @@ def alignon(st, inv=None, event=None, phase=None, ref=0, maxtimewindow=0, xcorr=
 
     :param xcorr: Use cross correlation with the reference trace to align traces.
     :type  xcorr: bool
-    
+
     :param taup_model: model used by TauPyModel to calculate arrivals, default is ak135
     :type taup_model: str
 
@@ -373,15 +373,15 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
                 stream.stats.origin = value["origin"]
         except:
             raise TypeError
-            
+
 
 
 def attach_epidist2coords(inventory, event, stream=None):
     """
-    Receives the epicentral distance of the station-source couple given in inventory - event and adds them to Array_Coords. 
+    Receives the epicentral distance of the station-source couple given in inventory - event and adds them to Array_Coords.
     If called with stream, it uses just the coordinates of the used stations in stream.
 
-    param inventory: 
+    param inventory:
     type inventory:
 
     param event:
@@ -617,14 +617,14 @@ def find_closest_station(inventory, stream, latitude, longitude,
 def gaps_fill_zeros(stream, inv, event, decimal_res=1):
     """
     WARNING: Use this method only for synthetics, for real data prefer bowpy.util.fkutil.partial_stack
-    Fills the gaps inbetween irregular distributed traces 
+    Fills the gaps inbetween irregular distributed traces
     in Stream with zero-padded Traces for further work.
 
     :param stream: Obspy Stream
 
     :param inv: Obspy Inventory
 
-    :param event: Obspy Event 
+    :param event: Obspy Event
 
     :param d: Number of digits to round
 
@@ -768,9 +768,9 @@ def get_coords(inventory, returntype="dict"):
 def isuniform(inv, event, stream=None, tolerance=0.5):
     """
     Checks if the epicentral station distribution is uniform, in a given tolerance range.
-    
+
     :param inv: Inventory with array information
-    
+
     :param event:    Event, that is used
 
     :param stream: stream-data, optional. If stream is an input only stations in stream will be used
@@ -801,7 +801,7 @@ def isuniform(inv, event, stream=None, tolerance=0.5):
 
 def plot_inv(inventory, projection="local"):
     """
-    Function to plot the geometry of the array, 
+    Function to plot the geometry of the array,
     including its center of gravity and geometrical center
 
     :type inventory: obspy.core.inventory.inventory.Inventory
@@ -812,7 +812,7 @@ def plot_inv(inventory, projection="local"):
 
     * ``"global"`` (Will plot the whole world.)
     * ``"ortho"`` (Will center around the mean lat/long.)
-    * ``"local"`` (Will plot around local events)   
+    * ``"local"`` (Will plot around local events)
     """
     if isinstance(inventory, Inventory):
         inventory.plot(projection, show=False)
@@ -983,7 +983,7 @@ def plot_transfer_function(stream, inventory, sx=(-10, 10), sy=(-10, 10), sls=0.
     plt.ioff()
 
 
-def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic', \
+def plot_vespa(data, st, inv=None, event=None, markphases=['ttall', 'P^410P', 'P^660P'], plot='classic', \
                cmap='seismic', tw=None, savefig=False, dpi=400, fs=25, power=4, marker='|', markerclr='red',labelfs=20, zoom=1, ticks=50, time_shift=0):
     if isinstance(inv, Inventory):
         attach_network_to_traces(st, inv)
@@ -1000,7 +1000,7 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
     else:
         sref = 0
 
-    vespa = np.roll(data[0]*zoom, time_shift)
+    vespa = np.roll(data[0]*zoom, time_shift*int(st[0].stats.sampling_rate))
     taxis = data[1]
     urange = data[2]
 
@@ -1040,9 +1040,9 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
             try:
                 ax.set_title(r'Relative %ith root Vespagram' % (power), fontsize=fs)
             except:
-                ax.set_title(r'Relative linear Vespagram', fontsize=fs)   
+                ax.set_title(r'Relative linear Vespagram', fontsize=fs)
     else:
-        p_ref = 0         
+        p_ref = 0
         ax.set_ylabel(r'$p$ in $\frac{s}{deg}$', fontsize=fs)
         try:
             ax.set_title(r'%ith root Vespagram' % (power), fontsize=fs)
@@ -1072,7 +1072,7 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
                 if tPhase > taxis.max() or tPhase < taxis.min() or sloPhase > urange.max() or sloPhase < urange.min():
                     continue
                 ax.autoscale(False)
-                
+
                 if marker in ['|']:
                     ax.plot( (tPhase, tPhase), (-labelfs/100. +sloPhase, labelfs/100.+sloPhase), color=markerclr)
                 else:
@@ -1144,7 +1144,7 @@ def plot_vespa(data, st=None, inv=None, event=None, markphases=['ttall', 'P^410P
 
 
     ax.tick_params(axis='both', which='major', labelsize=fs)
-    
+
     if len(ax.xaxis.get_ticklabels()) > 5:
         for label in ax.xaxis.get_ticklabels()[::2]:
             label.set_visible(False)
@@ -1293,10 +1293,10 @@ def resample_partial_stack(st, bin_size, refphase='P', overlap=None, order=None,
     The stacking is just an addition of the traces, more advanced schemes might follow.
     The uniform distribution is useful for FK-filtering, SSA and every method that requires
     a uniform distribution.
-    
+
     Needs depth information attached to the stream, array_util.see attach_coordinates_to_stream()
     and attach_network_to_traces()
-    
+
     input:
     :param st: obspy stream object
     :type st: obspy.core.stream.Stream
@@ -1306,7 +1306,7 @@ def resample_partial_stack(st, bin_size, refphase='P', overlap=None, order=None,
     :type bins: int
 
     :param refphase: If True, traces will be shifted to reference time of the bin, calculated by the reference phase.
-                     If Traces already aligned on a phase switch to False. 
+                     If Traces already aligned on a phase switch to False.
     :type refphase: str
 
     :param overlap: degree of overlap of each bin, e.g 0.5 corresponds to 50 percent
@@ -1316,12 +1316,12 @@ def resample_partial_stack(st, bin_size, refphase='P', overlap=None, order=None,
     :param order: Order of Nth-root stacking, default None
     :type order: float or int
 
-    :param maxtimewindow: Maximum timewindow in seconds, symmetrical around theoretical phase arrival time, 
+    :param maxtimewindow: Maximum timewindow in seconds, symmetrical around theoretical phase arrival time,
                           in which to pick the maximum amplitude.
 
     :param taup_model:
 
-    returns: 
+    returns:
     :param bin_data: partial stacked data of the array in bins uniform distributed stacks
     :type bin_data: array
 
@@ -1406,7 +1406,7 @@ def resample_partial_stack(st, bin_size, refphase='P', overlap=None, order=None,
                 yr_sampleindex[i] = int(m.get_travel_times(depth, res_distance, phase_list=[refphase+'diff'])[0].time / delta)
 
             for i, epi_distance in enumerate(epidist):
-                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[refphase+'diff'])[0].time / delta)       
+                yi_sampleindex[i] = int(m.get_travel_times(depth, epi_distance, phase_list=[refphase+'diff'])[0].time / delta)
 
     # Loop through all bins.
     for i, bins in enumerate(L):
@@ -1489,13 +1489,13 @@ def shift2ref(array, tref, tshift, ref_array=None, mtw=0, method='normal', xcorr
 
 	:param array: array-like trace, 1D
 
-	:param tref: Reference index, to be shifted, if crosscorrelation is needed, 
+	:param tref: Reference index, to be shifted, if crosscorrelation is needed,
 
 	:param tshift: Nondimensional shift value
 
-	:param mtw: Maximum nondimensional timewindow symmetrical around tref, 
+	:param mtw: Maximum nondimensional timewindow symmetrical around tref,
 				in which to calculate the highest value of array
-	
+
 	Author: S. Schneider, 2016
 	Source: Gubbins, D., 2004 Time series analysis and inverse theory for geophysicists
 	"""
@@ -1684,20 +1684,20 @@ def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None, po
 
 	:param slomin: Minimum of slowness range.
 	:type slomin: int, float
-	
+
 	:param slomax: Maximum of slowness range.
 	:type slomax: int, float
-	
+
 	:param slostep: Slowness stepsize.
 	:type slostep: int
-	
+
 	:param power: Order of Nth-root stack, if None, just a linear stack is performed.
 	:type power: float
-	
+
 	:param plot: If True, a figure is plottet with all theoretical arrivals, if set to 'contour'
 				 a contour-plot is created.
 	:type plot: bool or string.
-	
+
 	:param markphases: Which phases should be marked, default is 'ttall' + precursors, to mark all possible.
 	:type markphases: list
 
