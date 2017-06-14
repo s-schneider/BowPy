@@ -1,18 +1,16 @@
 from __future__ import absolute_import
 
-import numpy
 import numpy as np
 import math
 import fractions
 from scipy.signal import correlate
-import warnings
 import obspy
 
 import matplotlib.pyplot as plt
 import pylab
 from mpl_toolkits.basemap import Basemap
 
-from obspy import UTCDateTime, Stream, Inventory, Trace
+from obspy import Stream, Inventory, Trace
 from obspy.core.event.event import Event
 from obspy.core.inventory.network import Network
 from obspy.core import AttribDict
@@ -1667,8 +1665,10 @@ def truncate(data, tmin, tmax, absolute=False):
     return trunc_data
 
 
-def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None, power=4, plot=False, cmap='seismic', \
-              markphases=['ttall', 'P^410P', 'P^660P'], method='fft', tw=None, zoom=1, savefig=False, dpi=400, fs=25):
+def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None,
+              power=4, plot=False, cmap='seismic',
+              markphases=['ttall', 'P^410P', 'P^660P'], method='fft',
+              tw=None, zoom=1, savefig=False, dpi=400, fs=25):
     """
 	Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
 	and if set a plot.

@@ -123,34 +123,6 @@ def cg_solver(A,b,x0=None,niter=10):
 	return x_new #, resnorm, solnorm
 
 
-def create_filter(name, length, cutoff=None, ncorner=None):
-
-	cut = float(cutoff)/float(length)
-	m 	= float(ncorner)
-
-	if name in ['butterworth', 'Butterworth']:
-		x = np.linspace(0, 1, length)
-		y = 1. / (1. + (x/float(cut))**(2.*ncorner))
-
-	elif name in ['taper', 'Taper']:
-		shift	= 0.
-		fit = True
-		while fit:
-			cut += shift
-			x 		= np.linspace(0, 1, length)
-			y 		= (cut-x)*m + 0.5
-			y[y>1.] = 1.
-			y[y<0.] = 0.
-			if y.max() >= 1: fit=False
-			shift = 0.1
-
-	else:
-		msg='No valid name for filter found.'
-		raise IOError(msg)
-
-	return y
-
-
 def create_iFFT2mtx(nx, ny):
 	"""
 	Take advantage of the use of scipy.sparse library.

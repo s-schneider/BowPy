@@ -165,7 +165,7 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
 
 
 def create_ricker(n_of_samples, n_of_traces, delta_traces=1, slope=0,
-                  n_of_ricker_samples=100., width_of_ricker=2.,
+                  n_of_ricker_samples=100, width_of_ricker=2.,
                   shift_of_ricker=0):
     """
     Creates n_of_traces Traces with a Ricker wavelet
@@ -547,3 +547,31 @@ def line_set_zero(array, shape):
     new_array = array.transpose() * newfil
     new_array = new_array.transpose()
     return(new_array)
+
+
+def create_filter(name, length, cutoff=None, ncorner=None):
+
+	cut = float(cutoff)/float(length)
+	m 	= float(ncorner)
+
+	if name in ['butterworth', 'Butterworth']:
+		x = np.linspace(0, 1, length)
+		y = 1. / (1. + (x/float(cut))**(2.*ncorner))
+
+	elif name in ['taper', 'Taper']:
+		shift	= 0.
+		fit = True
+		while fit:
+			cut += shift
+			x 		= np.linspace(0, 1, length)
+			y 		= (cut-x)*m + 0.5
+			y[y>1.] = 1.
+			y[y<0.] = 0.
+			if y.max() >= 1: fit=False
+			shift = 0.1
+
+	else:
+		msg='No valid name for filter found.'
+		raise IOError(msg)
+
+	return y
