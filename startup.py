@@ -24,12 +24,12 @@ try:
     from obspy import read_events as read_cat
     from obspy import UTCDateTime
 
-    # import bowpy
-    # import bowpy.filter.fk as fk
-    # import bowpy.filter.radon as radon
-    # import bowpy.util.fkutil as fku
-    # import bowpy.util.base as base
-    # import bowpy.util.array_util as au
+    import bowpy
+    import bowpy.filter.fk as fk
+    import bowpy.filter.radon as radon
+    import bowpy.util.fkutil as fku
+    import bowpy.util.base as base
+    import bowpy.util.array_util as au
 
     from bowpy.misc.read import read_st
     from bowpy.filter.fk import pocs_recon

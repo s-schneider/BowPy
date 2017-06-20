@@ -326,16 +326,20 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
     # Calculate the event-station distances.
     if event:
         attach_event_origin_to_traces(stream, event)
-        event_lat    = event.origins[0].latitude
-        event_lng    = event.origins[0].longitude
-        event_dpt    = event.origins[0].depth / 1000.
+        event_lat = event.origins[0].latitude
+        event_lng = event.origins[0].longitude
+        event_dpt = event.origins[0].depth / 1000.
         event_origin = event.origins[0].time
         for value in coords.values():
-                value["distance"] = locations2degrees(
-                value["latitude"], value["longitude"], event_lat, event_lng)
-                value["depth"]    = event_dpt
-                value["origin"]   = event_origin
-                value["back_azimuth"] = gps2dist_azimuth(value["latitude"], value["longitude"], event_lat, event_lng)[2]
+                value["distance"] = locations2degrees(value["latitude"],
+                                                      value["longitude"],
+                                                      event_lat, event_lng)
+                value["depth"] = event_dpt
+                value["origin"] = event_origin
+                value["back_azimuth"] = gps2dist_azimuth(value["latitude"],
+                                                         value["longitude"],
+                                                         event_lat,
+                                                         event_lng)[2]
     else:
         print("No Event information found, distance, origin and back-azmuth will NOT be set!")
 
@@ -343,16 +347,16 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
     if isinstance(stream, Stream):
         for trace in stream:
             try:
-                station                           = ".".join(trace.id.split(".")[:2])
-                value                             = coords[station]
-                trace.stats.coordinates           = AttribDict()
-                trace.stats.coordinates.latitude  = value["latitude"]
+                station = ".".join(trace.id.split(".")[:2])
+                value = coords[station]
+                trace.stats.coordinates = AttribDict()
+                trace.stats.coordinates.latitude = value["latitude"]
                 trace.stats.coordinates.longitude = value["longitude"]
                 trace.stats.coordinates.elevation = value["elevation"]
                 if event:
-                    trace.stats.distance     = value["distance"]
-                    trace.stats.depth        = value["depth"]
-                    trace.stats.origin       = value["origin"]
+                    trace.stats.distance = value["distance"]
+                    trace.stats.depth = value["depth"]
+                    trace.stats.origin = value["origin"]
                     trace.stats.back_azimuth = value["back_azimuth"]
             except:
                 continue
@@ -700,19 +704,19 @@ def geometrical_center(inventory):
 
 def get_coords(inventory, returntype="dict"):
     """
-	Get the coordinates of the stations in the inventory, independently of the channels,
-	better use for arrays, than the channel-dependent core.inventory.inventory.Inventory.get_coordinates() .
-	returns the variable coords with entries: elevation (in km), latitude and longitude.
-	:param inventory: Inventory to get the coordinates from
-	:type inventory: obspy.core.inventory.inventory.Inventory
+    Get the coordinates of the stations in the inventory, independently of the channels,
+    better use for arrays, than the channel-dependent core.inventory.inventory.Inventory.get_coordinates() .
+    returns the variable coords with entries: elevation (in km), latitude and longitude.
+    :param inventory: Inventory to get the coordinates from
+    :type inventory: obspy.core.inventory.inventory.Inventory
 
-	:param coords: dictionary with stations of the inventory and its elevation (in km), latitude and longitude
-	:type coords: dict
+    :param coords: dictionary with stations of the inventory and its elevation (in km), latitude and longitude
+    :type coords: dict
 
-	:param return: type of desired return
-	:type return: dictionary or numpy.array
+    :param return: type of desired return
+    :type return: dictionary or numpy.array
 
-	"""
+    """
 
     coords = None
 
@@ -1481,22 +1485,22 @@ def rm(stream, tracelist):
 
 def shift2ref(array, tref, tshift, ref_array=None, mtw=0, method='normal', xcorr=False):
     """
-	Shifts the trace in array to the order of tref - tshift. If mtw is given, tshift
-	will be calculated depdending on the maximum amplitude of array in the give
-	timewindow.
+    Shifts the trace in array to the order of tref - tshift. If mtw is given, tshift
+    will be calculated depdending on the maximum amplitude of array in the give
+    timewindow.
 
-	:param array: array-like trace, 1D
+    :param array: array-like trace, 1D
 
-	:param tref: Reference index, to be shifted, if crosscorrelation is needed,
+    :param tref: Reference index, to be shifted, if crosscorrelation is needed,
 
-	:param tshift: Nondimensional shift value
+    :param tshift: Nondimensional shift value
 
-	:param mtw: Maximum nondimensional timewindow symmetrical around tref,
-				in which to calculate the highest value of array
+    :param mtw: Maximum nondimensional timewindow symmetrical around tref,
+                in which to calculate the highest value of array
 
-	Author: S. Schneider, 2016
-	Source: Gubbins, D., 2004 Time series analysis and inverse theory for geophysicists
-	"""
+    Author: S. Schneider, 2016
+    Source: Gubbins, D., 2004 Time series analysis and inverse theory for geophysicists
+    """
     trace = array.copy()
     if isinstance(mtw, float) and mtw == 0: mtw = None
 
@@ -1624,14 +1628,14 @@ def stack(data, order=None):
 
 def truncate(data, tmin, tmax, absolute=False):
     """
-	Truncates the data array on the left to tmin, on the right to right-end  - tmax.
+    Truncates the data array on the left to tmin, on the right to right-end  - tmax.
 
-	:param data: array-like
+    :param data: array-like
 
-	:param tmin: new start index
+    :param tmin: new start index
 
-	:param tmax: difference of the ending indicies
-	"""
+    :param tmax: difference of the ending indicies
+    """
     if absolute:
         if data.ndim > 1:
             trunc_n = tmax - tmin
@@ -1670,57 +1674,57 @@ def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None,
               markphases=['ttall', 'P^410P', 'P^660P'], method='fft',
               tw=None, zoom=1, savefig=False, dpi=400, fs=25):
     """
-	Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
-	and if set a plot.
+    Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
+    and if set a plot.
 
-	:param st: Stream
-	:type st: obspy.core.stream.Stream
+    :param st: Stream
+    :type st: obspy.core.stream.Stream
 
-	:param inv: inventory
-	:type inv: obspy.station.inventory.Inventory
+    :param inv: inventory
+    :type inv: obspy.station.inventory.Inventory
 
-	:param event: Event
-	:type event: obspy.core.event.Event
+    :param event: Event
+    :type event: obspy.core.event.Event
 
-	:param slomin: Minimum of slowness range.
-	:type slomin: int, float
+    :param slomin: Minimum of slowness range.
+    :type slomin: int, float
 
-	:param slomax: Maximum of slowness range.
-	:type slomax: int, float
+    :param slomax: Maximum of slowness range.
+    :type slomax: int, float
 
-	:param slostep: Slowness stepsize.
-	:type slostep: int
+    :param slostep: Slowness stepsize.
+    :type slostep: int
 
-	:param power: Order of Nth-root stack, if None, just a linear stack is performed.
-	:type power: float
+    :param power: Order of Nth-root stack, if None, just a linear stack is performed.
+    :type power: float
 
-	:param plot: If True, a figure is plottet with all theoretical arrivals, if set to 'contour'
-				 a contour-plot is created.
-	:type plot: bool or string.
+    :param plot: If True, a figure is plottet with all theoretical arrivals, if set to 'contour'
+                 a contour-plot is created.
+    :type plot: bool or string.
 
-	:param markphases: Which phases should be marked, default is 'ttall' + precursors, to mark all possible.
-	:type markphases: list
+    :param markphases: Which phases should be marked, default is 'ttall' + precursors, to mark all possible.
+    :type markphases: list
 
-	:param method: Shift method, to be used 'FFT' or 'normal'
-	:type  method: string
+    :param method: Shift method, to be used 'FFT' or 'normal'
+    :type  method: string
 
 
-	returns:
+    returns:
 
-	:param vespa: The calculated Vespagram
-	:type vespa: numpy.ndarray
+    :param vespa: The calculated Vespagram
+    :type vespa: numpy.ndarray
 
-	example:	import obspy
-				from bowpy.util.array_util import vespagram
+    example:	import obspy
+                from bowpy.util.array_util import vespagram
 
-				stream = obspy.read("../data/synthetics_uniform/SUNEW.QHD")
-				inv = obspy.read_inventory("../data/synthetics_uniform/SUNEW_inv.xml")
-				cat = obspy.read_events("../data/synthetics_random/SRNEW_cat.xml")
-				vespagram = vespagram(stream, inv, cat[0], 3., 12., 0.1, power=4., plot='contour')
+                stream = obspy.read("../data/synthetics_uniform/SUNEW.QHD")
+                inv = obspy.read_inventory("../data/synthetics_uniform/SUNEW_inv.xml")
+                cat = obspy.read_events("../data/synthetics_random/SRNEW_cat.xml")
+                vespagram = vespagram(stream, inv, cat[0], 3., 12., 0.1, power=4., plot='contour')
 
-	Author: S. Schneider, 2016
-	Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
-	"""
+    Author: S. Schneider, 2016
+    Reference: Rost, S. & Thomas, C. (2002). Array seismology: Methods and Applications
+    """
 
     # Prepare and convert objects.
     # Find geometrical center station of array. If fails, the first trace is used.

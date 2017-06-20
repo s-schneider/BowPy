@@ -650,7 +650,7 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidi
 		data = stream2array(st)
 
 		if time_shift:
-			data = np.roll(data, time_shift)
+			data = np.roll(data, time_shift*int(st[0].stats.sampling_rate))
 
 		spacing=2.
 		ax.set_xlim(tw.min(), tw.max())
