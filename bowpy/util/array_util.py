@@ -18,6 +18,7 @@ from obspy.geodetics.base import locations2degrees, gps2dist_azimuth, \
     kilometer2degrees
 from obspy.taup import TauPyModel
 from obspy.taup.taup_geo import add_geo_to_arrivals
+from obspy.core.util.attribdict import AttribDict
 
 from bowpy.util.base import nextpow2, stream2array, array2stream, array2trace
 
@@ -691,15 +692,12 @@ def gaps_fill_zeros(stream, inv, event, decimal_res=1):
 def geometrical_center(inventory):
     lats, lngs, hgt = __coordinate_values(inventory)
 
-    return {
-        "latitude": (np.max(lats) +
-                     np.min(lats)) / 2.0,
-        "longitude": (np.max(lngs) +
-                      np.min(lngs)) / 2.0,
-        "absolute_height_in_km":
-            (np.max(hgt) +
-             np.min(hgt)) / 2.0
-    }
+    geom_center = AttribDict()
+    geom_center["latitude"] = (np.max(lats) + np.min(lats)) / 2.0
+    geom_center["longitude"] = (np.max(lngs) + np.min(lngs)) / 2.0
+    geom_center["absolute_height_in_km"] = (np.max(hgt) + np.min(hgt)) / 2.0
+
+    return geom_center
 
 
 def get_coords(inventory, returntype="dict"):
