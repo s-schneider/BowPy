@@ -1,6 +1,7 @@
 import obspy
 from obspy.clients.syngine import Client as synClient
 from obspy.clients.fdsn import Client as irisClient
+from obspy.core.util.attribdict import AttribDict
 
 """
 # Example
@@ -19,7 +20,7 @@ streams, cat = get_syngine_data(model, eventid, iriseventid, inv)
 def get_syngine_data(model, eventid, iriseventid, inv):
     irisclient = irisClient('IRIS')
     synclient = synClient()
-    streams = {}
+    streams = AttribDict()
 
     for network in inv:
         stream = obspy.Stream()
