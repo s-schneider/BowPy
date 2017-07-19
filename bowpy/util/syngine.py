@@ -3,6 +3,8 @@ from obspy.clients.syngine import Client as synClient
 from obspy.clients.fdsn import Client as fdsnClient
 from obspy.core.util.attribdict import AttribDict
 from obspy.core import UTCDateTime
+from obspy.geodetics.base import degrees2kilometers
+from bowpy.util.array_util import dist_azimuth2gps, geometrical_center
 
 """
 # Example
@@ -53,25 +55,57 @@ streams, cat_syn = get_syngine_data(model, inv, 'IRIS', origins=origins,
 """
 
 
-def get_syngine_data(model, inv, client, eventid=None, origins=None,
-                     m_tensor=None, source_dc=None):
-    client = fdsnClient(client)
+def get_syngine_data(model, client=None, reclat=None, reclon=None, inv=None,
+                     eventid=None, origins=None, m_tensor=None,
+                     source_dc=None):
+    """
+    param reclat:
+    type reclat: list of floats
+    param reclon:
+    type reclon: list of floats
+    """
+    if client:
+        client = fdsnClient(client)
     synclient = synClient()
-    streams = AttribDict()
 
-    for network in inv:
+    if inv:
+        streams = AttribDict()
+        for network in inv:
+            stream = obspy.Stream()
+
+            for station in network:
+                print(station)
+                if eventid:
+                    stream_tmp = synclient.get_waveforms(model=model,
+                                                         network=network.code,
+                                                         station=station.code,
+                                                         eventid=eventid)
+                else:
+                    stream_tmp = synclient.get_waveforms(model=model,
+                                                         network=network.code,
+                                                         station=station.code,
+                                                         origintime=origins.time,
+                                                         sourcelatitude=origins.latitude,
+                                                         sourcelongitude=origins.longitude,
+                                                         sourcedepthinmeters=origins.depth,
+                                                         sourcemomenttensor=m_tensor,
+                                                         sourcedoublecouple=source_dc
+                                                         )
+                stream.append(stream_tmp[0])
+            streams[network.code] = stream
+
+    if reclat and reclon:
         stream = obspy.Stream()
-
-        for station in network:
+        for rlat, rlon in zip(reclat, reclon):
             if eventid:
                 stream_tmp = synclient.get_waveforms(model=model,
-                                                     network=network.code,
-                                                     station=station.code,
+                                                     receiverlatitude=rlat,
+                                                     receiverlongitude=rlon,
                                                      eventid=eventid)
             else:
                 stream_tmp = synclient.get_waveforms(model=model,
-                                                     network=network.code,
-                                                     station=station.code,
+                                                     receiverlatitude=rlat,
+                                                     receiverlongitude=rlon,
                                                      origintime=origins.time,
                                                      sourcelatitude=origins.latitude,
                                                      sourcelongitude=origins.longitude,
@@ -80,13 +114,50 @@ def get_syngine_data(model, inv, client, eventid=None, origins=None,
                                                      sourcedoublecouple=source_dc
                                                      )
             stream.append(stream_tmp[0])
-
-        streams[network.code] = stream
+        streams = stream
 
     starttime = origins.time - 120
     endtime = starttime + 120
-    cat = client.get_events(starttime, endtime,
-                            minlatitude=origins.latitude-.5,
-                            maxlatitude=origins.latitude+.5)
+    if client:
+        cat = client.get_events(starttime, endtime,
+                                minlatitude=origins.latitude-.5,
+                                maxlatitude=origins.latitude+.5)
+    else:
+        cat = None
 
     return streams, cat
+
+
+def get_ref_data(stream, inv, model='ak135f_1s', eventid=None, origins=None,
+                 m_tensor=None, source_dc=None):
+
+    ref_stream = Stream()
+
+    rlats = []
+    rlons = []
+    geom = geometrical_center(inv)
+    d, az, baz = gps2dist_azimuth(origins.latitude, origins.longitude,
+                                  geom.latitude, geom.longitude)
+    for i, trace in enumerate(stream):
+        dist = degrees2kilometers(trace.stats.distance)*1000.
+
+        rlat, rlon = dist_azimuth2gps(origins.latitude, origins.longitude,
+                                      az, dist)
+        if rlon > 180:
+            rlon = 180. - rlon
+
+        print(rlat, rlon)
+        rlats.append(rlat)
+        rlons.append(rlon)
+        print('Receiving trace %i of %i.' % (i+1, len(stream)))
+        stream_tmp, cat_void = get_syngine_data(model, reclat=rlats, reclon=rlons,
+                                                eventid=eventid, origins=origins,
+                                                m_tensor=m_tensor, source_dc=source_dc)
+
+        trace_tmp = stream_tmp[0].copy()
+        trace_tmp.stats.station = trace.stats.station
+        trace_tmp.stats.starttime = trace.stats.starttime
+        trace_tmp.stats.distance = trace.stats.distance
+        ref_stream.append(trace_tmp)
+
+    return ref_stream

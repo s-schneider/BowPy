@@ -6,6 +6,7 @@ import fractions
 from scipy.signal import correlate
 import obspy
 
+import math
 import matplotlib.pyplot as plt
 import pylab
 from mpl_toolkits.basemap import Basemap
@@ -190,7 +191,8 @@ def alignon(st, inv=None, event=None, phase=None, ref=0, maxtimewindow=0, xcorr=
 
             shifttimes[no_x] = delta * shift_index
             data_tmp[no_x, :] = datashift
-            print('Trace no %i was shifted by %f seconds' % (no_x, delta * shift_index))
+            if verbose:
+                print('Trace no %i was shifted by %f seconds' % (no_x, delta * shift_index))
             # Positive shift_index indicates positive shift in time and vice versa.
             if shift_index > 0 and shift_index > tmin: tmin = shift_index
             if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
@@ -1286,7 +1288,7 @@ def resample_distance(stream, inv=None, event=None, shiftmethod='fft', taup_mode
     return stream_res
 
 
-def resample_partial_stack(st, bin_size, refphase='P', overlap=None, order=None, maxtimewindow=None, shiftmethod='normal',
+def resample_partial_stack(st, bin_size=None, refphase='P', overlap=None, order=None, maxtimewindow=None, shiftmethod='normal',
                   taup_model='ak135'):
     """
     Will sort the traces into equally distributed bins and stack the bins.
@@ -1342,6 +1344,9 @@ def resample_partial_stack(st, bin_size, refphase='P', overlap=None, order=None,
     # and the new yinfo values.
 
     # Resample the borders of the bin, to overlap, if activated
+    if not bin_size:
+        bin_size = (epidist.max() - epidist.min()) / float(len(st_tmp))
+
     if overlap and not isinstance(overlap, bool):
         # bin_size = (epidist.max() - epidist.min()) / bins
         L = [(epidist.min(), epidist.min() + bin_size)]
@@ -1830,3 +1835,30 @@ def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None,
                    cmap=cmap, tw=tw, savefig=savefig, dpi=dpi, fs=fs, power=power, zoom=zoom)
 
     return vespa, taxis, urange
+
+
+def dist_azimuth2gps(lat1, lon1, azimuth, distance):
+    """
+    azimuth: in degrees
+    distance: in meters
+    """
+    R = 6378.137  # Radius of the Earth
+    brng = math.radians(azimuth)  # Bearing is 90 degrees converted to radians.
+    d = distance/1000.  # Distance in km
+
+    # lat2  52.20444 - the lat result I'm hoping for
+    # lon2  0.36056 - the long result I'm hoping for.
+
+    lat1 = math.radians(lat1)  # Current lat point converted to radians
+    lon1 = math.radians(lon1)  # Current long point converted to radians
+
+    lat2 = math.asin(math.sin(lat1)*math.cos(d/R) +
+                     math.cos(lat1)*math.sin(d/R)*math.cos(brng))
+
+    lon2 = lon1 + math.atan2(math.sin(brng)*math.sin(d/R)*math.cos(lat1),
+                             math.cos(d/R)-math.sin(lat1)*math.sin(lat2))
+
+    lat2 = math.degrees(lat2)
+    lon2 = math.degrees(lon2)
+
+    return (lat2, lon2)
