@@ -611,7 +611,7 @@ def fk_reconstruct(st, slopes=[-10,10], deltaslope=0.05, slopepicking=False, smo
     else:
         return st_rec
 
-def pocs_recon(st, maxiter=None, alpha=None, dmethod='denoise', method='linear', beta=None, peaks=None, maskshape=None,
+def pocs_recon(st, maxiter=None, alpha=None, dmethod='reconstruct', method='linear', beta=None, peaks=None, maskshape=None,
                dt=None, p=None, flow=None, fhigh=None, slidingwindow=False, alpha_i_test=False, st_org=None, plotfeedback=False):
     """
     This functions reconstructs missing signals in the f-k domain, using the original data,

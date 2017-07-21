@@ -255,7 +255,8 @@ def alignon(st, inv=None, event=None, phase=None, ref=0, maxtimewindow=0, xcorr=
 
             shifttimes[no_x] = delta * shift_index
             data_tmp[no_x, :] = datashift
-            print('Trace no %i was shifted by %f seconds' % (no_x, delta * shift_index))
+            if verbose:
+                print('Trace no %i was shifted by %f seconds' % (no_x, delta * shift_index))
             # Positive shift_index indicates positive shift in time and vice versa.
             if shift_index > 0 and shift_index > tmin: tmin = shift_index
             if shift_index < 0 and shift_index < tmax: tmax = abs(shift_index)
@@ -1535,8 +1536,8 @@ def shift2ref(array, tref, tshift, ref_array=None, mtw=0, method='normal', xcorr
 
     elif isinstance(mtw, np.ndarray) and not xcorr:
         if mtw[0] >= 0:
-            tmin = tshift - mtw[0]
-            tmax = tshift + mtw[1]
+            tmin = tshift - int(mtw[0])
+            tmax = tshift + int(mtw[1])
             stmax = trace[tmin]
             mtw_index = tshift
             for k in np.arange(tmin, tmax + 1).astype('int'):
@@ -1546,8 +1547,8 @@ def shift2ref(array, tref, tshift, ref_array=None, mtw=0, method='normal', xcorr
             shift_value = tref - mtw_index
 
         elif mtw[0] < 0:
-            tmin = tshift - abs(mtw[0])
-            tmax = tshift + abs(mtw[1])
+            tmin = tshift - abs(int(mtw[0]))
+            tmax = tshift + abs(int(mtw[1]))
             stmax = trace[tmin]
             mtw_index = tshift
             for k in np.arange(tmin, tmax + 1).astype('int'):
@@ -1674,7 +1675,7 @@ def truncate(data, tmin, tmax, absolute=False):
 
 def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None,
               power=4, plot=False, cmap='seismic',
-              markphases=['ttall', 'P^410P', 'P^660P'], method='fft',
+              markphases=None, method='fft',
               tw=None, zoom=1, savefig=False, dpi=400, fs=25):
     """
     Creates a vespagram for the given slownessrange and slownessstepsize. Returns the vespagram as numpy array
