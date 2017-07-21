@@ -20,38 +20,52 @@ def array2stream(ArrayData, st_original=None, network=None):
     param network: Network, of with all the station information
     type network: obspy.core.inventory.network.Network
     """
-    traces = []
+    if ArrayData.ndim == 1:
 
-    for i, trace in enumerate(ArrayData):
-        newtrace = obspy.core.trace.Trace(trace)
-        traces.append(newtrace)
+        trace = obspy.core.trace.Trace(ArrayData)
 
-    stream = Stream(traces)
+        if isinstance(st_original, Stream):
+            trace.stats = st_original[0].stats
+        elif isinstance(st_original, Trace):
+            trace.stats = st_original.stats
 
-    # Just writes the network information, if possible input original stream
+        return Stream(trace)
 
-    if isinstance(st_original, Stream):
-        st_tmp = st_original.copy()
-        # Checks length of ArrayData and st_original, if needed,
-        # corrects trace.stats.npts value of new generated Stream-object.
-        if ArrayData.shape[1] == len(st_tmp[0]):
+    else:
+        traces = []
 
-            for i, trace in enumerate(stream):
-                trace.stats = st_tmp[i].stats
+        for i, trace in enumerate(ArrayData):
+            newtrace = obspy.core.trace.Trace(trace)
+            traces.append(newtrace)
 
-        else:
+        stream = Stream(traces)
 
-            for i, trace in enumerate(stream):
-                trace.stats = st_tmp[i].stats
-                trace.stats.npts = ArrayData.shape[1]
+        # Just writes the network information,
+        # if possible input original stream
 
-    elif isinstance(network, Network) and not isinstance(st_tmp, Stream):
+        if isinstance(st_original, Stream):
+            st_tmp = st_original.copy()
+            # Checks length of ArrayData and st_original, if needed,
+            # corrects trace.stats.npts value of new generated Stream-object.
+            if ArrayData.shape[1] == len(st_tmp[0]):
 
-        for trace in stream:
-            trace.meta.network = network.code
-            trace.meta.station = network[0].code
+                for i, trace in enumerate(stream):
+                    trace.stats = st_tmp[i].stats
 
-    return stream
+            else:
+
+                for i, trace in enumerate(stream):
+                    trace.stats = st_tmp[i].stats
+                    trace.stats.npts = ArrayData.shape[1]
+
+        elif isinstance(network, Network) and not isinstance(st_tmp, Stream):
+
+            for trace in stream:
+                trace.meta.network = network.code
+                trace.meta.station = network[0].code
+
+        return stream
+
 
 
 def array2trace(ArrayData, st_original=None):

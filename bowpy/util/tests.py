@@ -127,6 +127,13 @@ def set_zero(st, name):
     return
 
 
+def bootstrap_stream(stream, n):
+    data = stream2array(stream)
+    sigma = bootstrap(data, n)
+    plot_sigma(sigma, stream)
+    return
+
+
 def bootstrap(data, n):
     noft = data.shape[0]
     d_stack = stack(data)
@@ -149,5 +156,5 @@ def bootstrap(data, n):
 
 def plot_sigma(sigma, stream):
     si_stream = array2stream(sigma, stream)
-    plot(si_stream)
+    plot(si_stream, ylabel='sigma', yticks=True)
     return
