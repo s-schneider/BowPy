@@ -554,7 +554,7 @@ def makeMask(fkdata, slope, shape, rth=0.4, expl_cutoff=False):
 
 def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidistances=None, markphases=None, phaselabel=True, phaselabelclr='red',
         norm=False, clr=None, clrtrace=None, newfigure=True, savefig=False, dpi=400, xlabel=None, ylabel=None, yticks=False, t_axis=None,
-        fs=15, tw=None, time_shift=None, verbose=False, kind='classic', labelfs=20):
+        fs=15, tw=None, time_shift=None, verbose=False, kind='classic', labelfs=20, ylimit=None):
     """
     Alpha Version!
 
@@ -950,14 +950,12 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidi
             cbar.ax.tick_params(labelsize=fs)
             cbar.ax.set_ylabel('A', fontsize=fs)
 
-
-
         if yinfo:
             ylim = (ymin-1, ymax+1)
             ax.set_ylim(ylim)
 
         if savefig:
-            fig.set_size_inches(8,7)
+            fig.set_size_inches(8, 7)
             fig.savefig(savefig, dpi=dpi)
             plt.close("all")
         else:
@@ -966,10 +964,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidi
             plt.show()
             plt.ioff()
 
-
     elif isinstance(st, Trace):
 
-        t_axis = np.linspace(0,st.stats.delta * st.stats.npts, st.stats.npts)
+        t_axis = np.linspace(0, st.stats.delta * st.stats.npts, st.stats.npts)
         data = st.data.copy()
 
         if norm in ['all', 'All', 'trace', 'Trace']:
@@ -979,6 +976,9 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidi
         except:
             print("No distance information attached to trace, no phases are calculated!")
             markphases=False
+
+        if ylimit:
+            ax.set_ylim(ylimit)
 
         if markphases:
             try:
@@ -1019,6 +1019,8 @@ def plot(st, inv=None, event=None, zoom=1, yinfo=False, stationlabel=True, epidi
             title = st.stats.network+'.'+st.stats.station+'.'+st.stats.location+'.'+st.stats.channel
             ax.set_title(title, fontsize=fs)
             ax.plot(t_axis, zoom*data, color=clr)
+
+
 
         if savefig:
             plt.savefig(savefig)

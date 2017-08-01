@@ -127,10 +127,10 @@ def set_zero(st, name):
     return
 
 
-def bootstrap_stream(stream, n):
+def bootstrap_stream(stream, n, fs=20, ylimit=None):
     data = stream2array(stream)
     sigma = bootstrap(data, n)
-    plot_sigma(sigma, stream)
+    plot_sigma(sigma, stream, fs=fs, ylimit=ylimit)
     return
 
 
@@ -154,7 +154,7 @@ def bootstrap(data, n):
     return sigma
 
 
-def plot_sigma(sigma, stream):
+def plot_sigma(sigma, stream, fs=20, ylimit=None):
     si_stream = array2stream(sigma, stream)
-    plot(si_stream, ylabel='sigma', yticks=True)
+    plot(si_stream[0], ylabel='sigma', yticks=True, fs=fs, ylimit=ylimit)
     return
