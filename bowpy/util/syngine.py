@@ -129,6 +129,8 @@ def get_syngine_data(model, client=None, reclat=None, reclon=None, inv=None,
                                     maxlatitude=origins.latitude+.5)
         else:
             cat = None
+    else:
+        cat = None
 
     return streams, cat
 
