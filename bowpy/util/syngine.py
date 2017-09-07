@@ -24,11 +24,11 @@ from bowpy.util.syngine import get_syngine_data
 
 model='ak135f_1s'
 eventid="GCMT:201305240544A"
-iriseventid=1916079
 irisclient = fdsnClient('IRIS')
-inv = irisclient.get_stations(network='TA', starttime=UTCDateTime(2017,1,1),
+inv = irisclient.get_stations(network='TA', station='121A',
+                              starttime=UTCDateTime(2017,1,1),
                               endtime=UTCDateTime(2018,1,1), maxlatitude=50)
-streams, cat = get_syngine_data(model, eventid, iriseventid, inv)
+streams, cat = get_syngine_data(model, client="IRIS", eventid=eventid, inv=inv)
 
 # Example 2
 
@@ -120,14 +120,15 @@ def get_syngine_data(model, client=None, reclat=None, reclon=None, inv=None,
             stream.append(stream_tmp[0])
         streams = stream
 
-    starttime = origins.time - 120
-    endtime = starttime + 120
-    if client:
-        cat = client.get_events(starttime, endtime,
-                                minlatitude=origins.latitude-.5,
-                                maxlatitude=origins.latitude+.5)
-    else:
-        cat = None
+    if origins:
+        starttime = origins.time - 120
+        endtime = starttime + 120
+        if client:
+            cat = client.get_events(starttime, endtime,
+                                    minlatitude=origins.latitude-.5,
+                                    maxlatitude=origins.latitude+.5)
+        else:
+            cat = None
 
     return streams, cat
 
