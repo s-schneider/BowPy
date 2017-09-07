@@ -10,7 +10,10 @@ import sys
 from bowpy.util.array_util import (center_of_gravity, attach_network_to_traces,
                                    attach_coordinates_to_traces,
                                    geometrical_center)
-import instaseis
+try:
+    import instaseis
+except:
+    pass
 
 
 def data_request(client_name, start, end, minmag, cat_client_name=None,
