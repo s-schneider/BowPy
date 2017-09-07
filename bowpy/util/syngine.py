@@ -1,12 +1,22 @@
 import obspy
+from obspy import Stream
 from obspy.clients.syngine import Client as synClient
 from obspy.clients.fdsn import Client as fdsnClient
 from obspy.core.util.attribdict import AttribDict
-from obspy.core import UTCDateTime
-from obspy.geodetics.base import degrees2kilometers
+from obspy.geodetics.base import degrees2kilometers, gps2dist_azimuth
 from bowpy.util.array_util import dist_azimuth2gps, geometrical_center
 
 """
+:param sourcedoublecouple: Specify a source as a double couple. The
+    list of values are ``strike``, ``dip``, ``rake`` [, ``M0`` ],
+    where strike, dip and rake are in degrees and M0 is the scalar
+    seismic moment in Newton meters (Nm). If not specified, a value
+    of *1e19* will be used as the scalar moment.
+
+:param sourcemomenttensor: Specify a source in moment tensor
+    components as a list: ``Mrr``, ``Mtt``, ``Mpp``, ``Mrt``, ``Mrp``,
+    ``Mtp`` with values in Newton meters (*Nm*).
+
 # Example
 from obspy.clients.syngine import Client as synClient
 from obspy.clients.fdsn import Client as fdsnClient
@@ -21,15 +31,6 @@ streams, cat = get_syngine_data(model, eventid, iriseventid, inv)
 
 or
 
-:param sourcedoublecouple: Specify a source as a double couple. The
-    list of values are ``strike``, ``dip``, ``rake`` [, ``M0`` ],
-    where strike, dip and rake are in degrees and M0 is the scalar
-    seismic moment in Newton meters (Nm). If not specified, a value
-    of *1e19* will be used as the scalar moment.
-
-:param sourcemomenttensor: Specify a source in moment tensor
-    components as a list: ``Mrr``, ``Mtt``, ``Mpp``, ``Mrt``, ``Mrp``,
-    ``Mtp`` with values in Newton meters (*Nm*).
 
 from obspy.clients.syngine import Client as synClient
 from obspy.clients.fdsn import Client as fdsnClient
