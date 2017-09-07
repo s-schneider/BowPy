@@ -29,12 +29,14 @@ inv = irisclient.get_stations(network='TA', station='121A',
                               starttime=UTCDateTime(2017,1,1),
                               endtime=UTCDateTime(2018,1,1), maxlatitude=50)
 streams, cat = get_syngine_data(model, client="IRIS", eventid=eventid, inv=inv)
+st = streams.TA
 
 # Example 2
 
 from obspy.clients.syngine import Client as synClient
 from obspy.clients.fdsn import Client as fdsnClient
 from bowpy.util.syngine import get_syngine_data
+from obspy.core import AttribDict
 
 model='ak135f_1s'
 irisclient = fdsnClient('IRIS')
@@ -50,10 +52,14 @@ exponent = 1E28
 moment_tensor[:] = [x * exponent for x in moment_tensor]
 sourcedoublecouple = [189, 11, -93, 3.95e+28]
 
-inv = irisclient.get_stations(network='TA', starttime=UTCDateTime(2017,1,1),
-                              endtime=UTCDateTime(2018,1,1), maxlatitude=50)
-streams, cat_syn = get_syngine_data(model, inv, 'IRIS', origins=origins,
-                                m_tensor=moment_tensor)
+inv = irisclient.get_stations(network='TA', station='121A',
+                              starttime=UTCDateTime(2017,1,1),
+                              endtime=UTCDateTime(2018,1,1),
+                              maxlatitude=50)
+
+streams, cat_syn = get_syngine_data(model, client='IRIS', inv=inv,
+                                    origins=origins, m_tensor=moment_tensor)
+st = streams.TA
 """
 
 
