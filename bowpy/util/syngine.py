@@ -17,9 +17,10 @@ from bowpy.util.array_util import dist_azimuth2gps, geometrical_center
     components as a list: ``Mrr``, ``Mtt``, ``Mpp``, ``Mrt``, ``Mrp``,
     ``Mtp`` with values in Newton meters (*Nm*).
 
-# Example
+# Example 1
 from obspy.clients.syngine import Client as synClient
 from obspy.clients.fdsn import Client as fdsnClient
+from bowpy.util.syngine import get_syngine_data
 
 model='ak135f_1s'
 eventid="GCMT:201305240544A"
@@ -29,11 +30,11 @@ inv = irisclient.get_stations(network='TA', starttime=UTCDateTime(2017,1,1),
                               endtime=UTCDateTime(2018,1,1), maxlatitude=50)
 streams, cat = get_syngine_data(model, eventid, iriseventid, inv)
 
-or
-
+# Example 2
 
 from obspy.clients.syngine import Client as synClient
 from obspy.clients.fdsn import Client as fdsnClient
+from bowpy.util.syngine import get_syngine_data
 
 model='ak135f_1s'
 irisclient = fdsnClient('IRIS')
@@ -80,7 +81,8 @@ def get_syngine_data(model, client=None, reclat=None, reclon=None, inv=None,
                     stream_tmp = synclient.get_waveforms(model=model,
                                                          network=network.code,
                                                          station=station.code,
-                                                         eventid=eventid)
+                                                         eventid=eventid
+                                                         )
                 else:
                     stream_tmp = synclient.get_waveforms(model=model,
                                                          network=network.code,
@@ -102,7 +104,8 @@ def get_syngine_data(model, client=None, reclat=None, reclon=None, inv=None,
                 stream_tmp = synclient.get_waveforms(model=model,
                                                      receiverlatitude=rlat,
                                                      receiverlongitude=rlon,
-                                                     eventid=eventid)
+                                                     eventid=eventid
+                                                     )
             else:
                 stream_tmp = synclient.get_waveforms(model=model,
                                                      receiverlatitude=rlat,
@@ -153,7 +156,8 @@ def get_ref_data(stream, inv, model='ak135f_1s', eventid=None, origins=None,
         print('Receiving trace %i of %i.' % (i+1, len(stream)))
         stream_tmp, cat_void = get_syngine_data(model, reclat=rlats, reclon=rlons,
                                                 eventid=eventid, origins=origins,
-                                                m_tensor=m_tensor, source_dc=source_dc)
+                                                m_tensor=m_tensor, source_dc=source_dc
+                                                )
 
         trace_tmp = stream_tmp[0].copy()
         trace_tmp.stats.station = trace.stats.station
