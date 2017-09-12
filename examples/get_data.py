@@ -5,4 +5,5 @@ client = Client('IRIS')
 
 cat = client.get_stations(minmagnitude=8)
 
-data_request('IRIS', cat=cat, net='*', channels='LH*', savefile=True)
+data_request('IRIS', cat=cat, net='*', channels='LH*', savefile=True,
+             normal_mode_data=True)
