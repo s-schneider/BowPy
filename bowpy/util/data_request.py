@@ -384,23 +384,24 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
 
         attach_network_to_traces(stream, inventory)
         attach_coordinates_to_traces(stream, inventory, event)
-        streamall.append(stream)
+
+        if savefile:
+            stname = str(origin_t).split('.')[0] + "." + file_format
+            invname = stname + "_inv.xml"
+            catname = stname + "_cat.xml"
+            stream.write(stname, format=file_format)
+            inventory.write(invname, format="STATIONXML")
+            catalog.write(catname, format="QUAKEML")
+        else:
+            streamall.append(stream)
+
         stream = Stream()
 
-    if savefile:
-        stname = str(origin_t).split('.')[0] + "." + file_format
-        invname = stname + "_inv.xml"
-        catname = stname + "_cat.xml"
-        stream.write(stname, format=file_format)
-        inventory.write(invname, format="STATIONXML")
-        catalog.write(catname, format="QUAKEML")
+    if not savefile:
+        inventory = invall
+        list_of_stream = streamall
 
-    plt.ion()
-    plt.ioff()
-    inventory = invall
-    list_of_stream = streamall
-
-    return(list_of_stream, inventory, catalog)
+        return(list_of_stream, inventory, catalog)
 
 
 def create_insta_from_invcat(network, event, database):
