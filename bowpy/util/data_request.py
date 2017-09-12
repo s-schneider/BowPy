@@ -208,6 +208,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
             try:
                 inventory = client.get_stations(network=net, station=scode,
                                                 level="station",
+                                                channel=channels,
                                                 starttime=station_stime,
                                                 endtime=station_etime,
                                                 minlatitude=station_minlat,
