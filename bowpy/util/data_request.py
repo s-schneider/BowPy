@@ -125,6 +125,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
 
     from obspy import UTCDateTime
     from bowpy.util.data_request import data_request
+    import mechanize
 
     start = UTCDateTime(2010,1,1,0,0)
     end = UTCDateTime(2010,12,31,0,0)
@@ -324,16 +325,6 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
 
                         sys.stdout.flush()
                         stream += st_req
-                            # try:
-                            #     if inventory_used:
-                            #         inventory_used += client.get_stations(net=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
-                            #                      minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
-                            #                      latitude=station_radcenlat, longitude=station_radcenlon, minradius=station_minrad, maxradius=station_maxrad)
-                            #
-                            # except:
-                            #         inventory_used = client.get_stations(net=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
-                            #                      minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
-                            #                      latitude=station_radcenlat, longitude=station_radcenlon, minradius=station_minrad, maxradius=station_maxrad)
                     except:
                         continue
                 print('\n')
@@ -386,17 +377,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
 
                             sys.stdout.flush()
                             stream += st_req
-                            # try:
-                            #     if inventory_used:
-                            #         inventory_used 	+= client.get_stations(net=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
-                            #                  minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
-                            #                  latitude=station_radcenlat, longitude=station_radcenlon, minradius=station_minrad, maxradius=station_maxrad)
-                            # except:
-                            #         inventory_used 	 = client.get_stations(net=net, station=scode, level="station", starttime=station_stime, endtime=station_etime,
-                            #                  minlatitude=station_minlat, maxlatitude=station_maxlat, minlongitude=station_minlon, maxlongitude=station_maxlon,
-                            #                  latitude=station_radcenlat, longitude=station_radcenlon, minradius=station_minrad, maxradius=station_maxrad)
                         except:
-
                             continue
 
         invall = inventory
