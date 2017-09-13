@@ -392,11 +392,11 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
             invname = stname + "_inv.xml"
             catname = stname + "_cat.xml"
             if file_format == 'ah':
-	        _write_ah1(stream, stname)
-	    else:
-	        stream.write(stname, format=file_format)
-            inventory.write(invname, format="STATIONXML")
-            catalog.write(catname, format="QUAKEML")
+                _write_ah1(stream, stname)
+            else:
+                stream.write(stname, format=file_format)
+                inventory.write(invname, format="STATIONXML")
+                catalog.write(catname, format="QUAKEML")
         else:
             streamall.append(stream)
 
