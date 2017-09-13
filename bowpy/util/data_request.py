@@ -227,7 +227,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                              len(inventory.get_contents()['stations'])))
             except:
                 print("No Inventory found for given parameters")
-                return
+                continue
 
         for net in inventory:
 

@@ -4,6 +4,6 @@ from obspy.clients.fdsn import Client
 client = Client('IRIS')
 
 cat = client.get_events(minmagnitude=8)
-
-data_request('IRIS', cat=cat, net='*', channels='LH*', savefile=True,
+station = '034A'
+st, inv, cat = data_request('IRIS', cat=cat, scode=station, net='*', channels='*', savefile=False,
              normal_mode_data=True, file_format='ah')
