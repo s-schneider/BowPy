@@ -10,6 +10,7 @@ import sys
 from bowpy.util.array_util import (center_of_gravity, attach_network_to_traces,
                                    attach_coordinates_to_traces,
                                    geometrical_center)
+from nmpy.util.writeah import _write_ah1
 try:
     import instaseis
 except:
@@ -390,7 +391,10 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
             stname = str(origin_t).split('.')[0] + "." + file_format
             invname = stname + "_inv.xml"
             catname = stname + "_cat.xml"
-            stream.write(stname, format=file_format)
+            if file_format == 'ah':
+	        _write_ah1(stream, stname)
+	    else:
+	        stream.write(stname, format=file_format)
             inventory.write(invname, format="STATIONXML")
             catalog.write(catname, format="QUAKEML")
         else:
