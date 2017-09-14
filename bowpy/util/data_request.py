@@ -382,12 +382,24 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                         except:
                             continue
 
+            if savefile == 'network':
+                stname = str(net.code) + str(origin_t).split('.')[0] + \
+                         "." + file_format
+                invname = stname + "_inv.xml"
+                catname = stname + "_cat.xml"
+                if file_format == 'ah':
+                    _write_ah1(stream, stname)
+                else:
+                    stream.write(stname, format=file_format)
+                    inventory.write(invname, format="STATIONXML")
+                    catalog.write(catname, format="QUAKEML")
+
         invall = inventory
 
         attach_network_to_traces(stream, inventory)
         attach_coordinates_to_traces(stream, inventory, event)
 
-        if savefile:
+        if savefile == 'event':
             stname = str(origin_t).split('.')[0] + "." + file_format
             invname = stname + "_inv.xml"
             catname = stname + "_cat.xml"
