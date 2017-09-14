@@ -409,7 +409,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                 stream.write(stname, format=file_format)
                 inventory.write(invname, format="STATIONXML")
                 catalog.write(catname, format="QUAKEML")
-        else:
+        if not savefile:
             streamall.append(stream)
 
         stream = Stream()
