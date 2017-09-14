@@ -383,13 +383,18 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                             continue
 
             if savefile == 'network':
-                stname = str(net.code) + str(origin_t).split('.')[0] + \
-                         "." + file_format
+                stname = str(net.code) + str(origin_t).split('.')[0]
                 invname = stname + "_inv.xml"
                 catname = stname + "_cat.xml"
                 if file_format == 'ah':
-                    _write_ah1(stream, stname)
+                    try:
+                        stname = stname + '.AH'
+                        _write_ah1(stream, stname)
+                    except:
+                        stname = stname + '.pickle'
+                        stream.write(stname, format='pickle')
                 else:
+                    stname = stname + "." + file_format
                     stream.write(stname, format=file_format)
                     inventory.write(invname, format="STATIONXML")
                     catalog.write(catname, format="QUAKEML")
@@ -400,12 +405,18 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
         attach_coordinates_to_traces(stream, inventory, event)
 
         if savefile == 'event':
-            stname = str(origin_t).split('.')[0] + "." + file_format
+            stname = str(origin_t).split('.')[0]
             invname = stname + "_inv.xml"
             catname = stname + "_cat.xml"
             if file_format == 'ah':
-                _write_ah1(stream, stname)
+                try:
+                    stname = stname + '.AH'
+                    _write_ah1(stream, stname)
+                except:
+                    stname = stname + '.pickle'
+                    stream.write(stname, format='pickle')
             else:
+                stname = stname + "." + file_format
                 stream.write(stname, format=file_format)
                 inventory.write(invname, format="STATIONXML")
                 catalog.write(catname, format="QUAKEML")
