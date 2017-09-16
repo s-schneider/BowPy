@@ -387,12 +387,12 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                 invname = stname + "_inv.xml"
                 catname = stname + "_cat.xml"
                 if file_format == 'ah':
-                    try:
-                        stname = stname + '.AH'
-                        _write_ah1(stream, stname)
-                    except:
-                        stname = stname + '.pickle'
-                        stream.write(stname, format='pickle')
+                    # try:
+                    stname = stname + '.AH'
+                    _write_ah1(stream, stname)
+                    # except:
+                    #     stname = stname + '.pickle'
+                    #     stream.write(stname, format='pickle')
                 else:
                     stname = stname + "." + file_format
                     stream.write(stname, format=file_format)
