@@ -328,7 +328,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                         sys.stdout.flush()
                         stream += st_req
                     except:
-                        continue
+                        pass
                 print('\n')
 
             # If not, checking each station individually.
@@ -380,9 +380,9 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                             sys.stdout.flush()
                             stream += st_req
                         except:
-                            continue
+                            pass
 
-            if savefile == 'network':
+            if savefile == 'network' and len(stream) != 0:
                 stname = str(net.code) + str(origin_t).split('.')[0]
                 invname = stname + "_inv.xml"
                 catname = stname + "_cat.xml"
@@ -398,13 +398,14 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                     stream.write(stname, format=file_format)
                     inventory.write(invname, format="STATIONXML")
                     catalog.write(catname, format="QUAKEML")
+                print('File Saved: %s' % stname)
 
         invall = inventory
 
         attach_network_to_traces(stream, inventory)
         attach_coordinates_to_traces(stream, inventory, event)
 
-        if savefile == 'event':
+        if savefile == 'event' and len(stream) != 0:
             stname = str(origin_t).split('.')[0]
             invname = stname + "_inv.xml"
             catname = stname + "_cat.xml"
@@ -420,6 +421,8 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                 stream.write(stname, format=file_format)
                 inventory.write(invname, format="STATIONXML")
                 catalog.write(catname, format="QUAKEML")
+            print('File Saved: %s' % stname)
+
         if not savefile:
             streamall.append(stream)
 
