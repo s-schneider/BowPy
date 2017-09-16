@@ -329,7 +329,6 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                         stream += st_req
                     except:
                         pass
-                print('\n')
 
             # If not, checking each station individually.
             else:
@@ -387,19 +386,21 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                 invname = stname + "_inv.xml"
                 catname = stname + "_cat.xml"
                 if file_format == 'ah':
-                    # try:
-                    stname = stname + '.AH'
-                    _write_ah1(stream, stname)
-                    # except:
-                    #     stname = stname + '.pickle'
-                    #     stream.write(stname, format='pickle')
+                    if normal_mode_data:
+                        if hasattr(stream[0].stats, 'response'):
+                            stname = stname + '.AH'
+                            _write_ah1(stream, stname)
+                            print('File Saved: %s' % stname)
+
+                        else:
+                            continue
                 else:
                     stname = stname + "." + file_format
                     stream.write(stname, format=file_format)
                     inventory.write(invname, format="STATIONXML")
                     catalog.write(catname, format="QUAKEML")
-                print('File Saved: %s' % stname)
-
+                    print('File Saved: %s' % stname)
+            print('\n')
         invall = inventory
 
         attach_network_to_traces(stream, inventory)
