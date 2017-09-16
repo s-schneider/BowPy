@@ -389,7 +389,10 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                     if normal_mode_data:
                         if hasattr(stream[0].stats, 'response'):
                             stname = stname + '.AH'
-                            _write_ah1(stream, stname)
+                            try:
+                                _write_ah1(stream, stname)
+                            except:
+                                stream.write(stname+'.pickle', format='pickle')
                             print('File Saved: %s' % stname)
 
                         else:
