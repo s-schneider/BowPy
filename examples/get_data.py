@@ -1,5 +1,6 @@
 from bowpy.util.data_request import data_request
 from obspy.clients.fdsn import Client
+import obspy
 
 client = Client('IRIS')
 
