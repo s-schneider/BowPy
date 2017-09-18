@@ -193,6 +193,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
     m = TauPyModel(model="ak135")
     for event in catalog:
         if inv:
+            origin_t = event.origins[0].time
             inventory = inv
 
         else:

@@ -8,6 +8,6 @@ events = client.get_events(minmagnitude=8)
 
 cat = obspy.core.event.Catalog()
 cat.append(events[0])
-st, inv, cat = data_request('IRIS', cat=cat, net='*', channels='*',
+st, inv, cat = data_request('IRIS', inv=inv, cat=cat, net='*', channels='L*',
                             savefile='network', normal_mode_data=True,
                             file_format='ah')
