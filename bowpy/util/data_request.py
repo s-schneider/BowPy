@@ -394,7 +394,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                                 _write_ah1(stream, stname)
                             except:
                                 stream.write(stname+'.pickle', format='pickle')
-                            print('\n File Saved: %s' % stname)
+
 
                         else:
                             continue
@@ -403,7 +403,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                     stream.write(stname, format=file_format)
                     inventory.write(invname, format="STATIONXML")
                     catalog.write(catname, format="QUAKEML")
-                    print('File Saved: %s' % stname)
+                print('File Saved: %s' % stname)
                 stream = Stream()
 
             print('\n')
