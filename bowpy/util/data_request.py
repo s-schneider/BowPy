@@ -383,7 +383,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                             pass
 
             if savefile == 'network' and len(stream) != 0:
-                stname = str(net.code) + str(origin_t).split('.')[0]
+                stname = str(net.code) + '.' + str(origin_t).split('.')[0]
                 invname = stname + "_inv.xml"
                 catname = stname + "_cat.xml"
                 if file_format == 'ah':
