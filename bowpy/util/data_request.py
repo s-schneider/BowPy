@@ -394,7 +394,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                                 _write_ah1(stream, stname)
                             except:
                                 stream.write(stname+'.pickle', format='pickle')
-                            print('File Saved: %s' % stname)
+                            print('\n File Saved: %s' % stname)
 
                         else:
                             continue
