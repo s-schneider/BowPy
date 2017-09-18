@@ -404,6 +404,8 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                     inventory.write(invname, format="STATIONXML")
                     catalog.write(catname, format="QUAKEML")
                     print('File Saved: %s' % stname)
+                stream = Stream()
+
             print('\n')
         invall = inventory
 
