@@ -296,7 +296,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                                          t_before_first_arrival * 60)
                     if normal_mode_data:
                         tend = UTCDateTime(event.origins[0].time +
-                                           Ptime + 50 * 60 * 60)
+                                           Ptime + 170 * 60 * 60)
                     else:
                         tend = UTCDateTime(event.origins[0].time + Ptime +
                                            t_after_first_arrival * 60)
