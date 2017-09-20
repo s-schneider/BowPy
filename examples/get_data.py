@@ -7,7 +7,7 @@ client = Client('IRIS')
 events = client.get_events(minmagnitude=8)
 
 cat = obspy.core.event.Catalog()
-cat.append(events[0])
-st, inv, cat = data_request('IRIS', cat=cat, channels="LHE,LHN,LHZ",
-                            savefile='network', normal_mode_data=True,
-                            file_format='ah')
+cat.append(events[29])
+data_request('IRIS', cat=cat, channels="VHE,VHN,VHZ",
+             savefile='station', normal_mode_data=True,
+             file_format='ah')

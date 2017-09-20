@@ -7,13 +7,17 @@ from obspy import UTCDateTime, Stream, Inventory, Trace, read
 from obspy.core.inventory.network import Network
 
 from bowpy.util.base import cat4stream, inv4stream
+from nmpy.util.base import read_ahx
 from bowpy.util.array_util import attach_network_to_traces, attach_coordinates_to_traces
 import warnings
 
 
 def read_st(input, format=None, network=None, client_name=None):
 
-    stream = read(input, format)
+    try:
+        stream = read(input, format)
+    except UnicodeDecodeError:
+        stream = read_ahx(input)
 
     try:
         if stream[0].stats._format == 'Q':

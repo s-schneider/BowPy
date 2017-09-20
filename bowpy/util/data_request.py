@@ -382,6 +382,27 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                         except:
                             pass
 
+                    if savefile == 'station' and len(stream) != 0:
+                        stname = str(net.code) + '.' + str(station.code) + \
+                                 + '.' + str(origin_t).split('.')[0]
+                        if file_format == 'ah':
+                            if normal_mode_data:
+                                if hasattr(stream[0].stats, 'response'):
+                                    stname = stname + '.AH'
+                                    try:
+                                        _write_ah1(stream, stname,
+                                                   station, event)
+                                    except:
+                                        stream.write(stname+'.pickle',
+                                                     format='pickle')
+                                else:
+                                    continue
+                        else:
+                            stname = stname + "." + file_format
+                            stream.write(stname, format=file_format)
+                        print('File Saved: %s' % stname)
+                        stream = Stream()
+
             if savefile == 'network' and len(stream) != 0:
                 stname = str(net.code) + '.' + str(origin_t).split('.')[0]
                 invname = stname + "_inv.xml"
@@ -394,8 +415,6 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                                 _write_ah1(stream, stname)
                             except:
                                 stream.write(stname+'.pickle', format='pickle')
-
-
                         else:
                             continue
                 else:
