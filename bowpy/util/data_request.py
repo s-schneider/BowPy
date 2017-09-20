@@ -331,6 +331,19 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                     except:
                         pass
 
+                    if savefile == 'station' and len(stream) != 0:
+                        stname = str(net.code) + '.' + str(station.code) \
+                                 + '.' + str(origin_t).split('.')[0]
+
+                        if hasattr(stream[0].stats, 'response'):
+                            save_file(stream, origin_t, file_format, stname,
+                                      station, event)
+                            print('\nFile Saved: %s' % stname)
+                            stream = Stream()
+                        else:
+                            stream = Stream()
+                            continue
+
             # If not, checking each station individually.
             else:
                 for station in net:
@@ -383,45 +396,25 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                             pass
 
                     if savefile == 'station' and len(stream) != 0:
-                        stname = str(net.code) + '.' + str(station.code) + \
+                        stname = str(net.code) + '.' + str(station.code) \
                                  + '.' + str(origin_t).split('.')[0]
-                        if file_format == 'ah':
-                            if normal_mode_data:
-                                if hasattr(stream[0].stats, 'response'):
-                                    stname = stname + '.AH'
-                                    try:
-                                        _write_ah1(stream, stname,
-                                                   station, event)
-                                    except:
-                                        stream.write(stname+'.pickle',
-                                                     format='pickle')
-                                else:
-                                    continue
+
+                        if hasattr(stream[0].stats, 'response'):
+                            save_file(stream, origin_t, file_format, stname,
+                                      station, event)
+                            print('\nFile Saved: %s' % stname)
+                            stream = Stream()
                         else:
-                            stname = stname + "." + file_format
-                            stream.write(stname, format=file_format)
-                        print('File Saved: %s' % stname)
-                        stream = Stream()
+                            stream = Stream()
+                            continue
 
             if savefile == 'network' and len(stream) != 0:
-                stname = str(net.code) + '.' + str(origin_t).split('.')[0]
-                invname = stname + "_inv.xml"
-                catname = stname + "_cat.xml"
-                if file_format == 'ah':
-                    if normal_mode_data:
-                        if hasattr(stream[0].stats, 'response'):
-                            stname = stname + '.AH'
-                            try:
-                                _write_ah1(stream, stname)
-                            except:
-                                stream.write(stname+'.pickle', format='pickle')
-                        else:
-                            continue
-                else:
-                    stname = stname + "." + file_format
-                    stream.write(stname, format=file_format)
-                    inventory.write(invname, format="STATIONXML")
-                    catalog.write(catname, format="QUAKEML")
+                stname = str(origin_t).split('.')[0]
+
+                attach_network_to_traces(stream, inventory)
+                attach_coordinates_to_traces(stream, inventory, event)
+
+                save_file(stream, origin_t, file_format, stname)
                 print('File Saved: %s' % stname)
                 stream = Stream()
 
@@ -435,20 +428,12 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
             stname = str(origin_t).split('.')[0]
             invname = stname + "_inv.xml"
             catname = stname + "_cat.xml"
-            if file_format == 'ah':
-                try:
-                    stname = stname + '.AH'
-                    _write_ah1(stream, stname)
-                except:
-                    stname = stname + '.pickle'
-                    stream.write(stname, format='pickle')
-            else:
-                stname = stname + "." + file_format
-                stream.write(stname, format=file_format)
-                inventory.write(invname, format="STATIONXML")
-                catalog.write(catname, format="QUAKEML")
+
+            save_file(stream, origin_t, file_format, stname)
+            inventory.write(invname, format="STATIONXML")
+            catalog.write(catname, format="QUAKEML")
+
             print('File Saved: %s' % stname)
-            stream = Stream()
 
         if not savefile:
             streamall.append(stream)
@@ -460,6 +445,20 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
         list_of_stream = streamall
 
         return(list_of_stream, inventory, catalog)
+
+
+def save_file(stream, origin_t, file_format, stname, station=None, event=None):
+
+    if file_format == 'ah':
+        try:
+            stname = stname + '.AH'
+            _write_ah1(stream, stname, station, event)
+        except:
+            stname = stname + '.pickle'
+            stream.write(stname, format='pickle')
+    else:
+        stname = stname + "." + file_format
+        stream.write(stname, format=file_format)
 
 
 def create_insta_from_invcat(network, event, database):
