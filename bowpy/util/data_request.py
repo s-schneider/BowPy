@@ -338,7 +338,11 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
                         if hasattr(stream[0].stats, 'response'):
                             save_file(stream, origin_t, file_format, stname,
                                       station, event)
-                            print('\nFile Saved: %s' % stname)
+                            msg = "     Saved data for %i of %i available " +\
+                                  "stations!"
+                            print(msg % (no_of_stations,
+                                         net.selected_number_of_stations),
+                                  end='\r')
                             stream = Stream()
                         else:
                             stream = Stream()
