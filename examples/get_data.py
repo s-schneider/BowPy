@@ -26,6 +26,6 @@ for event in events:
     os.chdir(newpath)
     cat = obspy.core.event.Catalog()
     cat.append(event)
-    data_request('IRIS', cat=cat, channels="VHE,VHN,VHZ",
+    data_request('IRIS', cat=cat, channels="VHE,VHN,VHZ,LHE,LHN,LHZ",
                  savefile='station', normal_mode_data=True,
                  file_format='ah')
