@@ -10,7 +10,7 @@ client = Client('IRIS')
 
 events = client.get_events(minmagnitude=8)
 oldfolder = None
-for event in events:
+for event in events[::-1]:
     eventy = str(event.origins[0].time.year)
     eventm = str(event.origins[0].time.month)
     eventd = str(event.origins[0].time.day)
