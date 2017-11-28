@@ -1,4 +1,4 @@
-from bowpy.util.data_request import data_request
+from nmpy.util.data_request import data_request
 from obspy.clients.fdsn import Client
 import obspy
 import os
@@ -26,6 +26,6 @@ for event in events[::-1]:
     os.chdir(newpath)
     cat = obspy.core.event.Catalog()
     cat.append(event)
-    data_request('IRIS', cat=cat, channels="VHE,VHN,VHZ,LHE,LHN,LHZ",
+    data_request('IRIS', cat=cat, channels="VHE,VHN,VHZ",
                  savefile='station', normal_mode_data=True,
                  file_format='ah')

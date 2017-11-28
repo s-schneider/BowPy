@@ -18,7 +18,7 @@ except:
 
 
 def data_request(client_name, start=None, end=None, minmag=None, cat=None,
-                 inv=None, cat_client_name=None, net=None, scode="*",
+                 inv=None, cat_client_name=None, net="*", scode="*",
                  channels="*", minlat=None, maxlat=None, minlon=None,
                  maxlon=None, station_minlat=None, station_maxlat=None,
                  station_minlon=None, station_maxlon=None,
