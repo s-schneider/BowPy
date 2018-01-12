@@ -67,7 +67,6 @@ def array2stream(ArrayData, st_original=None, network=None):
         return stream
 
 
-
 def array2trace(ArrayData, st_original=None):
     if ArrayData.ndim != 1:
         try:

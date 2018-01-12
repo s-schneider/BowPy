@@ -21,15 +21,20 @@ from bowpy.util.base import nextpow2, array2stream, stream2array,\
                             line_cut, line_set_zero
 from bowpy.util.picker import get_polygon
 
-def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth', 2, 2], phase=None, polygon=4, normalize=True, stack=False,
-                    slopes=[-3,3], deltaslope=0.05, slopepicking=False, smoothpicks=False, dist=0.5, maskshape=['boxcar',None],
-                    order=4., peakinput=False, eval_mean=1, fs=25):
+
+def fk_filter(st, inv=None, event=None, ftype='eliminate',
+              fshape=['butterworth', 2, 2], phase=None, polygon=4,
+              normalize=True, stack=False, slopes=[-3, 3], deltaslope=0.05,
+              slopepicking=False, smoothpicks=False, dist=0.5,
+              maskshape=['boxcar', None], order=4., peakinput=False,
+              eval_mean=1, fs=25):
     """
-    Import stream, the function applies an 2D FFT, removes a certain window around the
-    desired phase to surpress a slownessvalue corresponding to a wavenumber and applies an 2d iFFT.
-    To fill the gap between uneven distributed stations use array_util.gaps_fill_zeros(). A method to interpolate the signals in the
-    fk-domain is beeing build, also a method using a norm minimization method.
-    Alternative is an nonequidistant 2D Lombard-Scargle transformation.
+    Import stream, the function applies an 2D FFT, removes a certain window
+    around the desired phase to surpress a slownessvalue corresponding to a
+    wavenumber and applies an 2d iFFT. To fill the gap between uneven
+    distributed stations use array_util.gaps_fill_zeros(). A method to
+    interpolate the signals in the fk-domain is beeing build, also a method
+    using a norm minimization method.
 
     param st: Stream
     type st: obspy.core.stream.Stream
@@ -40,7 +45,8 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth'
     param event: Event
     type event: obspy.core.event.Event
 
-    param ftype: type of method, default is 'eliminate-polygon', possible inputs are:
+    param ftype: type of method, default is 'eliminate-polygon',
+                 possible inputs are:
                  -eliminate
                  -extract
                  -eliminate-polygon
@@ -50,19 +56,24 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth'
 
     type ftype: string
 
-    param fshape: fshape[0] describes the shape of the fk-filter in case of ftype is 'eliminate' or 'extract'. Possible inputs are:
+    param fshape: fshape[0] describes the shape of the fk-filter in case of
+                  ftype is 'eliminate' or 'extract'. Possible inputs are:
                  -spike (default)
                  -boxcar
                  -taper
                  -butterworth
 
-                  fshape[1] is an additional attribute to the shape of taper and butterworth, for:
+                  fshape[1] is an additional attribute to the shape of taper
+                  and butterworth, for:
                  -taper: fshape[1] = slope of sides
                  -butterworth: fshape[1] = number of poles
 
-                  fshape[3] describes the length of the filter shape, respectivly wavenumber corner points around k=0,
+                  fshape[3] describes the length of the filter shape,
+                  respectivly wavenumber corner points around k=0,
 
-                 e.g.: fshape['taper', 2, 4] produces a symmetric taper with slope of side = 2, where the signal is reduced about 50% at k=+-2
+                 e.g.: fshape['taper', 2, 4] produces a symmetric taper with
+                 slope of side = 2, where the signal is reduced about
+                 50% at k=+-2
 
 
     type  fshape: list
@@ -81,7 +92,8 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth'
     param SSA: Force SSA algorithm or let it check, default:False
     type SSA: bool
 
-    param eval_mean: number of linear events used to calculate the average of the area in the fk domain.
+    param eval_mean: number of linear events used to calculate the average of
+                     the area in the fk domain.
 
     returns:	stream_filtered, the filtered stream.
 
@@ -105,18 +117,18 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth'
     # Convert format and prepare Variables.
 
     # Check for Data type of variables.
-    if not type(st ) == Stream:
-        print( "Wrong input type of stream, must be obspy.core.stream.Stream" )
+    if not type(st) == Stream:
+        print("Wrong input type of stream, must be obspy.core.stream.Stream")
         raise TypeError
 
-    if len(fshape) ==  1:
+    if len(fshape) == 1:
         fshape = [fshape[0], None, None]
 
     st_tmp = st.copy()
     ArrayData = stream2array(st_tmp, normalize)
 
     ix = ArrayData.shape[0]
-    iK = int(math.pow(2,nextpow2(ix)))
+    iK = int(math.pow(2, nextpow2(ix)))
 
     try:
         yinfo = epidist2nparray(attach_epidist2coords(inv, event, st_tmp))
@@ -128,8 +140,10 @@ def fk_filter(st, inv=None, event=None, ftype='eliminate', fshape=['butterworth'
             ymax = st_tmp[0].stats.distance
             ymin = st_tmp[0].stats.distance
             for trace in st_tmp:
-                if trace.stats.distance > ymax: ymax = trace.stats.distance
-                if trace.stats.distance < ymin: ymin = trace.stats.distance
+                if trace.stats.distance > ymax:
+                    ymax = trace.stats.distance
+                if trace.stats.distance < ymin:
+                    ymin = trace.stats.distance
 
             dx = (ymax - ymin + 1) / len(st_tmp)
             k_axis = np.fft.fftfreq(iK, dx)
