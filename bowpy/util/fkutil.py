@@ -5,31 +5,22 @@ import math
 
 import sys
 import matplotlib as mpl
-# If using a Mac Machine, otherwitse comment the next line out:
-#matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
-import matplotlib.path as mplPath
-
-import obspy
 import obspy.signal.filter as obsfilter
-from obspy.geodetics import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy.taup import TauPyModel
 from obspy.core.event.event import Event
 from obspy import Stream, Trace, Inventory
-from obspy.core.inventory.network import Network
 from bowpy.util.base import nextpow2, stream2array
-from bowpy.util.array_util import get_coords, attach_coordinates_to_traces, attach_network_to_traces
-from bowpy.util.picker import pick_data, FollowDotCursor
+from bowpy.util.array_util import (attach_coordinates_to_traces,
+                                   attach_network_to_traces)
+from bowpy.util.picker import pick_data
 from bowpy.filter.ssa import fx_ssa
-import datetime
 import time
 import scipy as sp
-import scipy.signal as signal
 from scipy import sparse
 
-
-
-
+# If using a Mac Machine, otherwitse comment the next line out:
+mpl.use('TkAgg')
 
 """
 A collection of useful functions for handling the fk_filter and seismic data.
@@ -54,10 +45,10 @@ def convert_lsindex(ls_range, samplespacing):
     return(fft_range)
 
 
-def cg_solver(A,b,x0=None,niter=10):
+def cg_solver(A, b, x0=None, niter=10):
     """
-    Conjugate gradient solver for Ax = b lstsqs problems, as shown in Tomographic
-    inversion via the conjugate gradient method, Scales, J. 1987
+    Conjugate gradient solver for Ax = b lstsqs problems, as shown in
+    Tomographic inversion via the conjugate gradient method, Scales, J. 1987
     Expect a mxn Matrix A, a rhs b and an optional startvalue x0
 
     :param A:
@@ -79,14 +70,14 @@ def cg_solver(A,b,x0=None,niter=10):
     """
 
     if A.shape[0] != A.shape[1]:
-        msg='Dimension missmatch, A should be NxN'
+        msg = 'Dimension missmatch, A should be NxN'
         raise IOError(msg)
     print("--- Using CG-method --- \n \nInitiating matrices... \n \n")
 
-
-
-    if x0.any(): x = x0
-    else: x = np.zeros(A.shape[1])
+    if x0.any():
+        x = x0
+    else:
+        x = np.zeros(A.shape[1])
 
     r = b - A.dot(x).real
     p = r.copy()
@@ -96,31 +87,31 @@ def cg_solver(A,b,x0=None,niter=10):
     cont = True
     k = 1
     while cont:
-
-        alpha = np.dot(r,r) / np.dot(p,A.dot(p))
+        alpha = np.dot(r, r) / np.dot(p, A.dot(p))
         x_new = x + alpha * p
         r_new = r - alpha * A.dot(p)
 
-        beta = np.dot(r_new,r_new) / np.dot(r,r)
+        beta = np.dot(r_new, r_new) / np.dot(r, r)
         p_new = r_new + beta * p
 
         x = x_new.copy()
         p = p_new.copy()
 
+        # mcalc = A.dot(x).real - b
+        # resnorm_old = resnorm
+        # resnorm = np.linalg.norm(mcalc.transpose().toarray(), 2)
 
-        #mcalc = A.dot(x).real - b
-        #resnorm_old = resnorm
-        #resnorm = np.linalg.norm(mcalc.transpose().toarray(), 2)
+        # print("Misfit after %i iterations is : %f \n" % (int(k+1), resnorm) )
+        if k == niter:
+            cont = False
+        # if resnorm < 1e-8: cont=False
+        # elif abs(resnorm - resnorm_old) < 1e-8: cont=False
+        k += 1
 
-        #print("Misfit after %i iterations is : %f \n" % (int(k+1), resnorm) )
-        if k == niter: cont=False
-        #if resnorm < 1e-8: cont=False
-        #elif abs(resnorm - resnorm_old) < 1e-8: cont=False
-        k +=1
+    # solnorm = np.linalg.norm(x.toarray(), 2)
 
-    #solnorm = np.linalg.norm(x.toarray(), 2)
-
-    return x_new #, resnorm, solnorm
+    # return x_new, resnorm, solnorm
+    return x_new
 
 
 def create_iFFT2mtx(nx, ny):

@@ -1289,8 +1289,10 @@ def resample_distance(stream, inv=None, event=None, shiftmethod='fft', taup_mode
     return stream_res
 
 
-def resample_partial_stack(st, bin_size=None, refphase='P', overlap=None, order=None, maxtimewindow=None, shiftmethod='normal',
-                  taup_model='ak135'):
+def resample_partial_stack(st, bin_size=None, refphase='P', overlap=None,
+                           order=None, maxtimewindow=None,
+                           shiftmethod='normal',
+                           taup_model='ak135'):
     """
     Will sort the traces into equally distributed bins and stack the bins.
     The stacking is just an addition of the traces, more advanced schemes might follow.
