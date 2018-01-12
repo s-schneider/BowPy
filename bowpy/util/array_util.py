@@ -6,7 +6,6 @@ import fractions
 from scipy.signal import correlate
 import obspy
 
-import math
 import matplotlib.pyplot as plt
 import pylab
 from mpl_toolkits.basemap import Basemap
@@ -19,7 +18,6 @@ from obspy.geodetics.base import locations2degrees, gps2dist_azimuth, \
     kilometer2degrees
 from obspy.taup import TauPyModel
 from obspy.taup.taup_geo import add_geo_to_arrivals
-from obspy.core.util.attribdict import AttribDict
 
 from bowpy.util.base import nextpow2, stream2array, array2stream, array2trace
 
