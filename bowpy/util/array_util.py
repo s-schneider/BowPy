@@ -1674,7 +1674,7 @@ def truncate(data, tmin, tmax, absolute=False):
 
 
 def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None,
-              power=4, plot=False, cmap='seismic',
+              power=4, plot=False, cmap='seismic', sref=0
               markphases=None, method='fft',
               tw=None, zoom=1, savefig=False, dpi=400, fs=25):
     """
@@ -1748,7 +1748,7 @@ def vespagram(stream, slomin=-5, slomax=5, slostep=0.1, inv=None, event=None,
             else:
                 sref = i
     else:
-        sref = 0
+        sref = sref
 
     epidist = np.zeros(data.shape[0])
     for i, trace in enumerate(st):
