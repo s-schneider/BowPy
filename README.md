@@ -8,11 +8,7 @@ Installation:
 
 - cd into bowPy
 
-- chmod 755 INSTALL.sh
-
-- ./INSTALL.sh
-
-
+- python setup.py install
 
 start ipython
 
