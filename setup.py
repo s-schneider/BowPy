@@ -18,7 +18,7 @@ README = (HERE / "README.md").read_text()
 INSTALL_REQUIRES = [
     'obspy>=1.2.2',
     'numpy>=1.17.2',
-    'scipy'
+    'scipy',
     ]
 
 MIN_PYTHON_VERSION = (3, 6)

@@ -11,8 +11,9 @@ from bowpy.util.base import stream2array, array2stream
 from bowpy.filter.fk import pocs_recon
 from bowpy.util.array_util import stack
 from bowpy.util.fkutil import plot
+
 # If using a Mac Machine, otherwitse comment the next line out:
-matplotlib.use('TkAgg')
+matplotlib.use("TkAgg")
 
 
 def qtest_pocs(st_rec, st_orginal, alpharange, irange):
@@ -25,8 +26,8 @@ def qtest_pocs(st_rec, st_orginal, alpharange, irange):
     The highest Q value is the one to be chosen.
     """
     Qall = []
-    dmethod = 'reconstruct'
-    method = 'linear'
+    dmethod = "reconstruct"
+    method = "linear"
 
     st_org = st_orginal.copy()
     data_org = stream2array(st_org, normalize=True)
@@ -36,16 +37,18 @@ def qtest_pocs(st_rec, st_orginal, alpharange, irange):
         print("########## CURRENT ALPHA %f  ##########\n" % alpha)
         for i in irange:
 
-            print('POCS RECON WITH %i ITERATIONS' % i, end="\r")
+            print("POCS RECON WITH %i ITERATIONS" % i, end="\r")
             sys.stdout.flush()
             srs = st_rec.copy()
-            st_pocsrec = pocs_recon(srs, maxiter=int(i), method=method,
-                                    dmethod=dmethod, alpha=alpha)
+            st_pocsrec = pocs_recon(
+                srs, maxiter=int(i), method=method, dmethod=dmethod, alpha=alpha
+            )
             drec = stream2array(st_pocsrec, normalize=True)
-            Q_tmp = np.linalg.norm(data_org, 2)**2. / np.linalg.norm(data_org
-                                                                     - drec,
-                                                                     2)**2.
-            Q = 10.*np.log(Q_tmp)
+            Q_tmp = (
+                np.linalg.norm(data_org, 2) ** 2.0
+                / np.linalg.norm(data_org - drec, 2) ** 2.0
+            )
+            Q = 10.0 * np.log(Q_tmp)
             Qall.append([alpha, i, Q])
 
     Qmax = [0, 0, 0]
@@ -56,20 +59,28 @@ def qtest_pocs(st_rec, st_orginal, alpharange, irange):
     return Qall
 
 
-def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None, fs=20,
-               cmap='Blues', cbarlim=None):
+def qtest_plot(
+    ifile,
+    alpharange,
+    irange,
+    ifile_path=None,
+    ofile=None,
+    fs=20,
+    cmap="Blues",
+    cbarlim=None,
+):
 
     if isinstance(alpharange, numpy.ndarray):
         yrange = alpharange
         yextent = np.zeros(yrange.size)
     else:
-        msg = 'Wrong alpharange input'
+        msg = "Wrong alpharange input"
         raise IOError(msg)
 
     if isinstance(irange, numpy.ndarray):
         xrange = irange
     else:
-        msg = 'Wrong irange input'
+        msg = "Wrong irange input"
         raise IOError(msg)
 
     Qraw = ifile
@@ -88,13 +99,19 @@ def qtest_plot(ifile, alpharange, irange, ifile_path=None, ofile=None, fs=20,
     Qmax[np.unravel_index(maxindex, Qmat.shape)] = 10000
 
     extent = (alpharange.min(), alpharange.max(), irange.min(), irange.max())
-    im = ax.imshow(Qplot, aspect='auto', origin='lower', interpolation='none',
-                   cmap=cmap, extent=extent)
-    ax.set_ylabel('No of iterations', fontsize=fs)
-    ax.set_xlabel(r'$\alpha$', fontsize=fs)
-    ax.tick_params(axis='both', which='both', labelsize=fs)
+    im = ax.imshow(
+        Qplot,
+        aspect="auto",
+        origin="lower",
+        interpolation="none",
+        cmap=cmap,
+        extent=extent,
+    )
+    ax.set_ylabel("No of iterations", fontsize=fs)
+    ax.set_xlabel(r"$\alpha$", fontsize=fs)
+    ax.tick_params(axis="both", which="both", labelsize=fs)
     cbar = fig.colorbar(im)
-    cbar.ax.set_ylabel('Q', fontsize=fs)
+    cbar.ax.set_ylabel("Q", fontsize=fs)
     cbar.ax.tick_params(labelsize=fs)
     if cbarlim:
         cbar.set_clim(cbarlim[0], cbarlim[1])
@@ -121,8 +138,8 @@ def set_zero(st, name):
         for i, trace in enumerate(st):
             if trace.stats.station == station:
                 trace.data = np.zeros(trace.data.shape)
-                st[i].stats.zerotrace = 'True'
-                st[i].stats.station = 'empty'
+                st[i].stats.zerotrace = "True"
+                st[i].stats.station = "empty"
 
     return
 
@@ -137,7 +154,7 @@ def bootstrap_stream(stream, n, fs=20, ylimit=None):
 def bootstrap(data, n):
     noft = data.shape[0]
     d_stack = stack(data)
-    bootsum = 0.
+    bootsum = 0.0
 
     for n_i in range(n):
         b = np.zeros(data.shape)
@@ -147,14 +164,14 @@ def bootstrap(data, n):
             b[noft_i] = data[r]
 
         b_stack = stack(b, 1)
-        boot = np.square((d_stack-b_stack))
+        boot = np.square((d_stack - b_stack))
         bootsum = bootsum + boot
 
-    sigma = np.sqrt(bootsum / float(n*(n-1)))
+    sigma = np.sqrt(bootsum / float(n * (n - 1)))
     return sigma
 
 
 def plot_sigma(sigma, stream, fs=20, ylimit=None):
     si_stream = array2stream(sigma, stream)
-    plot(si_stream[0], ylabel='sigma', yticks=True, fs=fs, ylimit=ylimit)
+    plot(si_stream[0], ylabel="sigma", yticks=True, fs=fs, ylimit=ylimit)
     return

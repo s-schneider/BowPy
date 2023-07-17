@@ -73,7 +73,7 @@ def array2trace(ArrayData, st_original=None):
             stream = array2stream(ArrayData, st_original)
             return stream
         except:
-            msg = 'Dimension do not fit'
+            msg = "Dimension do not fit"
             raise IOError(msg)
     else:
         trace = obspy.core.trace.Trace(ArrayData)
@@ -95,18 +95,18 @@ def cat4stream(stream, client_name):
     stime_old = None
 
     for i, trace in enumerate(stream):
-        if hasattr(trace.stats, 'sh'):
+        if hasattr(trace.stats, "sh"):
             eventinfo = trace.stats.sh
-            depth = eventinfo['DEPTH']+10
-            lat = eventinfo['LAT']
-            lon = eventinfo['LON']
-            origin = eventinfo['ORIGIN']
+            depth = eventinfo["DEPTH"] + 10
+            lat = eventinfo["LAT"]
+            lon = eventinfo["LON"]
+            origin = eventinfo["ORIGIN"]
             etime = origin + 300
             stime = origin - 300
 
-        elif hasattr(trace.stats, 'ah'):
+        elif hasattr(trace.stats, "ah"):
             eventinfo = trace.stats.ah.event
-            depth = eventinfo.depth+10
+            depth = eventinfo.depth + 10
             lat = eventinfo.latitude
             lon = eventinfo.longitude
             origin = eventinfo.origin_time
@@ -114,15 +114,20 @@ def cat4stream(stream, client_name):
             stime = origin - 300
 
         else:
-            print('trace no %i has no event information, skipped' % i)
+            print("trace no %i has no event information, skipped" % i)
             continue
 
         if i > 0 and lat == lat_old and lon == lon_old and stime == stime_old:
             continue
 
-        cat_tmp = client.get_events(starttime=stime, endtime=etime,
-                                    maxdepth=depth, latitude=lat,
-                                    longitude=lon, maxradius=1)
+        cat_tmp = client.get_events(
+            starttime=stime,
+            endtime=etime,
+            maxdepth=depth,
+            latitude=lat,
+            longitude=lon,
+            maxradius=1,
+        )
 
         lat_old = lat
         lon_old = lon
@@ -133,39 +138,47 @@ def cat4stream(stream, client_name):
     return cat
 
 
-def create_deltasignal(no_of_traces=10, len_of_traces=30000,
-                       multiple=False, multipdist=2, no_of_multip=1,
-                       slowness=None, zero_traces=False, no_of_zeros=0,
-                       noise_level=0, non_equi=False):
+def create_deltasignal(
+    no_of_traces=10,
+    len_of_traces=30000,
+    multiple=False,
+    multipdist=2,
+    no_of_multip=1,
+    slowness=None,
+    zero_traces=False,
+    no_of_zeros=0,
+    noise_level=0,
+    non_equi=False,
+):
     """
     function that creates a delta peak signal
     slowness = 0 corresponds to shift of 1 to each trace
     """
     if slowness:
-        slowness = slowness-1
+        slowness = slowness - 1
     data = np.array([noise_level * np.random.rand(len_of_traces)])
 
     if multiple:
         dist = multipdist
         data[0][0] = 1
         for i in range(no_of_multip):
-            data[0][dist+i*dist] = 1
+            data[0][dist + i * dist] = 1
     else:
         data[0][0] = 1
 
     data_temp = data
     for i in range(no_of_traces)[1:]:
         if slowness:
-            new_trace = np.roll(data_temp, slowness*i)
+            new_trace = np.roll(data_temp, slowness * i)
         else:
             new_trace = np.roll(data_temp, i)
         data = np.append(data, new_trace, axis=0)
 
     if zero_traces:
-        first_zero = len(data)/no_of_zeros
+        first_zero = len(data) / no_of_zeros
         while first_zero <= len(data):
-            data[first_zero-1] = 0
-            first_zero = first_zero+len(data)/no_of_zeros
+            data[first_zero - 1] = 0
+            first_zero = first_zero + len(data) / no_of_zeros
 
     if non_equi:
         for i in [5, 50, 120]:
@@ -174,12 +187,18 @@ def create_deltasignal(no_of_traces=10, len_of_traces=30000,
     else:
         indices = []
 
-    return(data, indices)
+    return (data, indices)
 
 
-def create_ricker(n_of_samples, n_of_traces, delta_traces=1, slope=0,
-                  n_of_ricker_samples=100, width_of_ricker=2.,
-                  shift_of_ricker=0):
+def create_ricker(
+    n_of_samples,
+    n_of_traces,
+    delta_traces=1,
+    slope=0,
+    n_of_ricker_samples=100,
+    width_of_ricker=2.0,
+    shift_of_ricker=0,
+):
     """
     Creates n_of_traces Traces with a Ricker wavelet
     :param n_of_samples: No of samplesw
@@ -201,21 +220,21 @@ def create_ricker(n_of_samples, n_of_traces, delta_traces=1, slope=0,
     """
 
     if n_of_samples < n_of_ricker_samples:
-        msg = 'Number of tracesamples lower than number of ricker samples'
+        msg = "Number of tracesamples lower than number of ricker samples"
         raise IOError(msg)
 
     data = np.zeros((n_of_traces, n_of_samples))
 
     trace = np.zeros(n_of_samples)
     ricker_tmp = sp.signal.ricker(n_of_ricker_samples, width_of_ricker)
-    ricker = ricker_tmp/ricker_tmp.max()
+    ricker = ricker_tmp / ricker_tmp.max()
 
-    trace[shift_of_ricker:shift_of_ricker+n_of_ricker_samples] = ricker
+    trace[shift_of_ricker : shift_of_ricker + n_of_ricker_samples] = ricker
 
     if slope != 0:
         for i in range(data.shape[0]):
             delta = np.floor(i * float(abs(slope) / float(delta_traces)))
-            delta = delta.astype('int')
+            delta = delta.astype("int")
             data[i] = np.roll(trace, delta)[:n_of_samples]
         if slope < 0:
             data = np.flipud(data)
@@ -226,25 +245,26 @@ def create_ricker(n_of_samples, n_of_traces, delta_traces=1, slope=0,
     return data
 
 
-def create_sine(no_of_traces=10, len_of_traces=30000, samplingrate=30000,
-                no_of_periods=1):
+def create_sine(
+    no_of_traces=10, len_of_traces=30000, samplingrate=30000, no_of_periods=1
+):
 
-    deltax = 2*np.pi/len_of_traces
+    deltax = 2 * np.pi / len_of_traces
     signal_len = len_of_traces * no_of_periods
     data_temp = np.array([np.zeros(signal_len)])
     t = []
 
     # first trace
     for i in range(signal_len):
-        data_temp[0][i] = np.sin(i*deltax)
-        t.append((float(i) + float(i)/signal_len)*2*np.pi/signal_len)
+        data_temp[0][i] = np.sin(i * deltax)
+        t.append((float(i) + float(i) / signal_len) * 2 * np.pi / signal_len)
         data = data_temp
 
     # other traces
     for i in range(no_of_traces)[1:]:
         data = np.append(data, data_temp, axis=0)
 
-    return(data, t)
+    return (data, t)
 
 
 def cut2shortest(stream):
@@ -270,9 +290,9 @@ def inv4stream(stream, client_name):
     stat = ""
     for i, trace in enumerate(stream):
         if i > 0:
-            if trace.stats.station == stream[i-1].stats.station:
+            if trace.stats.station == stream[i - 1].stats.station:
                 continue
-        stat = stat + trace.stats.station + ','
+        stat = stat + trace.stats.station + ","
 
     stat = str(stat)
     client = Client(client_name)
@@ -297,7 +317,7 @@ def maxrow(array):
         if array[i].sum() > rowsum:
             rowsum = array[i].sum()
             max_row_index = i
-    return(max_row_index)
+    return max_row_index
 
 
 def keep_longest(stream):
@@ -306,7 +326,7 @@ def keep_longest(stream):
     """
 
     st_tmp = Stream()
-    st_tmp.sort(['npts'])
+    st_tmp.sort(["npts"])
     channels = AttribDict()
 
     for i, tr in enumerate(stream):
@@ -345,9 +365,9 @@ def read_file(stream, inventory, catalog, array=False):
     # pushing the trace data in an array
     if array:
         ArrayData = stream2array(st)
-        return(st, inv, cat, ArrayData)
+        return (st, inv, cat, ArrayData)
     else:
-        return(st, inv, cat)
+        return (st, inv, cat)
 
 
 def split2stations(stream, min_len=None, merge_traces=None, keep_masked=False):
@@ -361,7 +381,7 @@ def split2stations(stream, min_len=None, merge_traces=None, keep_masked=False):
                          or just the longest continious record is kept.
     :type  merge_traces: bool or none
     """
-    stream.sort(['station'])
+    stream.sort(["station"])
 
     stream_list = []
     st_tmp = Stream()
@@ -393,13 +413,13 @@ def split2stations(stream, min_len=None, merge_traces=None, keep_masked=False):
         except:
             st_tmp = keep_longest(st_tmp)
     elif merge_traces is False:
-                st_tmp = keep_longest(st_tmp)
+        st_tmp = keep_longest(st_tmp)
 
     stream_list.append(st_tmp)
 
     if not keep_masked or min_len:
         for station in stream_list:
-            station.sort(['channel'])
+            station.sort(["channel"])
             for trace in station:
                 if type(trace.data) == np.ma.core.MaskedArray:
                     stream_list.remove(station)
@@ -409,22 +429,34 @@ def split2stations(stream, min_len=None, merge_traces=None, keep_masked=False):
                     stream_list.remove(station)
                     break
 
-    return(stream_list)
+    return stream_list
 
 
 def standard_test_signal(snes1=1, snes2=3, noise=0, nonequi=False):
-    y, yindices = create_deltasignal(no_of_traces=200, len_of_traces=200,
-                                     multiple=True, multipdist=5,
-                                     no_of_multip=1, slowness=snes1,
-                                     noise_level=noise, non_equi=nonequi)
+    y, yindices = create_deltasignal(
+        no_of_traces=200,
+        len_of_traces=200,
+        multiple=True,
+        multipdist=5,
+        no_of_multip=1,
+        slowness=snes1,
+        noise_level=noise,
+        non_equi=nonequi,
+    )
 
-    x, xindices = create_deltasignal(no_of_traces=200, len_of_traces=200,
-                                     multiple=True, multipdist=5,
-                                     no_of_multip=5, slowness=snes2,
-                                     noise_level=noise, non_equi=nonequi)
+    x, xindices = create_deltasignal(
+        no_of_traces=200,
+        len_of_traces=200,
+        multiple=True,
+        multipdist=5,
+        no_of_multip=5,
+        slowness=snes2,
+        noise_level=noise,
+        non_equi=nonequi,
+    )
     a = x + y
     y_index = np.sort(np.unique(np.append(yindices, xindices)))
-    return(a, y_index)
+    return (a, y_index)
 
 
 def stats(stream):
@@ -446,16 +478,16 @@ def stream2array(stream, normalize=False):
 
     if normalize:
         if x.max() == 0:
-            print('Maximum value is 0')
-            return(x)
+            print("Maximum value is 0")
+            return x
 
         elif math.isnan(x.max()):
-            print('Maximum values are NaN, set to 0')
+            print("Maximum values are NaN, set to 0")
             n = np.isnan(x)
-            x[n] = 0.
+            x[n] = 0.0
 
         x = x / x.max()
-    return(x)
+    return x
 
 
 def LCM(a, b):
@@ -463,6 +495,7 @@ def LCM(a, b):
     Calculates the least common multiple of two values
     """
     import fractions
+
     return abs(a * b) / fractions.gcd(a, b) if a and b else 0
 
 
@@ -478,38 +511,40 @@ def line_cut(array, shape):
     :type  shape: list
     """
 
-    fil=None
+    fil = None
     name = shape[0]
     kwarg = shape[1]
     length = shape[2]
-    new_array = np.zeros(array.shape).astype('complex')
-    if name in ['spike', 'Spike']:
+    new_array = np.zeros(array.shape).astype("complex")
+    if name in ["spike", "Spike"]:
         new_array[0] = array[0]
         return new_array
 
-    elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
+    elif name in ["boxcar", "Boxcar"] and isinstance(length, int):
         new_array[0] = array[0]
-        newrange = np.linspace(1, length, length).astype('int')
+        newrange = np.linspace(1, length, length).astype("int")
         for i in newrange:
             new_array[i] = array[i]
-            new_array[new_array.shape[0]-i] = array[new_array.shape[0]-i]
+            new_array[new_array.shape[0] - i] = array[new_array.shape[0] - i]
         return new_array
 
-    elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
-        fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+    elif name in ["butterworth", "Butterworth", "taper", "Taper"] and isinstance(
+        length, int
+    ):
+        fil_lh = create_filter(name, array.shape[0] / 2, length, kwarg)
 
-    elif name in ['taper', 'Taper'] and isinstance(length, int):
-        fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+    elif name in ["taper", "Taper"] and isinstance(length, int):
+        fil_lh = create_filter(name, array.shape[0] / 2, length, kwarg)
 
     fil_rh = np.flipud(fil_lh)[::-1][0:][::-1]
-    fil = np.zeros(2*fil_lh.size)
-    fil[:fil.size/2] = fil_lh
-    fil[fil.size/2:] = fil_rh
+    fil = np.zeros(2 * fil_lh.size)
+    fil[: fil.size / 2] = fil_lh
+    fil[fil.size / 2 :] = fil_rh
 
     new_array = array.transpose() * fil
     new_array = new_array.transpose()
 
-    return(new_array)
+    return new_array
 
 
 def line_set_zero(array, shape):
@@ -524,67 +559,71 @@ def line_set_zero(array, shape):
     :type  shape: list
     """
 
-
-    fil=None
+    fil = None
     name = shape[0]
     kwarg = shape[1]
     length = shape[2]
     new_array = array
 
-    if name in ['spike', 'Spike']:
+    if name in ["spike", "Spike"]:
         new_array[0] = np.zeros(array[0].size)
         return new_array
 
-    elif name in ['boxcar', 'Boxcar'] and isinstance(length, int):
+    elif name in ["boxcar", "Boxcar"] and isinstance(length, int):
         new_array[0] = np.zeros(array[0].size)
-        newrange = np.linspace(1, length, length).astype('int')
+        newrange = np.linspace(1, length, length).astype("int")
         for i in newrange:
-            new_array[i] = np.zeros(array[new_array.shape[0]-i].size)
-            new_array[new_array.shape[0]-i] = np.zeros(array[new_array.shape[0]-i].size)
+            new_array[i] = np.zeros(array[new_array.shape[0] - i].size)
+            new_array[new_array.shape[0] - i] = np.zeros(
+                array[new_array.shape[0] - i].size
+            )
         return new_array
 
-    elif name in ['butterworth', 'Butterworth', 'taper', 'Taper'] and isinstance(length, int):
-        fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+    elif name in ["butterworth", "Butterworth", "taper", "Taper"] and isinstance(
+        length, int
+    ):
+        fil_lh = create_filter(name, array.shape[0] / 2, length, kwarg)
 
-    elif name in ['taper', 'Taper'] and isinstance(length, int):
-        fil_lh = create_filter(name, array.shape[0]/2, length, kwarg)
+    elif name in ["taper", "Taper"] and isinstance(length, int):
+        fil_lh = create_filter(name, array.shape[0] / 2, length, kwarg)
         # fil_lh = -1. * fil_lh + 1.
 
     fil_rh = np.flipud(fil_lh)[::-1][1:][::-1]
-    fil = np.zeros(2*fil_lh.size)
-    fil[:fil.size/2] = fil_lh
-    fil[fil.size/2+1:] = fil_rh
+    fil = np.zeros(2 * fil_lh.size)
+    fil[: fil.size / 2] = fil_lh
+    fil[fil.size / 2 + 1 :] = fil_rh
     newfil = np.ones(fil.shape)
     newfil = newfil - fil
 
     new_array = array.transpose() * newfil
     new_array = new_array.transpose()
-    return(new_array)
+    return new_array
 
 
 def create_filter(name, length, cutoff=None, ncorner=None):
 
-	cut = float(cutoff)/float(length)
-	m 	= float(ncorner)
+    cut = float(cutoff) / float(length)
+    m = float(ncorner)
 
-	if name in ['butterworth', 'Butterworth']:
-		x = np.linspace(0, 1, length)
-		y = 1. / (1. + (x/float(cut))**(2.*ncorner))
+    if name in ["butterworth", "Butterworth"]:
+        x = np.linspace(0, 1, length)
+        y = 1.0 / (1.0 + (x / float(cut)) ** (2.0 * ncorner))
 
-	elif name in ['taper', 'Taper']:
-		shift	= 0.
-		fit = True
-		while fit:
-			cut += shift
-			x 		= np.linspace(0, 1, length)
-			y 		= (cut-x)*m + 0.5
-			y[y>1.] = 1.
-			y[y<0.] = 0.
-			if y.max() >= 1: fit=False
-			shift = 0.1
+    elif name in ["taper", "Taper"]:
+        shift = 0.0
+        fit = True
+        while fit:
+            cut += shift
+            x = np.linspace(0, 1, length)
+            y = (cut - x) * m + 0.5
+            y[y > 1.0] = 1.0
+            y[y < 0.0] = 0.0
+            if y.max() >= 1:
+                fit = False
+            shift = 0.1
 
-	else:
-		msg='No valid name for filter found.'
-		raise IOError(msg)
+    else:
+        msg = "No valid name for filter found."
+        raise IOError(msg)
 
-	return y
+    return y

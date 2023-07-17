@@ -1,9 +1,6 @@
 from __future__ import absolute_import, print_function
 
-import numpy
 import numpy as np
-from numpy import genfromtxt
-import math
 
 import matplotlib
 
@@ -11,40 +8,25 @@ import matplotlib
 matplotlib.use('TkAgg')
 
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import scipy as sp
 import scipy.signal as signal
-import scipy.io as sio
-
-import os
-import datetime
 
 import obspy
 from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees, locations2degrees
 from obspy.taup import TauPyModel
 from obspy import read_inventory as read_inv
 from obspy import read_events as read_cat
-from obspy import UTCDateTime
 
-import sipy
-import bowpy.misc.Muenster_Array_Seismology_Vespagram as MAS
-import bowpy.filter.fk as fk
-import bowpy.filter.radon as radon
+# import sipy
 import bowpy.util.fkutil as fku
 import bowpy.util.base as base
-import bowpy.util.array_util as au
-import bowpy.util.tests as tests
 
 from bowpy.misc.read import read_st
-from bowpy.filter.fk import pocs_recon
-from bowpy.util.data_request import data_request
-from bowpy.util.base import cat4stream, inv4stream
 from bowpy.filter.fk import fk_filter, fk_reconstruct
-from bowpy.util.fkutil import  nextpow2, find_subsets, slope_distribution, makeMask, create_iFFT2mtx, plotfk, fktrafo
-from bowpy.util.array_util import get_coords, attach_network_to_traces, attach_coordinates_to_traces,\
-stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, attach_epidist2coords, epidist2nparray, epidist2list, \
-alignon, partial_stack, gaps_fill_zeros, vespagram, rm, cut, plot_vespa
-from bowpy.util.picker import get_polygon
+from bowpy.util.fkutil import fktrafo
+from bowpy.util.array_util import attach_network_to_traces, attach_coordinates_to_traces,\
+stream2array, array2stream, attach_network_to_traces, attach_coordinates_to_traces, epidist2nparray, \
+alignon
 
 ##########
 st = read_st('../data/workfiles/UT_24_10_09/FKFIL_PREP.pickle')
@@ -64,82 +46,82 @@ stn.normalize(global_max=True)
 
 #### TEST ROUTINE FOR MAINPHASE AND PRECURSOR WITH DIFFERENT DELTA U ###
 def test(x, case, nf=True):
-	from obspy import Stream, Trace
-	from bowpy.util.array_util import stack
-	import sys
-	n_of_samples 		= 2000
-	n_of_traces 		= 20
-	delta_traces		= 100
-	n_of_ricker_samples	= int(n_of_samples/10.)
-	width_of_ricker		= int(n_of_samples/100.)
-	shift_of_ricker		= 1000
-	
-	rslope=0
-	MR = base.create_ricker(n_of_samples, n_of_traces, delta_traces, rslope, n_of_ricker_samples, width_of_ricker, shift_of_ricker)
+    from obspy import Stream, Trace
+    from bowpy.util.array_util import stack
+    import sys
+    n_of_samples        = 2000
+    n_of_traces         = 20
+    delta_traces        = 100
+    n_of_ricker_samples = int(n_of_samples/10.)
+    width_of_ricker     = int(n_of_samples/100.)
+    shift_of_ricker     = 1000
+    
+    rslope=0
+    MR = base.create_ricker(n_of_samples, n_of_traces, delta_traces, rslope, n_of_ricker_samples, width_of_ricker, shift_of_ricker)
 
-	PC_u = [30] #np.linspace(0,100,101)
-	PC = base.create_ricker(n_of_samples, n_of_traces, delta_traces, 0, n_of_ricker_samples, width_of_ricker, shift_of_ricker- 3*n_of_ricker_samples )
-	data_org = MR + PC
-	
+    PC_u = [30] #np.linspace(0,100,101)
+    PC = base.create_ricker(n_of_samples, n_of_traces, delta_traces, 0, n_of_ricker_samples, width_of_ricker, shift_of_ricker- 3*n_of_ricker_samples )
+    data_org = MR + PC
+    
 
-	data_fk_org = stack(data_org) #fk_filter(st_org, ftype='extract', fshape=['butterworth', 4, 2])
-	data_fk_org = data_fk_org / data_fk_org.max()
-	st_org = Trace(data_fk_org)
-	
+    data_fk_org = stack(data_org) #fk_filter(st_org, ftype='extract', fshape=['butterworth', 4, 2])
+    data_fk_org = data_fk_org / data_fk_org.max()
+    st_org = Trace(data_fk_org)
+    
 
-	bw_length = np.linspace(1, n_of_traces/2., n_of_traces/2.).astype('int')#[::2]
-	bw_slope = np.linspace(1, 100., 100).astype('int')
-	allt = Stream()
-	allt += st_org
-	allsynths = []
-	Qall=[]
-	for length in bw_length:
-		for slope in bw_slope:
+    bw_length = np.linspace(1, n_of_traces/2., n_of_traces/2.).astype('int')#[::2]
+    bw_slope = np.linspace(1, 100., 100).astype('int')
+    allt = Stream()
+    allt += st_org
+    allsynths = []
+    Qall=[]
+    for length in bw_length:
+        for slope in bw_slope:
 
-			for u in PC_u:
-				u = int(u)
-				PC 		= base.create_ricker(n_of_samples, n_of_traces, delta_traces, u, n_of_ricker_samples, width_of_ricker, shift_of_ricker- 3*n_of_ricker_samples )
-				data 	= MR + PC
+            for u in PC_u:
+                u = int(u)
+                PC      = base.create_ricker(n_of_samples, n_of_traces, delta_traces, u, n_of_ricker_samples, width_of_ricker, shift_of_ricker- 3*n_of_ricker_samples )
+                data    = MR + PC
 
-				allsynths.append(data)
+                allsynths.append(data)
 
-				st_tmp 	= array2stream(data)
-				if length == 0:
-					st_fk 	= fk_filter(st_tmp, ftype='extract', fshape=['spike'])[0]
-				else:
-					if case == 1:
-						st_fk 	= fk_filter(st_tmp, ftype='extract', fshape=['boxcar', None, length])[0]
-					elif case == 2:
-						st_fk 	= fk_filter(st_tmp, ftype='extract', fshape=['butterworth', slope, length])[0]
-					elif case == 3:
-						st_fk 	= fk_filter(st_tmp, ftype='extract', fshape=['taper', slope, length])[0]
-				data_fk = st_fk.data/st_fk.data.max()	
-				allt += st_fk
+                st_tmp  = array2stream(data)
+                if length == 0:
+                    st_fk   = fk_filter(st_tmp, ftype='extract', fshape=['spike'])[0]
+                else:
+                    if case == 1:
+                        st_fk   = fk_filter(st_tmp, ftype='extract', fshape=['boxcar', None, length])[0]
+                    elif case == 2:
+                        st_fk   = fk_filter(st_tmp, ftype='extract', fshape=['butterworth', slope, length])[0]
+                    elif case == 3:
+                        st_fk   = fk_filter(st_tmp, ftype='extract', fshape=['taper', slope, length])[0]
+                data_fk = st_fk.data/st_fk.data.max()   
+                allt += st_fk
 
-				Q = np.linalg.norm(data_fk_org,2)**2. / np.linalg.norm(data_fk_org - data_fk,2)**2.
-				Q = 10.*np.log(Q)
-				Qall.append([length, slope, Q])
-				print('Q = %f, length = %f, slope = %f' % (Q,length, slope),  end="\r")
-				sys.stdout.flush()
+                Q = np.linalg.norm(data_fk_org,2)**2. / np.linalg.norm(data_fk_org - data_fk,2)**2.
+                Q = 10.*np.log(Q)
+                Qall.append([length, slope, Q])
+                print('Q = %f, length = %f, slope = %f' % (Q,length, slope),  end="\r")
+                sys.stdout.flush()
 
-	
-	np.savetxt('../Qtlist.dat', Qall)
+    
+    np.savetxt('../Qtlist.dat', Qall)
 
-	fs = 22
-	if nf:
-		fig, ax = plt.subplots()
-	else:
-		fig = plt.gcf()
-		ax = plt.gca()
+    fs = 22
+    if nf:
+        fig, ax = plt.subplots()
+    else:
+        fig = plt.gcf()
+        ax = plt.gca()
 
-	ax.set_xlabel(r'Windolength ($k$)', fontsize=fs)
-	ax.set_ylabel('Q', fontsize=fs)
-	ax.set_xlim(0,n_of_traces/2.)
-	ax.tick_params(axis='both', which='major', labelsize=fs)
-	ax.set_title(r'FK-Filter dependency on $k$ windowlength', fontsize=fs)
-	#ax.plot(np.linspace(1,0, len(Qall))[::-1],Qall, 'ro')
-	ax.plot(bw_length, Qall, 'ro')
-	plt.show()
+    ax.set_xlabel(r'Windolength ($k$)', fontsize=fs)
+    ax.set_ylabel('Q', fontsize=fs)
+    ax.set_xlim(0,n_of_traces/2.)
+    ax.tick_params(axis='both', which='major', labelsize=fs)
+    ax.set_title(r'FK-Filter dependency on $k$ windowlength', fontsize=fs)
+    #ax.plot(np.linspace(1,0, len(Qall))[::-1],Qall, 'ro')
+    ax.plot(bw_length, Qall, 'ro')
+    plt.show()
 
 fig = plt.gcf()
 ax = plt.gca()
@@ -161,11 +143,11 @@ xrange = np.linspace(0,99, 100)
 yrange = np.linspace(0,9,10)
 Qmat = np.zeros((100,10))
 for x in xrange:
-	for y in yrange:
-		for i, item in enumerate(Qtemp):
-			if item[1] == x and item[0]==y:
-				print('%i, %i, %f, %i' % (x, y, item[2], i))
-				Qmat[x,y] = item[2]
+    for y in yrange:
+        for i, item in enumerate(Qtemp):
+            if item[1] == x and item[0]==y:
+                print('%i, %i, %f, %i' % (x, y, item[2], i))
+                Qmat[x,y] = item[2]
 
 #plt.imshow(Qmat, aspect='auto', origin='lower', interpolation='none')
 import matplotlib as mpl
@@ -216,32 +198,32 @@ noise = np.fromfile('../data/test_datasets/randnumbers/noisearr.txt')
 noise = noise.reshape(20,300)
 
 with open("../data/test_datasets/ricker/rickerlist.dat", 'r') as fh:
-	rickerlist = np.array(fh.read().split()).astype('str')
+    rickerlist = np.array(fh.read().split()).astype('str')
 
 noisefoldlist = ["no_noise","10pct_noise", "20pct_noise", "50pct_noise", "60pct_noise", "80pct_noise"]
 noiselevellist = np.array([0., 0.1, 0.2, 0.5, 0.6, 0.8]) 
 
 for i, noisefolder in enumerate(noisefoldlist):
-	for filein in rickerlist:
-		PICPATH = "../data/test_datasets/ricker/" + noisefolder + "/"
-		PATH = "../data/test_datasets/ricker/" + filein + "/"
-		srs = read_st(PATH)
-		if i != 0:
-			data = stream2array(srs) * noiselevellist[i] * noise
-			srs = array2stream(data)
+    for filein in rickerlist:
+        PICPATH = "../data/test_datasets/ricker/" + noisefolder + "/"
+        PATH = "../data/test_datasets/ricker/" + filein + "/"
+        srs = read_st(PATH)
+        if i != 0:
+            data = stream2array(srs) * noiselevellist[i] * noise
+            srs = array2stream(data)
 
-		name = 'boxcar_auto' + '.png'
-		picpath = PICPATH + name
-		st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['boxcar', None], solver='ilsmr',method='interpolate', mu=2.5e-2, tol=1e-12)
-		st_rec.normalize()
-		fku.plot_data(stream2array(st_rec), savefig=picpath)
+        name = 'boxcar_auto' + '.png'
+        picpath = PICPATH + name
+        st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['boxcar', None], solver='ilsmr',method='interpolate', mu=2.5e-2, tol=1e-12)
+        st_rec.normalize()
+        fku.plot_data(stream2array(st_rec), savefig=picpath)
 
-		taperrange = [0.25, 0.5, 1, 1.5]
-		for ts in taperrange:
-			st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['taper', tr], solver='ilsmr',method='interpolate', mu=2.5e-2, tol=1e-12)
+        taperrange = [0.25, 0.5, 1, 1.5]
+        for ts in taperrange:
+            st_rec = fk_reconstruct(srs, slopes=[-2,2], deltaslope=0.001, maskshape=['taper', tr], solver='ilsmr',method='interpolate', mu=2.5e-2, tol=1e-12)
 
 
-		bwrange = [1,2,4,8]
+        bwrange = [1,2,4,8]
 
 
 
@@ -260,27 +242,27 @@ A = Ts.dot(FH.dot(Ys))
 #madj = Ah.dot(dv)
 
 for i,muval in enumerate(murange):
-	print(muval)
-	stw = stn.copy()
-	#E = muval * sparse.eye(A.shape[0])
-	#B = A + E
-	#Binv = sparse.linalg.inv(B)
-	#def getmnorm(x):
-	#	return print(np.linalg.norm(A.dot(x) - madj))
+    print(muval)
+    stw = stn.copy()
+    #E = muval * sparse.eye(A.shape[0])
+    #B = A + E
+    #Binv = sparse.linalg.inv(B)
+    #def getmnorm(x):
+    #   return print(np.linalg.norm(A.dot(x) - madj))
 
-	#x = sparse.linalg.cg(Binv, madj, maxiter=100)#, callback=getmnorm)
-	#dfk = x[0].reshape(20,300)
-	#d = np.fft.ifft2(dfk).real
-	#d = d/d.max()
+    #x = sparse.linalg.cg(Binv, madj, maxiter=100)#, callback=getmnorm)
+    #dfk = x[0].reshape(20,300)
+    #d = np.fft.ifft2(dfk).real
+    #d = d/d.max()
 
-	#rnorm = np.linalg.norm(x[0],2)
-	#snorm = np.linalg.norm(A.dot(x[0]) - madj,2)
+    #rnorm = np.linalg.norm(x[0],2)
+    #snorm = np.linalg.norm(A.dot(x[0]) - madj,2)
 
-	st_rec, rnorm, snorm = fk_reconstruct(stw, slopes=[-2,2], deltaslope=0.001, maskshape=['butterworth', 4], fulloutput=False, solver='lsqr',method=20, mu=muval, tol=0, peakinput=peaks)
+    st_rec, rnorm, snorm = fk_reconstruct(stw, slopes=[-2,2], deltaslope=0.001, maskshape=['butterworth', 4], fulloutput=False, solver='lsqr',method=20, mu=muval, tol=0, peakinput=peaks)
 
-	L[0][i]= muval
-	L[1][i]= rnorm
-	L[2][i]= snorm
+    L[0][i]= muval
+    L[1][i]= rnorm
+    L[2][i]= snorm
 
 
 #stuni = read_st("/Users/Simon/dev/FK-Filter/data/synthetics_uniform/SUNEW.QHD")
@@ -323,27 +305,27 @@ epiran = epidist2nparray(epidist(invran, cat[0]))
 
 ###############
 with open("../data/test_datasets/randnumbers/rand10.txt", 'r') as fh:
-	rand10 = np.array(fh.read().split()).astype('int')
+    rand10 = np.array(fh.read().split()).astype('int')
 with open("../data/test_datasets/randnumbers/rand20.txt", 'r') as fh:
-	rand20 = np.array(fh.read().split()).astype('int')
+    rand20 = np.array(fh.read().split()).astype('int')
 with open("../data/test_datasets/randnumbers/rand50.txt", 'r') as fh:
-	rand50 = np.array(fh.read().split()).astype('int')
+    rand50 = np.array(fh.read().split()).astype('int')
 with open("../data/test_datasets/randnumbers/rand80.txt", 'r') as fh:
-	rand80 = np.array(fh.read().split()).astype('int')
+    rand80 = np.array(fh.read().split()).astype('int')
 
 
 randlist = [rand10, rand20, rand50, rand80 ] 
 stlist = [[stri, 'ricker']] #, [sts, 'instaseis']]
 for streams in (stlist):
-	for values in randlist:
-		stemp =  streams[0].copy()
-		attach_network_to_traces(stemp, inv)
-		attach_coordinates_to_traces(stemp, inv, cat[0])
-		for no in values:
-			name = 'SR' + str(int( 100. - len(values)/20.*100.)) +'.QHD'
-			stemp[no].data = np.zeros(300)
-			stemp[no].stats.zerotrace = "True"
-			stemp.write("../data/test_datasets/%s/%s" % (streams[1],name), format='Q')
+    for values in randlist:
+        stemp =  streams[0].copy()
+        attach_network_to_traces(stemp, inv)
+        attach_coordinates_to_traces(stemp, inv, cat[0])
+        for no in values:
+            name = 'SR' + str(int( 100. - len(values)/20.*100.)) +'.QHD'
+            stemp[no].data = np.zeros(300)
+            stemp[no].stats.zerotrace = "True"
+            stemp.write("../data/test_datasets/%s/%s" % (streams[1],name), format='Q')
 
 
 #############
@@ -394,7 +376,7 @@ plt.show()
 
 
 
-Test Sinus
+# Test Sinus
 A = 2.
 w = 1.
 phi = 0.5 * np.pi
@@ -431,18 +413,18 @@ yls2ifft = fku.ls2ifft_prep(yls)
 """
 ##################INSTASEIS###############################
 Instaseis Source: Honshu
-	origin time      : 2011-03-11T05:47:32.760000Z
-	Longitude        :  143.1 deg
-	Latitude         :   37.5 deg
-	Depth            : 2.0e+01 km
-	Moment Magnitude :   13.82
-	Scalar Moment    :   5.31e+29 Nm
-	Mrr              :   1.73e+29 Nm
-	Mtt              :  -2.81e+28 Nm
-	Mpp              :  -1.45e+29 Nm
-	Mrt              :   2.12e+29 Nm
-	Mrp              :   4.55e+29 Nm
-	Mtp              :  -6.57e+28 Nm
+    origin time      : 2011-03-11T05:47:32.760000Z
+    Longitude        :  143.1 deg
+    Latitude         :   37.5 deg
+    Depth            : 2.0e+01 km
+    Moment Magnitude :   13.82
+    Scalar Moment    :   5.31e+29 Nm
+    Mrr              :   1.73e+29 Nm
+    Mtt              :  -2.81e+28 Nm
+    Mpp              :  -1.45e+29 Nm
+    Mrt              :   2.12e+29 Nm
+    Mrp              :   4.55e+29 Nm
+    Mtp              :  -6.57e+28 Nm
 """
 #get data with instaseis
 import obspy
@@ -511,8 +493,8 @@ station_range = np.linspace(0,aperture-1,no_of_stations) + 100.
 #randrange[0] = station_range[0]
 #randrange[no_of_stations-1] = station_range[no_of_stations-1]
 # while randrange.max() > randrange[19]:
-# 	i = randrange.argmax()
-# 	randrange[i] = randrange[i]-0.1
+#   i = randrange.argmax()
+#   randrange[i] = randrange[i]-0.1
 
 # randrange.sort()
 
@@ -527,26 +509,26 @@ randrange = np.array([ 100.        ,  101.74222711,  102.8608334 ,  104.13732881
 
 
 with open( qstfile, "w") as fh:
-	if uniform:
-		k=0
-		for i in station_range:
-			slon = i
-			name="X"+str(int(k))
-			print(name)
-			x.append(ins.Receiver(latitude="54", longitude=str(slon), network="LA", station=name ))
-			latdiff = gps2dist_azimuth(54,0,54,slon)[0]/1000.
-			fh.write("%s    lat:     54.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))
-			k+=1
-	elif real:
+    if uniform:
+        k=0
+        for i in station_range:
+            slon = i
+            name="X"+str(int(k))
+            print(name)
+            x.append(ins.Receiver(latitude="54", longitude=str(slon), network="LA", station=name ))
+            latdiff = gps2dist_azimuth(54,0,54,slon)[0]/1000.
+            fh.write("%s    lat:     54.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))
+            k+=1
+    elif real:
 
-		for station in network:
-			x.append(ins.Receiver(latitude=str(station.latitude), longitude=str(station.latitude), network=str(network.code), station=str(station.code) ))
-	else:
-		for i, slon in enumerate(randrange):
-			name="X"+str(int(i))
-			x.append(ins.Receiver(latitude="54", longitude=slon, network="RA", station=name ))
-			latdiff = gps2dist_azimuth(54,0,54,slon)[0]/1000.
-			fh.write("%s    lat:     54.0 lon:     %f elevation:   0.0000 array:RA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))		
+        for station in network:
+            x.append(ins.Receiver(latitude=str(station.latitude), longitude=str(station.latitude), network=str(network.code), station=str(station.code) ))
+    else:
+        for i, slon in enumerate(randrange):
+            name="X"+str(int(i))
+            x.append(ins.Receiver(latitude="54", longitude=slon, network="RA", station=name ))
+            latdiff = gps2dist_azimuth(54,0,54,slon)[0]/1000.
+            fh.write("%s    lat:     54.0 lon:     %f elevation:   0.0000 array:RA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (name, slon, latdiff))      
 
 st_synth = []    
 for i in range(len(x)):
@@ -569,47 +551,47 @@ Write quakeml file
 
 
 with open( catfile, "w") as fh:
-	fh.write("<?xml version=\'1.0\' encoding=\'utf-8\'?> \n")
-	fh.write("<q:quakeml xmlns:q=\"http://quakeml.org/xmlns/quakeml/1.2\" xmlns:ns0=\"http://service.iris.edu/fdsnws/event/1/\" xmlns=\"http://quakeml.org/xmlns/bed/1.2\"> \n")
-	fh.write("  <eventParameters publicID=\"smi:local/6b269cbf-6b00-4643-8c2c-cbe6274083ae\"> \n")
-	fh.write("    <event publicID=\"smi:service.iris.edu/fdsnws/event/1/query?eventid=3279407\"> \n")
-	fh.write("      <preferredOriginID>smi:service.iris.edu/fdsnws/event/1/query?originid=9933375</preferredOriginID> \n")
-	fh.write("      <preferredMagnitudeID>smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=16642444</preferredMagnitudeID> \n")
-	fh.write("      <type>earthquake</type> \n")
-	fh.write("      <description ns0:FEcode=\"228\"> \n")
-	fh.write("        <text>NEAR EAST COAST OF HONSHU, JAPAN</text> \n ")
-	fh.write("        <type>Flinn-Engdahl region</type> \n")
-	fh.write("      </description> \n")
-	fh.write("      <origin publicID=\"smi:service.iris.edu/fdsnws/event/1/query?originid=9933375\" ns0:contributor=\"ISC\" ns0:contributorOriginId=\"02227159\" ns0:catalog=\"ISC\" ns0:contributorEventId=\"16461282\"> \n")
-	fh.write("        <time> \n")
-	fh.write("          <value>%s</value> \n" % tofe)
-	fh.write("        </time> \n")
-	fh.write("        <latitude> \n")
-	fh.write("          <value>%f</value> \n" %lat)
-	fh.write("        </latitude>\n")
-	fh.write("        <longitude> \n")
-	fh.write("          <value>%f</value> \n" %lon)
-	fh.write("        </longitude>\n")
-	fh.write("        <depth> \n")
-	fh.write("          <value>%f</value> \n" %depth)
-	fh.write("        </depth>\n")
-	fh.write("        <creationInfo> \n")
-	fh.write("          <author>Simon</author> \n")
-	fh.write("        </creationInfo> \n")
-	fh.write("      </origin> \n")
-	fh.write("      <magnitude publicID=\"smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=16642444\"> \n")
-	fh.write("        <mag> \n")
-	fh.write("          <value>9.1</value> \n")
-	fh.write("        </mag> \n")
-	fh.write("        <type>MW</type> \n")
-	fh.write("        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=9933383</originID> \n")
-	fh.write("        <creationInfo> \n")
-	fh.write("          <author>Simon</author> \n")
-	fh.write("        </creationInfo> \n")
-	fh.write("      </magnitude> \n")
-	fh.write("    </event> \n")
-	fh.write("  </eventParameters> \n")
-	fh.write("</q:quakeml>")
+    fh.write("<?xml version=\'1.0\' encoding=\'utf-8\'?> \n")
+    fh.write("<q:quakeml xmlns:q=\"http://quakeml.org/xmlns/quakeml/1.2\" xmlns:ns0=\"http://service.iris.edu/fdsnws/event/1/\" xmlns=\"http://quakeml.org/xmlns/bed/1.2\"> \n")
+    fh.write("  <eventParameters publicID=\"smi:local/6b269cbf-6b00-4643-8c2c-cbe6274083ae\"> \n")
+    fh.write("    <event publicID=\"smi:service.iris.edu/fdsnws/event/1/query?eventid=3279407\"> \n")
+    fh.write("      <preferredOriginID>smi:service.iris.edu/fdsnws/event/1/query?originid=9933375</preferredOriginID> \n")
+    fh.write("      <preferredMagnitudeID>smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=16642444</preferredMagnitudeID> \n")
+    fh.write("      <type>earthquake</type> \n")
+    fh.write("      <description ns0:FEcode=\"228\"> \n")
+    fh.write("        <text>NEAR EAST COAST OF HONSHU, JAPAN</text> \n ")
+    fh.write("        <type>Flinn-Engdahl region</type> \n")
+    fh.write("      </description> \n")
+    fh.write("      <origin publicID=\"smi:service.iris.edu/fdsnws/event/1/query?originid=9933375\" ns0:contributor=\"ISC\" ns0:contributorOriginId=\"02227159\" ns0:catalog=\"ISC\" ns0:contributorEventId=\"16461282\"> \n")
+    fh.write("        <time> \n")
+    fh.write("          <value>%s</value> \n" % tofe)
+    fh.write("        </time> \n")
+    fh.write("        <latitude> \n")
+    fh.write("          <value>%f</value> \n" %lat)
+    fh.write("        </latitude>\n")
+    fh.write("        <longitude> \n")
+    fh.write("          <value>%f</value> \n" %lon)
+    fh.write("        </longitude>\n")
+    fh.write("        <depth> \n")
+    fh.write("          <value>%f</value> \n" %depth)
+    fh.write("        </depth>\n")
+    fh.write("        <creationInfo> \n")
+    fh.write("          <author>Simon</author> \n")
+    fh.write("        </creationInfo> \n")
+    fh.write("      </origin> \n")
+    fh.write("      <magnitude publicID=\"smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=16642444\"> \n")
+    fh.write("        <mag> \n")
+    fh.write("          <value>9.1</value> \n")
+    fh.write("        </mag> \n")
+    fh.write("        <type>MW</type> \n")
+    fh.write("        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=9933383</originID> \n")
+    fh.write("        <creationInfo> \n")
+    fh.write("          <author>Simon</author> \n")
+    fh.write("        </creationInfo> \n")
+    fh.write("      </magnitude> \n")
+    fh.write("    </event> \n")
+    fh.write("  </eventParameters> \n")
+    fh.write("</q:quakeml>")
 
 
 
@@ -618,35 +600,35 @@ Write station-files for synthetics
 """
 
 with open( invfile, "w") as fh:
-	fh.write("<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n")
-	fh.write("<FDSNStationXML schemaVersion=\"1.0\" xmlns=\"http://www.fdsn.org/xml/station/1\">\n")
-	fh.write("  <Source>IRIS-DMC</Source>\n")
-	fh.write("  <Sender>IRIS-DMC</Sender>\n")
-	fh.write("  <Created>2015-11-05T18:22:28+00:00</Created>\n")
-	fh.write("  <Network code=\"LA\" endDate=\"2500-12-31T23:59:59+00:00\" restrictedStatus=\"open\" startDate=\"2003-01-01T00:00:00+00:00\">\n")
-	fh.write("    <Description>Synthetic Array - Linear Array</Description>\n")
-	fh.write("    <TotalNumberStations>20</TotalNumberStations>\n")
-	fh.write("    <SelectedNumberStations>20</SelectedNumberStations>\n")
+    fh.write("<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n")
+    fh.write("<FDSNStationXML schemaVersion=\"1.0\" xmlns=\"http://www.fdsn.org/xml/station/1\">\n")
+    fh.write("  <Source>IRIS-DMC</Source>\n")
+    fh.write("  <Sender>IRIS-DMC</Sender>\n")
+    fh.write("  <Created>2015-11-05T18:22:28+00:00</Created>\n")
+    fh.write("  <Network code=\"LA\" endDate=\"2500-12-31T23:59:59+00:00\" restrictedStatus=\"open\" startDate=\"2003-01-01T00:00:00+00:00\">\n")
+    fh.write("    <Description>Synthetic Array - Linear Array</Description>\n")
+    fh.write("    <TotalNumberStations>20</TotalNumberStations>\n")
+    fh.write("    <SelectedNumberStations>20</SelectedNumberStations>\n")
 
-	if not uniform:
-		station_range = randrange
-	j=0
-	for i in station_range:
-		slon=i
-		lat=54.0
-		name="X"+str(int(j))
-		fh.write("    <Station code=\"%s\" endDate=\"2011-11-17T23:59:59+00:00\" restrictedStatus=\"open\" startDate=\"2010-01-08T00:00:00+00:00\">\n" % name)
-		fh.write("      <Latitude unit=\"DEGREES\">%f</Latitude>\n" % lat)
-		fh.write("      <Longitude unit=\"DEGREES\">%f</Longitude>\n" % slon)
-		fh.write("      <Elevation>0.0</Elevation>\n")
-		fh.write("      <Site>\n")
-		fh.write("        <Name> %s </Name>\n" % name)
-		fh.write("      </Site>\n")
-		fh.write("    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>\n")
-		fh.write("    </Station>\n")
-		j += 1
-	fh.write("  </Network>\n")
-	fh.write("</FDSNStationXML>")
+    if not uniform:
+        station_range = randrange
+    j=0
+    for i in station_range:
+        slon=i
+        lat=54.0
+        name="X"+str(int(j))
+        fh.write("    <Station code=\"%s\" endDate=\"2011-11-17T23:59:59+00:00\" restrictedStatus=\"open\" startDate=\"2010-01-08T00:00:00+00:00\">\n" % name)
+        fh.write("      <Latitude unit=\"DEGREES\">%f</Latitude>\n" % lat)
+        fh.write("      <Longitude unit=\"DEGREES\">%f</Longitude>\n" % slon)
+        fh.write("      <Elevation>0.0</Elevation>\n")
+        fh.write("      <Site>\n")
+        fh.write("        <Name> %s </Name>\n" % name)
+        fh.write("      </Site>\n")
+        fh.write("    <CreationDate>2010-01-08T00:00:00+00:00</CreationDate>\n")
+        fh.write("    </Station>\n")
+        j += 1
+    fh.write("  </Network>\n")
+    fh.write("</FDSNStationXML>")
 
 inv=read_inv(invfile)
 cat=read_cat(catfile)
@@ -657,11 +639,11 @@ st.write( streamfile, format="Q")
 ##########################################################################################
 #create Q station-file
 with open("SYNTH.QST", "w") as fh:
-	for i in station_range:
-		slon=i
-		latdiff = gps2dist_azimuth(0.1,0,0.1,lon)[0]/1000.
-		#print "X%s    lat:     0.0 slon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON" % (i, lon, latdiff)
-		fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, slon, latdiff))
+    for i in station_range:
+        slon=i
+        latdiff = gps2dist_azimuth(0.1,0,0.1,lon)[0]/1000.
+        #print "X%s    lat:     0.0 slon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON" % (i, lon, latdiff)
+        fh.write("X%s    lat:     0.0 lon:     %f elevation:   0.0000 array:LA  xrel:      %f yrel:      0.00 name:ADDED BY SIMON \n" % (i, slon, latdiff))
 
 
 
@@ -677,12 +659,12 @@ epidist = []
 arrivaltime = []
 
 for i in range(len(stream)):
-	elat = latitude
-	elon = longitude
-	slat =  inv[0][i].latitude
-	slon =  inv[0][i].longitude
-	epidist.append(locations2degrees(slat,slon,elat,elon))
-	arrivaltime.append(m.get_travel_times(source_depth_in_km=100.0, distance_in_degree=epidist[i]))
+    elat = latitude
+    elon = longitude
+    slat =  inv[0][i].latitude
+    slon =  inv[0][i].longitude
+    epidist.append(locations2degrees(slat,slon,elat,elon))
+    arrivaltime.append(m.get_travel_times(source_depth_in_km=100.0, distance_in_degree=epidist[i]))
 
 tofe
 
@@ -765,9 +747,9 @@ freq = np.fft.fftfreq(len(y), d)
 fig = plt.figure()
 
 for i in range(1):
-	plt.clf()
-	plt.plot()
-	fig.canvas.draw()
+    plt.clf()
+    plt.plot()
+    fig.canvas.draw()
 
 plt.draw()
 plt.show()

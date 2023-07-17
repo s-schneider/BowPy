@@ -8,8 +8,10 @@ from matplotlib import path as mplPath
 import numpy as np
 import scipy.spatial as spatial
 
+
 def fmt(x, y):
-    return 'x: {x:0.2f}\ny: {y:0.2f}'.format(x = x, y = y)
+    return "x: {x:0.2f}\ny: {y:0.2f}".format(x=x, y=y)
+
 
 class DataCursor(object):
     # http://stackoverflow.com/a/4674445/190597
@@ -25,11 +27,20 @@ class DataCursor(object):
 
 
     """
-    def __init__(self, artists, x = [], y = [], tolerance = 5, offsets = (-20, 20),
-                 formatter = fmt, display_all = False):
+
+    def __init__(
+        self,
+        artists,
+        x=[],
+        y=[],
+        tolerance=5,
+        offsets=(-20, 20),
+        formatter=fmt,
+        display_all=False,
+    ):
         """Create the data cursor and connect it to the relevant figure.
-        "artists" is the matplotlib artist or sequence of artists that will be 
-            selected. 
+        "artists" is the matplotlib artist or sequence of artists that will be
+            selected.
         "tolerance" is the radius (in points) that the mouse click must be
             within to select the artist.
         "offsets" is a tuple of (x,y) offsets in points from the selected
@@ -38,9 +49,9 @@ class DataCursor(object):
             returns a string
         "display_all" controls whether more than one annotation box will
             be shown if there are multiple axes.  Only one will be shown
-            per-axis, regardless. 
+            per-axis, regardless.
         """
-        self._points = np.column_stack((x,y))
+        self._points = np.column_stack((x, y))
         self.formatter = formatter
         self.offsets = offsets
         self.display_all = display_all
@@ -57,23 +68,28 @@ class DataCursor(object):
         for artist in self.artists:
             artist.set_picker(tolerance)
         for fig in self.figures:
-            fig.canvas.mpl_connect('pick_event', self)
+            fig.canvas.mpl_connect("pick_event", self)
 
     def annotate(self, ax):
         """Draws and hides the annotation box for the given axis "ax"."""
-        annotation = ax.annotate(self.formatter, xy = (0, 0), ha = 'right',
-                xytext = self.offsets, textcoords = 'offset points', va = 'bottom',
-                bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5),
-                arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3,rad=0')
-                )
+        annotation = ax.annotate(
+            self.formatter,
+            xy=(0, 0),
+            ha="right",
+            xytext=self.offsets,
+            textcoords="offset points",
+            va="bottom",
+            bbox=dict(boxstyle="round,pad=0.5", fc="yellow", alpha=0.5),
+            arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0"),
+        )
         annotation.set_visible(False)
         return annotation
 
     def snap(self, x, y):
-        """Return the value in self._points closest to (x, y).
-        """
-        idx = np.nanargmin(((self._points - (x,y))**2).sum(axis = -1))
+        """Return the value in self._points closest to (x, y)."""
+        idx = np.nanargmin(((self._points - (x, y)) ** 2).sum(axis=-1))
         return self._points[idx]
+
     def __call__(self, event):
         """Intended to be called through "mpl_connect"."""
         # Rather than trying to interpolate, just display the clicked coords
@@ -91,7 +107,7 @@ class DataCursor(object):
             annotation.set_text(self.formatter(x, y))
             annotation.set_visible(True)
             event.canvas.draw()
-            
+
 
 class FollowDotCursor(object):
     """
@@ -109,12 +125,13 @@ class FollowDotCursor(object):
     plt.show()
 
     """
+
     def __init__(self, ax, x, y, tolerance=5, formatter=fmt, offsets=(-20, 20)):
         try:
-            x = np.asarray(x, dtype='float')
+            x = np.asarray(x, dtype="float")
         except (TypeError, ValueError):
-            x = np.asarray(mdates.date2num(x), dtype='float')
-        y = np.asarray(y, dtype='float')
+            x = np.asarray(mdates.date2num(x), dtype="float")
+        y = np.asarray(y, dtype="float")
         self._points = np.column_stack((x, y))
         self.offsets = offsets
         self.scale = x.ptp()
@@ -124,11 +141,10 @@ class FollowDotCursor(object):
         self.tolerance = tolerance
         self.ax = ax
         self.fig = ax.figure
-        self.ax.xaxis.set_label_position('top')
-        self.dot = ax.scatter(
-            [x.min()], [y.min()], s=130, color='green', alpha=0.7)
+        self.ax.xaxis.set_label_position("top")
+        self.dot = ax.scatter([x.min()], [y.min()], s=130, color="green", alpha=0.7)
         self.annotation = self.setup_annotation()
-        plt.connect('motion_notify_event', self)
+        plt.connect("motion_notify_event", self)
 
     def scaled(self, points):
         points = np.asarray(points)
@@ -156,12 +172,15 @@ class FollowDotCursor(object):
     def setup_annotation(self):
         """Draw and hide the annotation box."""
         annotation = self.ax.annotate(
-            '', xy=(0, 0), ha = 'right',
-            xytext = self.offsets, textcoords = 'offset points', va = 'bottom',
-            bbox = dict(
-                boxstyle='round,pad=0.5', fc='yellow', alpha=0.75),
-            arrowprops = dict(
-                arrowstyle='->', connectionstyle='arc3,rad=0'))
+            "",
+            xy=(0, 0),
+            ha="right",
+            xytext=self.offsets,
+            textcoords="offset points",
+            va="bottom",
+            bbox=dict(boxstyle="round,pad=0.5", fc="yellow", alpha=0.75),
+            arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0"),
+        )
         return annotation
 
     def snap(self, x, y):
@@ -173,46 +192,49 @@ class FollowDotCursor(object):
             # IndexError: index out of bounds
             return self._points[0]
 
-def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, yticks=None, fs=25):
+
+def get_polygon(
+    data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, yticks=None, fs=25
+):
     """
     Interactive function to pick a polygon out of a figure and receive the vertices of it.
     :param data:
     :type:
-    
-    :param no_of_vert: number of vertices, default 4, 
+
+    :param no_of_vert: number of vertices, default 4,
     :type no_of_vert: int
     """
     from bowpy.util.polygon_interactor import PolygonInteractor
     from matplotlib.patches import Polygon
-    
+
     no_of_vert = int(no_of_vert)
     # Define shape of polygon.
     try:
-        x, y = xticks.max(), yticks.max() 
-        xmin= -x/10.
-        xmax= x/10.
-        ymin= y - 3.*y/2.
-        ymax= y - 3.*y/4.
+        x, y = xticks.max(), yticks.max()
+        xmin = -x / 10.0
+        xmax = x / 10.0
+        ymin = y - 3.0 * y / 2.0
+        ymax = y - 3.0 * y / 4.0
 
     except AttributeError:
-        y,x = data.shape
-        xmin= -x/10.
-        xmax= x/10.
-        ymin= y - 3.*y/2.
-        ymax= y - 3.*y/4.
-        
+        y, x = data.shape
+        xmin = -x / 10.0
+        xmax = x / 10.0
+        ymin = y - 3.0 * y / 2.0
+        ymax = y - 3.0 * y / 4.0
+
     xs = []
     for i in range(no_of_vert):
-        if i >= no_of_vert/2:
+        if i >= no_of_vert / 2:
             xs.append(xmax)
         else:
             xs.append(xmin)
 
-    ys = np.linspace(ymin, ymax, no_of_vert/2)
-    ys = np.append(ys,ys[::-1]).tolist()
+    ys = np.linspace(ymin, ymax, no_of_vert / 2)
+    ys = np.append(ys, ys[::-1]).tolist()
 
     poly = Polygon(list(zip(xs, ys)), animated=True, closed=False, fill=False)
-    
+
     # Add polygon to figure.
     fig, ax = plt.subplots()
     ax.add_patch(poly)
@@ -222,31 +244,40 @@ def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, ytick
     plt.ylabel(ylabel, fontsize=fs)
 
     try:
-        im = ax.imshow(abs(data), aspect='auto', extent=(xticks.min(), xticks.max(), 0, yticks.max()), interpolation='none')
+        im = ax.imshow(
+            abs(data),
+            aspect="auto",
+            extent=(xticks.min(), xticks.max(), 0, yticks.max()),
+            interpolation="none",
+        )
     except AttributeError:
-        im = ax.imshow(abs(data), aspect='auto', interpolation='none')
+        im = ax.imshow(abs(data), aspect="auto", interpolation="none")
 
     cbar = fig.colorbar(im)
     cbar.ax.tick_params(labelsize=fs)
-    cbar.ax.set_ylabel('R', fontsize=fs)
-    mpl.rcParams['xtick.labelsize'] = fs
-    mpl.rcParams['ytick.labelsize'] = fs
-    ax.tick_params(axis='both', which='major', labelsize=fs)
+    cbar.ax.set_ylabel("R", fontsize=fs)
+    mpl.rcParams["xtick.labelsize"] = fs
+    mpl.rcParams["ytick.labelsize"] = fs
+    ax.tick_params(axis="both", which="major", labelsize=fs)
 
-
-    plt.show()      
+    plt.show()
     print("Calculate area inside chosen polygon\n")
     try:
-        vertices = (poly.get_path().vertices)
+        vertices = poly.get_path().vertices
         vert_tmp = []
         xticks.sort()
         yticks.sort()
         for fkvertex in vertices:
-            vert_tmp.append([np.abs(xticks-fkvertex[0]).argmin(), np.abs(yticks[::-1]-fkvertex[1]).argmin()])
-        vertices = np.array(vert_tmp)   
-        
+            vert_tmp.append(
+                [
+                    np.abs(xticks - fkvertex[0]).argmin(),
+                    np.abs(yticks[::-1] - fkvertex[1]).argmin(),
+                ]
+            )
+        vertices = np.array(vert_tmp)
+
     except AttributeError:
-        vertices = (poly.get_path().vertices).astype('int')
+        vertices = (poly.get_path().vertices).astype("int")
 
     indicies = convert_polygon_to_flat_index(data, vertices)
     return indicies
@@ -254,15 +285,15 @@ def get_polygon(data, no_of_vert=4, xlabel=None, xticks=None, ylabel=None, ytick
 
 def convert_polygon_to_flat_index(data, vertices):
     """
-    Converts points insde of a polygon defined by its vertices, taken of an imshow plot of data,to 
+    Converts points insde of a polygon defined by its vertices, taken of an imshow plot of data,to
     flat-indicies. Does NOT include the border of the polygon.
-    
+
     :param data: speaks for itself
     :type data: numpy.ndarray
 
     :param vertices: also...
     :type vertices: numpy.ndarray
-    
+
     """
 
     # check if points are inside polygon. Be careful with the indicies, np and mpl
@@ -271,24 +302,28 @@ def convert_polygon_to_flat_index(data, vertices):
     arr = []
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
-            if polygon.contains_point([j,i]):
-                arr.append([j,i])
+            if polygon.contains_point([j, i]):
+                arr.append([j, i])
     arr = map(list, zip(*arr))
 
-    flat_index= np.ravel_multi_index(arr, data.conj().transpose().shape).astype('int').tolist()
+    flat_index = (
+        np.ravel_multi_index(arr, data.conj().transpose().shape).astype("int").tolist()
+    )
 
-    return(flat_index)  
+    return flat_index
+
 
 def pick_data(x, y, xlabel, ylabel, title):
-        
+
     fig, ax1 = plt.subplots(1, 1)
     ax1.set_title(title)
     ax1.set_ylabel(ylabel)
     ax1.set_xlabel(xlabel)
-    line, = ax1.plot(x, y , picker=5)  # 5 points tolerance
-    
+    (line,) = ax1.plot(x, y, picker=5)  # 5 points tolerance
+
     global PickByHand
     PickByHand = []
+
     def onpick1(event):
         if isinstance(event.artist, Line2D):
             thisline = event.artist
@@ -296,10 +331,9 @@ def pick_data(x, y, xlabel, ylabel, title):
             ydata = thisline.get_ydata()
             ind = event.ind
             pick = zip(np.take(xdata, ind), np.take(ydata, ind))
-            print('onpick1 line:', zip(np.take(xdata, ind), np.take(ydata, ind)) )
+            print("onpick1 line:", zip(np.take(xdata, ind), np.take(ydata, ind)))
             PickByHand.append(pick)
 
-    fig.canvas.mpl_connect('pick_event', onpick1)
+    fig.canvas.mpl_connect("pick_event", onpick1)
     plt.show()
     return PickByHand
-

@@ -7,28 +7,57 @@ from obspy.geodetics import locations2degrees, gps2dist_azimuth
 from obspy.taup import TauPyModel
 from obspy.core.event import Catalog, Event, Magnitude, Origin, MomentTensor
 import sys
-from bowpy.util.array_util import (center_of_gravity, attach_network_to_traces,
-                                   attach_coordinates_to_traces,
-                                   geometrical_center)
+from bowpy.util.array_util import (
+    center_of_gravity,
+    attach_network_to_traces,
+    attach_coordinates_to_traces,
+    geometrical_center,
+)
 from nmpy.util.writeah import _write_ah1
+
 try:
     import instaseis
 except:
     pass
 
 
-def data_request(client_name, start=None, end=None, minmag=None, cat=None,
-                 inv=None, cat_client_name=None, net="*", scode="*",
-                 channels="*", minlat=None, maxlat=None, minlon=None,
-                 maxlon=None, station_minlat=None, station_maxlat=None,
-                 station_minlon=None, station_maxlon=None,
-                 mindepth=None, maxdepth=None, radialcenterlat=None,
-                 radialcenterlon=None, minrad=None, maxrad=None,
-                 station_radcenlat=None, station_radcenlon=None,
-                 station_minrad=None, station_maxrad=None,
-                 azimuth=None, baz=False, t_before_first_arrival=1,
-                 t_after_first_arrival=9, savefile=False, file_format='SAC',
-                 normal_mode_data=False):
+def data_request(
+    client_name,
+    start=None,
+    end=None,
+    minmag=None,
+    cat=None,
+    inv=None,
+    cat_client_name=None,
+    net="*",
+    scode="*",
+    channels="*",
+    minlat=None,
+    maxlat=None,
+    minlon=None,
+    maxlon=None,
+    station_minlat=None,
+    station_maxlat=None,
+    station_minlon=None,
+    station_maxlon=None,
+    mindepth=None,
+    maxdepth=None,
+    radialcenterlat=None,
+    radialcenterlon=None,
+    minrad=None,
+    maxrad=None,
+    station_radcenlat=None,
+    station_radcenlon=None,
+    station_minrad=None,
+    station_maxrad=None,
+    azimuth=None,
+    baz=False,
+    t_before_first_arrival=1,
+    t_after_first_arrival=9,
+    savefile=False,
+    file_format="SAC",
+    normal_mode_data=False,
+):
     """
     Searches in a given Database for seismic data. Restrictions in terms of
     starttime, endtime, network etc can be made. If data is found it returns a
@@ -150,7 +179,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
     """
     if not cat and not inv:
         if not start and not end and not minmag:
-            print('Neither catalog and inventory specified nor dates')
+            print("Neither catalog and inventory specified nor dates")
             return
 
     stream = Stream()
@@ -161,28 +190,37 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
         catalog = cat
         client = Client(client_name)
     else:
-        if cat_client_name == 'globalcmt':
-            catalog = request_gcmt(starttime=start, endtime=end,
-                                   minmagnitude=minmag, mindepth=mindepth,
-                                   maxdepth=maxdepth, minlatitude=minlat,
-                                   maxlatitude=maxlat, minlongitude=minlon,
-                                   maxlongitude=maxlon)
+        if cat_client_name == "globalcmt":
+            catalog = request_gcmt(
+                starttime=start,
+                endtime=end,
+                minmagnitude=minmag,
+                mindepth=mindepth,
+                maxdepth=maxdepth,
+                minlatitude=minlat,
+                maxlatitude=maxlat,
+                minlongitude=minlon,
+                maxlongitude=maxlon,
+            )
             client = Client(client_name)
         else:
             client = Client(client_name)
             try:
-                catalog = client.get_events(starttime=start, endtime=end,
-                                            minmagnitude=minmag,
-                                            mindepth=mindepth,
-                                            maxdepth=maxdepth,
-                                            latitude=radialcenterlat,
-                                            longitude=radialcenterlon,
-                                            minradius=minrad,
-                                            maxradius=maxrad,
-                                            minlatitude=minlat,
-                                            maxlatitude=maxlat,
-                                            minlongitude=minlon,
-                                            maxlongitude=maxlon)
+                catalog = client.get_events(
+                    starttime=start,
+                    endtime=end,
+                    minmagnitude=minmag,
+                    mindepth=mindepth,
+                    maxdepth=maxdepth,
+                    latitude=radialcenterlat,
+                    longitude=radialcenterlon,
+                    minradius=minrad,
+                    maxradius=maxrad,
+                    minlatitude=minlat,
+                    maxlatitude=maxlat,
+                    minlongitude=minlon,
+                    maxlongitude=maxlon,
+                )
 
             except:
                 print("No events found for given parameters.")
@@ -204,28 +242,29 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
             print("\n")
 
             origin_t = event.origins[0].time
-            station_stime = UTCDateTime(origin_t - 3600*24)
-            station_etime = UTCDateTime(origin_t + 3600*24)
+            station_stime = UTCDateTime(origin_t - 3600 * 24)
+            station_etime = UTCDateTime(origin_t + 3600 * 24)
 
             try:
-                inventory = client.get_stations(network=net, station=scode,
-                                                level="station",
-                                                channel=channels,
-                                                starttime=station_stime,
-                                                endtime=station_etime,
-                                                minlatitude=station_minlat,
-                                                maxlatitude=station_maxlat,
-                                                minlongitude=station_minlon,
-                                                maxlongitude=station_maxlon,
-                                                latitude=station_radcenlat,
-                                                longitude=station_radcenlon,
-                                                minradius=station_minrad,
-                                                maxradius=station_maxrad)
+                inventory = client.get_stations(
+                    network=net,
+                    station=scode,
+                    level="station",
+                    channel=channels,
+                    starttime=station_stime,
+                    endtime=station_etime,
+                    minlatitude=station_minlat,
+                    maxlatitude=station_maxlat,
+                    minlongitude=station_minlon,
+                    maxlongitude=station_maxlon,
+                    latitude=station_radcenlat,
+                    longitude=station_radcenlon,
+                    minradius=station_minrad,
+                    maxradius=station_maxrad,
+                )
 
-                msg = "Inventory with %i networks, " +\
-                      "containing %i stations found."
-                print(msg % (len(inventory),
-                             len(inventory.get_contents()['stations'])))
+                msg = "Inventory with %i networks, " + "containing %i stations found."
+                print(msg % (len(inventory), len(inventory.get_contents()["stations"])))
             except:
                 print("No Inventory found for given parameters")
                 continue
@@ -235,46 +274,58 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
             print("Searching in network: %s" % net.code)
             elat = event.origins[0].latitude
             elon = event.origins[0].longitude
-            depth = event.origins[0].depth/1000.
+            depth = event.origins[0].depth / 1000.0
 
             array_fits = True
             if azimuth or baz:
                 cog = center_of_gravity(net)
-                slat = cog['latitude']
-                slon = cog['longitude']
+                slat = cog["latitude"]
+                slon = cog["longitude"]
                 epidist = locations2degrees(slat, slon, elat, elon)
-                arr_time = m.get_travel_times(source_depth_in_km=depth,
-                                              distance_in_degree=epidist)
+                arr_time = m.get_travel_times(
+                    source_depth_in_km=depth, distance_in_degree=epidist
+                )
 
                 # Checking for first arrival time
                 P_arrival_time = arr_time[0]
 
                 Ptime = P_arrival_time.time
-                tstart = UTCDateTime(event.origins[0].time + Ptime -
-                                     t_before_first_arrival * 60)
-                tend = UTCDateTime(event.origins[0].time + Ptime +
-                                   t_after_first_arrival * 60)
+                tstart = UTCDateTime(
+                    event.origins[0].time + Ptime - t_before_first_arrival * 60
+                )
+                tend = UTCDateTime(
+                    event.origins[0].time + Ptime + t_after_first_arrival * 60
+                )
 
                 center = geometrical_center(net)
-                clat = center['latitude']
-                clon = center['longitude']
+                clat = center["latitude"]
+                clon = center["longitude"]
                 if azimuth:
-                    print("Looking for events in the azimuth range of %f to %f\
-                          " % (azimuth[0], azimuth[1]))
+                    print(
+                        "Looking for events in the azimuth range of %f to %f\
+                          "
+                        % (azimuth[0], azimuth[1])
+                    )
                     center_az = gps2dist_azimuth(clat, clon, elat, elon)[1]
                     if center_az > azimuth[1] and center_az < azimuth[0]:
-                        print("Geometrical center of Array out of azimuth"
-                              + " bounds, \nchecking if single stations fit")
+                        print(
+                            "Geometrical center of Array out of azimuth"
+                            + " bounds, \nchecking if single stations fit"
+                        )
                         array_fits = False
 
                 elif baz:
-                    print("Looking for events in the back azimuth " +
-                          "range of %f to %f" % (baz[0], baz[1]))
+                    print(
+                        "Looking for events in the back azimuth "
+                        + "range of %f to %f" % (baz[0], baz[1])
+                    )
                     center_baz = gps2dist_azimuth(clat, clon, elat, elon)[2]
                     if center_baz > baz[1] and center_baz < baz[0]:
-                        print("Geometrical center of Array out of back " +
-                              "azimuth bounds, \nchecking if " +
-                              "single stations fit")
+                        print(
+                            "Geometrical center of Array out of back "
+                            + "azimuth bounds, \nchecking if "
+                            + "single stations fit"
+                        )
                         array_fits = False
 
             # If array fits to azimuth/back azimuth or no azimuth/back azimuth
@@ -284,65 +335,81 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
 
                 for station in net:
 
-                    epidist = locations2degrees(station.latitude,
-                                                station.longitude,
-                                                elat, elon)
-                    arr_time = m.get_travel_times(source_depth_in_km=depth,
-                                                  distance_in_degree=epidist)
+                    epidist = locations2degrees(
+                        station.latitude, station.longitude, elat, elon
+                    )
+                    arr_time = m.get_travel_times(
+                        source_depth_in_km=depth, distance_in_degree=epidist
+                    )
                     P_arrival_time = arr_time[0]
 
                     Ptime = P_arrival_time.time
-                    tstart = UTCDateTime(event.origins[0].time + Ptime -
-                                         t_before_first_arrival * 60)
+                    tstart = UTCDateTime(
+                        event.origins[0].time + Ptime - t_before_first_arrival * 60
+                    )
                     if normal_mode_data:
-                        tend = UTCDateTime(event.origins[0].time +
-                                           Ptime + 170 * 60 * 60)
+                        tend = UTCDateTime(
+                            event.origins[0].time + Ptime + 170 * 60 * 60
+                        )
                     else:
-                        tend = UTCDateTime(event.origins[0].time + Ptime +
-                                           t_after_first_arrival * 60)
+                        tend = UTCDateTime(
+                            event.origins[0].time + Ptime + t_after_first_arrival * 60
+                        )
 
                     try:
                         if normal_mode_data:
-                            st_req = client.get_waveforms(network=net.code,
-                                                          station=station.code,
-                                                          location='*',
-                                                          channel=channels,
-                                                          starttime=tstart,
-                                                          endtime=tend,
-                                                          attach_response=True,
-                                                          longestonly=True)
+                            st_req = client.get_waveforms(
+                                network=net.code,
+                                station=station.code,
+                                location="*",
+                                channel=channels,
+                                starttime=tstart,
+                                endtime=tend,
+                                attach_response=True,
+                                longestonly=True,
+                            )
                         else:
-                            st_req = client.get_waveforms(network=net.code,
-                                                          station=station.code,
-                                                          location='*',
-                                                          channel=channels,
-                                                          starttime=tstart,
-                                                          endtime=tend,
-                                                          attach_response=True)
+                            st_req = client.get_waveforms(
+                                network=net.code,
+                                station=station.code,
+                                location="*",
+                                channel=channels,
+                                starttime=tstart,
+                                endtime=tend,
+                                attach_response=True,
+                            )
                         no_of_stations += 1
-                        msg = "Downloaded data for %i of %i available " +\
-                              "stations!"
-                        print(msg % (no_of_stations,
-                                     net.selected_number_of_stations),
-                              end='\r')
+                        msg = "Downloaded data for %i of %i available " + "stations!"
+                        print(
+                            msg % (no_of_stations, net.selected_number_of_stations),
+                            end="\r",
+                        )
 
                         sys.stdout.flush()
                         stream += st_req
                     except:
                         pass
 
-                    if savefile == 'station' and len(stream) != 0:
-                        stname = str(net.code) + '.' + str(station.code) \
-                                 + '.' + str(origin_t).split('.')[0]
+                    if savefile == "station" and len(stream) != 0:
+                        stname = (
+                            str(net.code)
+                            + "."
+                            + str(station.code)
+                            + "."
+                            + str(origin_t).split(".")[0]
+                        )
 
-                        if hasattr(stream[0].stats, 'response'):
-                            save_file(stream, origin_t, file_format, stname,
-                                      station, event)
-                            msg = "     Saved data for %i of %i available " +\
-                                  "stations!"
-                            print(msg % (no_of_stations,
-                                         net.selected_number_of_stations),
-                                  end='\r')
+                        if hasattr(stream[0].stats, "response"):
+                            save_file(
+                                stream, origin_t, file_format, stname, station, event
+                            )
+                            msg = (
+                                "     Saved data for %i of %i available " + "stations!"
+                            )
+                            print(
+                                msg % (no_of_stations, net.selected_number_of_stations),
+                                end="\r",
+                            )
                             stream = Stream()
                         else:
                             stream = Stream()
@@ -351,89 +418,105 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
             # If not, checking each station individually.
             else:
                 for station in net:
-                    epidist = locations2degrees(station.latitude,
-                                                station.longitude, elat, elon)
-                    arr_time = m.get_travel_times(source_depth_in_km=depth,
-                                                  distance_in_degree=epidist)
+                    epidist = locations2degrees(
+                        station.latitude, station.longitude, elat, elon
+                    )
+                    arr_time = m.get_travel_times(
+                        source_depth_in_km=depth, distance_in_degree=epidist
+                    )
 
                     # Checking for first arrival time
                     P_arrival_time = arr_time[0]
 
                     Ptime = P_arrival_time.time
-                    tstart = UTCDateTime(event.origins[0].time + Ptime -
-                                         t_before_first_arrival * 60)
-                    tend = UTCDateTime(event.origins[0].time + Ptime +
-                                       t_after_first_arrival * 60)
+                    tstart = UTCDateTime(
+                        event.origins[0].time + Ptime - t_before_first_arrival * 60
+                    )
+                    tend = UTCDateTime(
+                        event.origins[0].time + Ptime + t_after_first_arrival * 60
+                    )
 
                     fit = False
                     if azimuth:
-                        stat_az = gps2dist_azimuth(station.latitude,
-                                                   station.longitude,
-                                                   elat, elon)[1]
+                        stat_az = gps2dist_azimuth(
+                            station.latitude, station.longitude, elat, elon
+                        )[1]
                         if stat_az > azimuth[1] and stat_az < azimuth[0]:
                             fit = True
                     elif baz:
-                        stat_baz = gps2dist_azimuth(station.latitude,
-                                                    station.longitude,
-                                                    elat, elon)[2]
+                        stat_baz = gps2dist_azimuth(
+                            station.latitude, station.longitude, elat, elon
+                        )[2]
                         if stat_baz > baz[1] and stat_baz < baz[0]:
                             fit = True
                     if fit:
                         try:
-                            st_req = client.get_waveforms(network=net.code,
-                                                          station=station.code,
-                                                          location='*',
-                                                          channel=channels,
-                                                          startime=tstart,
-                                                          endtime=tend,
-                                                          attach_response=True)
+                            st_req = client.get_waveforms(
+                                network=net.code,
+                                station=station.code,
+                                location="*",
+                                channel=channels,
+                                startime=tstart,
+                                endtime=tend,
+                                attach_response=True,
+                            )
                             no_of_stations += 1
-                            msg = "Downloaded data for %i of %i available " +\
-                                  "stations!"
-                            print(msg % (no_of_stations,
-                                         net.selected_number_of_stations),
-                                  end='\r')
+                            msg = (
+                                "Downloaded data for %i of %i available " + "stations!"
+                            )
+                            print(
+                                msg % (no_of_stations, net.selected_number_of_stations),
+                                end="\r",
+                            )
 
                             sys.stdout.flush()
                             stream += st_req
                         except:
                             pass
 
-                    if savefile == 'station' and len(stream) != 0:
-                        stname = str(net.code) + '.' + str(station.code) \
-                                 + '.' + str(origin_t).split('.')[0]
+                    if savefile == "station" and len(stream) != 0:
+                        stname = (
+                            str(net.code)
+                            + "."
+                            + str(station.code)
+                            + "."
+                            + str(origin_t).split(".")[0]
+                        )
 
-                        if hasattr(stream[0].stats, 'response'):
-                            save_file(stream, origin_t, file_format, stname,
-                                      station, event)
-                            msg = "     Saved data for %i of %i available " +\
-                                  "stations!"
-                            print(msg % (no_of_stations,
-                                         net.selected_number_of_stations),
-                                  end='\r')
+                        if hasattr(stream[0].stats, "response"):
+                            save_file(
+                                stream, origin_t, file_format, stname, station, event
+                            )
+                            msg = (
+                                "     Saved data for %i of %i available " + "stations!"
+                            )
+                            print(
+                                msg % (no_of_stations, net.selected_number_of_stations),
+                                end="\r",
+                            )
                             stream = Stream()
                         else:
                             stream = Stream()
                             continue
 
-            if savefile == 'network' and len(stream) != 0:
-                stname = str(origin_t).split('.')[0]
+            if savefile == "network" and len(stream) != 0:
+                stname = str(origin_t).split(".")[0]
 
                 attach_network_to_traces(stream, inventory)
                 attach_coordinates_to_traces(stream, inventory, event)
 
                 save_file(stream, origin_t, file_format, stname)
-                print('File Saved: %s' % stname)
+                print("File Saved: %s" % stname)
                 stream = Stream()
 
-            print('\n')
+            print("\n")
         invall = inventory
 
         attach_network_to_traces(stream, inventory)
         attach_coordinates_to_traces(stream, inventory, event)
 
-        if savefile == 'event' and len(stream) != 0:
-            stname = str(origin_t).split('.')[0]
+        if savefile == "event" and len(stream) != 0:
+            stname = str(origin_t).split(".")[0]
             invname = stname + "_inv.xml"
             catname = stname + "_cat.xml"
 
@@ -441,7 +524,7 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
             inventory.write(invname, format="STATIONXML")
             catalog.write(catname, format="QUAKEML")
 
-            print('File Saved: %s' % stname)
+            print("File Saved: %s" % stname)
 
         if not savefile:
             streamall.append(stream)
@@ -452,18 +535,18 @@ def data_request(client_name, start=None, end=None, minmag=None, cat=None,
         inventory = invall
         list_of_stream = streamall
 
-        return(list_of_stream, inventory, catalog)
+        return (list_of_stream, inventory, catalog)
 
 
 def save_file(stream, origin_t, file_format, stname, station=None, event=None):
 
-    if file_format == 'ah':
+    if file_format == "ah":
         try:
-            stname = stname + '.AH'
+            stname = stname + ".AH"
             _write_ah1(stream, stname, station, event)
         except:
-            stname = stname + '.pickle'
-            stream.write(stname, format='pickle')
+            stname = stname + ".pickle"
+            stream.write(stname, format="pickle")
     else:
         stname = stname + "." + file_format
         stream.write(stname, format=file_format)
@@ -492,23 +575,28 @@ def create_insta_from_invcat(network, event, database):
     lon = event.origins[0].longitude
     depth = event.origins[0].depth
 
-    source = instaseis.Source(latitude=lat, longitude=lon, depth_in_m=depth,
-                              m_rr=event.MomentTensor.m_rr,
-                              m_tt=event.MomentTensor.m_tt,
-                              m_pp=event.MomentTensor.m_pp,
-                              m_rt=event.MomentTensor.m_rt,
-                              m_rp=event.MomentTensor.m_rp,
-                              m_tp=event.MomentTensor.m_tp,
-                              origin_time=tofe
-                              )
+    source = instaseis.Source(
+        latitude=lat,
+        longitude=lon,
+        depth_in_m=depth,
+        m_rr=event.MomentTensor.m_rr,
+        m_tt=event.MomentTensor.m_tt,
+        m_pp=event.MomentTensor.m_pp,
+        m_rt=event.MomentTensor.m_rt,
+        m_rp=event.MomentTensor.m_rp,
+        m_tp=event.MomentTensor.m_tp,
+        origin_time=tofe,
+    )
 
     stream = Stream()
     tmp = []
     for station in network:
-        rec = instaseis.Receiver(latitude=str(station.latitude),
-                                 longitude=str(station.longitude),
-                                 network=str(network.code),
-                                 station=str(station.code))
+        rec = instaseis.Receiver(
+            latitude=str(station.latitude),
+            longitude=str(station.longitude),
+            network=str(network.code),
+            station=str(station.code),
+        )
         tmp.append(db.get_seismograms(source=source, receiver=rec))
 
     for x in tmp:
@@ -517,9 +605,17 @@ def create_insta_from_invcat(network, event, database):
     return stream
 
 
-def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None,
-                 maxdepth=None, minlatitude=None, maxlatitude=None,
-                 minlongitude=None, maxlongitude=None):
+def request_gcmt(
+    starttime,
+    endtime,
+    minmagnitude=None,
+    mindepth=None,
+    maxdepth=None,
+    minlatitude=None,
+    maxlatitude=None,
+    minlongitude=None,
+    maxlongitude=None,
+):
     from mechanize import Browser
     import re
 
@@ -533,34 +629,34 @@ def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None,
     # Split numbers and text
     r = re.compile("([a-zA-Z]+)([0-9]+)")
     br = Browser()
-    br.open('http://www.globalcmt.org/CMTsearch.html')
+    br.open("http://www.globalcmt.org/CMTsearch.html")
     # Site has just one form
     br.select_form(nr=0)
 
-    br.form['yr'] = str(starttime.year)
-    br.form['mo'] = str(starttime.month)
-    br.form['day'] = str(starttime.day)
-    br.form['oyr'] = str(endtime.year)
-    br.form['omo'] = str(endtime.month)
-    br.form['oday'] = str(endtime.day)
-    br.form['list'] = ['4']
-    br.form['itype'] = ['ymd']
-    br.form['otype'] = ['ymd']
+    br.form["yr"] = str(starttime.year)
+    br.form["mo"] = str(starttime.month)
+    br.form["day"] = str(starttime.day)
+    br.form["oyr"] = str(endtime.year)
+    br.form["omo"] = str(endtime.month)
+    br.form["oday"] = str(endtime.day)
+    br.form["list"] = ["4"]
+    br.form["itype"] = ["ymd"]
+    br.form["otype"] = ["ymd"]
 
     if minmagnitude:
-        br.form['lmw'] = str(minmagnitude)
+        br.form["lmw"] = str(minmagnitude)
     if minlatitude:
-        br.form['llat'] = str(minlatitude)
+        br.form["llat"] = str(minlatitude)
     if maxlatitude:
-        br.form['ulat'] = str(maxlatitude)
+        br.form["ulat"] = str(maxlatitude)
     if minlongitude:
-        br.form['llon'] = str(minlongitude)
+        br.form["llon"] = str(minlongitude)
     if maxlongitude:
-        br.form['ulon'] = str(maxlongitude)
+        br.form["ulon"] = str(maxlongitude)
     if mindepth:
-        br.form['lhd'] = str(mindepth)
+        br.form["lhd"] = str(mindepth)
     if maxdepth:
-        br.form['uhd'] = str(maxdepth)
+        br.form["uhd"] = str(maxdepth)
 
     print("Submitting parameters to globalcmt.org ")
     req = br.submit()
@@ -570,14 +666,14 @@ def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None,
     for line in req:
         data.append(line)
 
-    data_chunked = _chunking_list(keyword='\n', list=data)
+    data_chunked = _chunking_list(keyword="\n", list=data)
     origins = []
     magnitudes = []
     tensor = []
 
     for line in data_chunked:
         for element in line:
-            if 'event name' in element:
+            if "event name" in element:
                 try:
                     org = line[1].split()
                     year = int(r.match(org[0]).groups()[1])
@@ -585,8 +681,8 @@ def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None,
                     day = int(org[2])
                     hour = int(org[3])
                     minute = int(org[4])
-                    sec_temp = int(org[5].split('.')[0])
-                    msec_temp = int(org[5].split('.')[1])
+                    sec_temp = int(org[5].split(".")[0])
+                    msec_temp = int(org[5].split(".")[1])
 
                 except:
                     org = line[1].split()
@@ -595,17 +691,18 @@ def request_gcmt(starttime, endtime, minmagnitude=None, mindepth=None,
                     day = int(org[3])
                     hour = int(org[4])
                     minute = int(org[5])
-                    sec_temp = int(org[6].split('.')[0])
-                    msec_temp = int(org[6].split('.')[1])
+                    sec_temp = int(org[6].split(".")[0])
+                    msec_temp = int(org[6].split(".")[1])
 
-                origins_temp = UTCDateTime(year, mon, day, hour, minute,
-                                           sec_temp, msec_temp)
+                origins_temp = UTCDateTime(
+                    year, mon, day, hour, minute, sec_temp, msec_temp
+                )
                 # adding time shift located in line[3]
                 origin = origins_temp + float(line[3].split()[2])
                 magnitude = float(line[1].split()[10])
                 latitude = float(line[5].split()[1])
                 longitude = float(line[6].split()[1])
-                depth = 1000. * float(line[7].split()[1])
+                depth = 1000.0 * float(line[7].split()[1])
                 m_rr = float(line[8].split()[1])
                 m_tt = float(line[9].split()[1])
                 m_pp = float(line[10].split()[1])

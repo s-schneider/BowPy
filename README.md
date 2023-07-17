@@ -8,7 +8,13 @@ Installation:
 
 - cd into bowPy
 
-- python setup.py install
+- python3 -m venv env
+
+- source env/bin/activate
+
+- (env) pip install .
+
+- (env) pip install basemap
 
 start ipython
 

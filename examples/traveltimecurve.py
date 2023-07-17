@@ -1,4 +1,8 @@
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
+
+
 drange = np.linspace(0,180,361)
 fs = 22
 xlabel = 'Distance (degrees)'

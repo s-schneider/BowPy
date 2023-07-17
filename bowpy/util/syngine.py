@@ -63,9 +63,17 @@ st = streams.TA
 """
 
 
-def get_syngine_data(model, client=None, reclat=None, reclon=None, inv=None,
-                     eventid=None, origins=None, m_tensor=None,
-                     source_dc=None):
+def get_syngine_data(
+    model,
+    client=None,
+    reclat=None,
+    reclon=None,
+    inv=None,
+    eventid=None,
+    origins=None,
+    m_tensor=None,
+    source_dc=None,
+):
     """
     param reclat:
     type reclat: list of floats
@@ -84,22 +92,24 @@ def get_syngine_data(model, client=None, reclat=None, reclon=None, inv=None,
             for station in network:
                 print(station)
                 if eventid:
-                    stream_tmp = synclient.get_waveforms(model=model,
-                                                         network=network.code,
-                                                         station=station.code,
-                                                         eventid=eventid
-                                                         )
+                    stream_tmp = synclient.get_waveforms(
+                        model=model,
+                        network=network.code,
+                        station=station.code,
+                        eventid=eventid,
+                    )
                 else:
-                    stream_tmp = synclient.get_waveforms(model=model,
-                                                         network=network.code,
-                                                         station=station.code,
-                                                         origintime=origins.time,
-                                                         sourcelatitude=origins.latitude,
-                                                         sourcelongitude=origins.longitude,
-                                                         sourcedepthinmeters=origins.depth,
-                                                         sourcemomenttensor=m_tensor,
-                                                         sourcedoublecouple=source_dc
-                                                         )
+                    stream_tmp = synclient.get_waveforms(
+                        model=model,
+                        network=network.code,
+                        station=station.code,
+                        origintime=origins.time,
+                        sourcelatitude=origins.latitude,
+                        sourcelongitude=origins.longitude,
+                        sourcedepthinmeters=origins.depth,
+                        sourcemomenttensor=m_tensor,
+                        sourcedoublecouple=source_dc,
+                    )
                 stream.append(stream_tmp[0])
             streams[network.code] = stream
 
@@ -107,22 +117,24 @@ def get_syngine_data(model, client=None, reclat=None, reclon=None, inv=None,
         stream = obspy.Stream()
         for rlat, rlon in zip(reclat, reclon):
             if eventid:
-                stream_tmp = synclient.get_waveforms(model=model,
-                                                     receiverlatitude=rlat,
-                                                     receiverlongitude=rlon,
-                                                     eventid=eventid
-                                                     )
+                stream_tmp = synclient.get_waveforms(
+                    model=model,
+                    receiverlatitude=rlat,
+                    receiverlongitude=rlon,
+                    eventid=eventid,
+                )
             else:
-                stream_tmp = synclient.get_waveforms(model=model,
-                                                     receiverlatitude=rlat,
-                                                     receiverlongitude=rlon,
-                                                     origintime=origins.time,
-                                                     sourcelatitude=origins.latitude,
-                                                     sourcelongitude=origins.longitude,
-                                                     sourcedepthinmeters=origins.depth,
-                                                     sourcemomenttensor=m_tensor,
-                                                     sourcedoublecouple=source_dc
-                                                     )
+                stream_tmp = synclient.get_waveforms(
+                    model=model,
+                    receiverlatitude=rlat,
+                    receiverlongitude=rlon,
+                    origintime=origins.time,
+                    sourcelatitude=origins.latitude,
+                    sourcelongitude=origins.longitude,
+                    sourcedepthinmeters=origins.depth,
+                    sourcemomenttensor=m_tensor,
+                    sourcedoublecouple=source_dc,
+                )
             stream.append(stream_tmp[0])
         streams = stream
 
@@ -130,9 +142,12 @@ def get_syngine_data(model, client=None, reclat=None, reclon=None, inv=None,
         starttime = origins.time - 120
         endtime = starttime + 120
         if client:
-            cat = client.get_events(starttime, endtime,
-                                    minlatitude=origins.latitude-.5,
-                                    maxlatitude=origins.latitude+.5)
+            cat = client.get_events(
+                starttime,
+                endtime,
+                minlatitude=origins.latitude - 0.5,
+                maxlatitude=origins.latitude + 0.5,
+            )
         else:
             cat = None
     else:
@@ -141,32 +156,44 @@ def get_syngine_data(model, client=None, reclat=None, reclon=None, inv=None,
     return streams, cat
 
 
-def get_ref_data(stream, inv, model='ak135f_1s', eventid=None, origins=None,
-                 m_tensor=None, source_dc=None):
+def get_ref_data(
+    stream,
+    inv,
+    model="ak135f_1s",
+    eventid=None,
+    origins=None,
+    m_tensor=None,
+    source_dc=None,
+):
 
     ref_stream = Stream()
 
     rlats = []
     rlons = []
     geom = geometrical_center(inv)
-    d, az, baz = gps2dist_azimuth(origins.latitude, origins.longitude,
-                                  geom.latitude, geom.longitude)
+    d, az, baz = gps2dist_azimuth(
+        origins.latitude, origins.longitude, geom.latitude, geom.longitude
+    )
     for i, trace in enumerate(stream):
-        dist = degrees2kilometers(trace.stats.distance)*1000.
+        dist = degrees2kilometers(trace.stats.distance) * 1000.0
 
-        rlat, rlon = dist_azimuth2gps(origins.latitude, origins.longitude,
-                                      az, dist)
+        rlat, rlon = dist_azimuth2gps(origins.latitude, origins.longitude, az, dist)
         if rlon > 180:
-            rlon = 180. - rlon
+            rlon = 180.0 - rlon
 
         print(rlat, rlon)
         rlats.append(rlat)
         rlons.append(rlon)
-        print('Receiving trace %i of %i.' % (i+1, len(stream)))
-        stream_tmp, cat_void = get_syngine_data(model, reclat=rlats, reclon=rlons,
-                                                eventid=eventid, origins=origins,
-                                                m_tensor=m_tensor, source_dc=source_dc
-                                                )
+        print("Receiving trace %i of %i." % (i + 1, len(stream)))
+        stream_tmp, cat_void = get_syngine_data(
+            model,
+            reclat=rlats,
+            reclon=rlons,
+            eventid=eventid,
+            origins=origins,
+            m_tensor=m_tensor,
+            source_dc=source_dc,
+        )
 
         trace_tmp = stream_tmp[0].copy()
         trace_tmp.stats.station = trace.stats.station
